@@ -38,6 +38,10 @@ The prototype shares the existing `localStorage` key `phaenomenon-demo-v1`, with
 
 A **starting workspace** selector offers designer/lead, lighting technician, installation crew and production manager presets. These guide the starting screen only. Changing a view **does not** change permission.
 
+**Task ownership:** Production managers can link each published installation task to a person assigned to that event. Crew can filter tasks by stage and by member, without creating duplicate people. An assignment outside a person's listed event area is flagged for review. These assignments are lightweight organisational records, not authenticated user accounts or actual access restrictions.
+
+**Equipment suppliers:** Event role assignments can optionally specify a catalogue item and quantity supplied. This records who is expected to provide equipment, but does not yet reserve individual serial-numbered assets or verify supplier stock.
+
 ## Publication and change propagation
 
 Design and current technical records remain editable in the classic planner. **Crew packs use a saved published snapshot** rather than reading those live records directly.
