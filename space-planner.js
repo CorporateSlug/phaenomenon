@@ -78,6 +78,7 @@
       window.PhaenomenonVenueWorkflow?.ensureAll(this.db);
       window.PhaenomenonMultiSpace?.migrate(this.venue,p);
       this.focusSpaceId=p.focusSpaceId||'all';
+      if(this.focusSpaceId!=='all'&&Array.isArray(this.event.spaceIds)&&!this.event.spaceIds.includes(this.focusSpaceId))this.focusSpaceId='all';
     }
     persist(){this.save();this.updateSummary();this.draw();}
     build(){
@@ -442,8 +443,8 @@
       const obj={id:uid('obj'),kind,name:TYPES.find(t=>t[0]===kind)?.[1]||'Equipment',x,y,z:kind==='light'?Math.min(2.5,G.peakHeight(v)):0,watts:0,eqId:''};
       const M=window.PhaenomenonMultiSpace;
       if(M?.hasAreas(v)){
-        const room=v.spaces.find(s=>s.id===this.focusSpaceId)||v.spaces[0];
-        obj.areaId=room.id;obj.x=r1(room.x+room.width*.5+(items.length%3-1)*1.2);obj.y=r1(room.y+room.length*.5);
+        const space=v.spaces.find(s=>s.id===this.focusSpaceId)||v.spaces.find(s=>this.event?.spaceIds?.includes(s.id))||v.spaces[0];
+        obj.areaId=space.id;obj.x=r1(space.x+space.width*.5+(items.length%3-1)*1.2);obj.y=r1(space.y+space.length*.5);
         M.constrain(v,obj);
       }
       if(kind==='light'&&F)F.apply(obj,fixtureType||'par');
