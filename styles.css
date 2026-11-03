@@ -220,3 +220,29 @@
 #space-planner-root .sp-canvas-activation{top:13px;right:13px}
 #space-planner-root .sp-workspace.sp-is-focused .sp-canvas-wrap{margin:0 10px;min-height:260px}
 @media(max-width:700px){#space-planner-root .sp-canvas-wrap{margin:0 8px;border-radius:10px}#space-planner-root .sp-workspace.sp-is-focused .sp-canvas-wrap{margin:0 7px}#space-planner-root .sp-canvas-activation{top:9px;right:9px}}
+
+
+/* Space Planner 2.0 — real 3D scene, subtle annotations and compact tool palette */
+#space-planner-root .sp-canvas-wrap .sp3-host{position:absolute;inset:0;z-index:1;background:#1b3033;overflow:hidden;font-family:'DM Sans',system-ui,sans-serif}
+#space-planner-root .sp3-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab;outline:0}
+#space-planner-root .sp3-canvas:focus-visible{outline:2px solid #9ed4ba;outline-offset:-3px}
+#space-planner-root .sp3-labels{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:2}
+#space-planner-root .sp3-label{position:absolute;left:0;top:0;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:5px 8px;font-size:10px;font-weight:700;letter-spacing:0;line-height:1.25;border:1px solid #aac7bc2e;border-radius:6px;background:#16302edb;color:#e7f1ed;box-shadow:0 3px 10px #071b1b40;will-change:transform;user-select:none}
+#space-planner-root .sp3-label-selected{border-color:#f7c58b88;color:#ffebc8;background:#4d443ae8}
+#space-planner-root .sp3-label-measure{background:#244941ce;color:#cee1d8;border-color:#a3c9b855;padding:3px 6px;box-shadow:none;font-variant-numeric:tabular-nums}
+#space-planner-root .sp3-label-corner{background:#daf1e5;color:#284d44;min-width:20px;text-align:center;box-shadow:none;padding:3px 5px}
+#space-planner-root .sp3-hud{position:absolute;top:12px;left:12px;z-index:5;display:flex;align-items:center;gap:7px;flex-wrap:wrap;max-width:calc(100% - 24px);pointer-events:auto}
+#space-planner-root .sp3-tools{display:inline-flex;gap:2px;padding:3px;border:1px solid #acc7bf3d;border-radius:9px;background:#132c2ad9;backdrop-filter:blur(7px)}
+#space-planner-root .sp3-hud button{border:1px solid #b7d4ca28;border-radius:7px;padding:7px 10px;background:#173532ea;color:#bfd5cc;font-size:10px;font-weight:750;cursor:pointer;min-height:33px}
+#space-planner-root .sp3-tools button{border:0;background:transparent;min-height:28px}
+#space-planner-root .sp3-hud button:hover{background:#2b5548;color:#fff}
+#space-planner-root .sp3-hud button.active{background:#d9ece2;color:#254f43;box-shadow:0 1px 3px #0002}
+#space-planner-root .sp3-status{position:absolute;bottom:11px;right:11px;max-width:55%;pointer-events:none;font-size:10px;color:#bad3c7;background:#17302eeb;border:1px solid #9ac4b12e;border-radius:7px;padding:6px 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:3}
+#space-planner-root .sp-view-controls .sp-toggle{min-width:42px}
+#space-planner-root .sp-view-controls #sp-view-perspective{min-width:82px}
+#space-planner-root .sp3-properties{grid-column:1/-1;min-width:0;border-top:1px solid #e7efeb;margin-top:3px;padding-top:12px}
+#space-planner-root .sp3-properties>strong{display:block;font-size:11px;font-weight:800;color:#3f6358;margin-bottom:10px}
+#space-planner-root .sp3-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#space-planner-root .sp3-fields label{min-width:0;display:flex;flex-direction:column;gap:5px;font-size:10px;font-weight:650;color:#70847c}
+#space-planner-root .sp3-fields .field{min-width:0;width:100%;min-height:34px;padding:7px 9px;font-size:11px}
+@media(max-width:650px){#space-planner-root .sp3-hud{top:9px;left:9px;gap:5px}#space-planner-root .sp3-hud button{padding:5px 7px;font-size:9px;min-height:29px}#space-planner-root .sp3-label{font-size:9px;max-width:114px;padding:4px 6px}#space-planner-root .sp3-status{font-size:9px;right:8px;bottom:8px}#space-planner-root .sp-view-controls #sp-view-perspective{min-width:67px}}
