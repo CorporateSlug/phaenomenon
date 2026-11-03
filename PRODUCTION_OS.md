@@ -20,7 +20,7 @@ The prototype shares the existing `localStorage` key `phaenomenon-demo-v1`, with
 | `productionOS.teamHierarchy[eventId]` | Event-specific reporting hierarchy for people: a position such as In charge, Second in charge, Team lead or Helper; optional supervisor entity ID and responsibilities. Separate from job roles, identity and permissions. |
 | `productionOS.packAcknowledgements[eventId]` | Local review markers tied to a person and crew pack revision. Not authenticated or signed approvals. |
 | `productionOS.operations[eventId]` | Event load-in and return intervals used for preliminary equipment stock checks. |
-| `productionOS.published[eventId]` | A numbered immutable-by-convention snapshot of the current venue layout, connections and technical records; corresponding instruction tasks, their statuses and archived revisions. |
+| `productionOS.published[eventId]` | A numbered, immutable-by-convention snapshot of the event's selected Spaces, layout, kit allocations, linked equipment specifications, connections and technical settings, with revisioned installation tasks and archived instructions. |
 | `productionOS.issues` | Reported discrepancies or problems tied to an event and optionally an installation task. |
 | `productionOS.show[eventId]` | Lightweight run-of-show activities and optional links to creative lighting looks. |
 | `productionOS.looks[eventId]` | Draft lighting looks with areas, colours, levels and effect concepts, not active console programming. |
@@ -112,6 +112,18 @@ To avoid an overwhelming production dashboard, Production now has four focused t
 **Task ownership:** Production managers can link each published installation task to a person assigned to that event. Crew can filter tasks by stage and by member, without creating duplicate people. An assignment outside a person's listed event area is flagged for review. These assignments are lightweight organisational records, not authenticated user accounts or actual access restrictions.
 
 **Equipment suppliers:** Event role assignments can optionally specify a catalogue item and quantity supplied. This records who is expected to provide equipment, but does not yet reserve individual serial-numbered assets or verify supplier stock.
+
+## Recent usability and data-consistency improvements
+
+- **3D equipment-kit synchronisation is additive.** It raises insufficient quantities for catalogue-linked placed items, without discarding unplaced cables, stands or other manually planned stock. A visible inspector choice excludes permanent scenery and other non-kit objects.
+- **Event Builder planning assumptions** (guest count, rough lighting zones, indoor/outdoor environment, complexity, estimated crew hours and hourly rates) stay available in a collapsible section. The 3D planner includes a direct return link to the same event's Builder.
+- **Show cues are editable and removable.** Changed completed cues return to Planned. Cue edits do not alter physical equipment or delete unrelated lighting-look records.
+- **Crew-pack revisions include kit and relevant linked equipment metadata** (type, category, stated power), and the per-object placement-task fingerprint includes its equipment link and planning specification. Changing a model or power assumption resets its affected task after a revised pack is published, while leaving independently unchanged installation tasks at their previously recorded states. Kit quantity changes appear in revision review but do not themselves reset unchanged physical placement checks.
+- These are planning-data controls. A reset or a retained completion marker is not independent safety verification. Engineering approvals, actual electrical load checks, surveyed routes, authenticated sign-offs and stock/serial checks remain outside the prototype.
+
+Regression coverage: `tests/flow-and-kit.test.mjs`, `tests/published-gear-revisions.test.mjs`, and `tests/show-cue-editing.test.mjs`.
+
+---
 
 ## Publication and change propagation
 
