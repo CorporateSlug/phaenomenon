@@ -245,9 +245,31 @@ function attach(p){
    else if(field==='shape'){const ok=window.confirm('Replace this area’s outline with a '+el.value+' template? Equipment will remain in the nearest valid position.');if(!ok)return;a.geometry.footprint=G.template(el.value==='l'?'L':el.value==='u'?'U':el.value,a.width,a.length);a.shape=el.value;}
    else if(field==='name'){a.name=String(el.value).slice(0,75).trim()||a.name;}
    else{
-    const previous={width:a.width,length:a.length};
+    const previous={x:a.x,y:a.y,width:a.width,length:a.length,height:a.height};
     a[field]=cap(n(el.value,a[field]),field==='height'?.5:field==='x'||field==='y'?0:2,field==='height'?40:200);
-    if((field==='width'||field==='length')&&previous[field]>0){const scale=a[field]/previous[field];for(const point of a.geometry.footprint)point[field==='width'?'x':'y']=r(point[field==='width'?'x':'y']*scale);}
+    const attached=Object.values(p.db.venuePlans||{}).filter(pl=>pl.venueId===p.venue.id).flatMap(pl=>(pl.items||[]).filter(item=>item.areaId===a.id));
+    if((field==='x'||field==='y')&&a[field]!==previous[field]){
+      const delta=a[field]-previous[field];
+      attached.forEach(item=>item[field]=r(item[field]+delta));
+      (p.venue.links||[]).forEach(link=>{
+        if(link.fromSpace===a.id)link.from[field]=r(n(link.from[field])+delta);
+        if(link.toSpace===a.id)link.to[field]=r(n(link.to[field])+delta);
+      });
+    }
+    if((field==='width'||field==='length')&&previous[field]>0){
+      const axis=field==='width'?'x':'y',scale=a[field]/previous[field];
+      for(const point of a.geometry.footprint)point[axis]=r(point[axis]*scale);
+      attached.forEach(item=>item[axis]=r(a[axis]+(item[axis]-a[axis])*scale));
+      (p.venue.links||[]).forEach(link=>{
+        if(link.fromSpace===a.id)link.from[axis]=r(a[axis]+(n(link.from[axis])-a[axis])*scale);
+        if(link.toSpace===a.id)link.to[axis]=r(a[axis]+(n(link.to[axis])-a[axis])*scale);
+      });
+    }
+    if(field==='height'){
+      const change=a.height-previous.height;
+      a.geometry.roof.eave=a.height;
+      a.geometry.roof.peak=r(n(a.geometry.roof.peak,a.height)+change);
+    }
    }
    expand(p.venue);
    for(const plan of Object.values(p.db.venuePlans||{}))if(plan.venueId===p.venue.id)plan.items?.forEach(item=>constrain(p.venue,item));
