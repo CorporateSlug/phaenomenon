@@ -1,3 +1,22 @@
+# Phaenomenon: event lighting operations first
+
+The primary use case is **repeat-customer event bookings**, followed by equipment planning and invoicing. The previous architectural lighting project ideas are retained below as optional long-term possibilities, not the immediate priority.
+
+## Practical next milestones
+
+1. Populate Aaron's actual equipment inventory, kit templates, hire prices and stock levels.
+2. Reconstruct two or three real jobs and determine which parameters he uses to select equipment. Replace the current demonstration-only rules with his own decision model.
+3. Add event duration, equipment reservation windows, returns, maintenance, transport and crew planning.
+4. Produce job packs, equipment picklists, site notes and check-in / check-out records.
+5. Support customer-specific rates, quotes and deposits, then proper Australian invoice details and secure integration with his chosen invoicing/accounting system.
+6. Move from browser-only local storage to a secured multi-user backend before real business use.
+
+**Current limitations:** Gear suggestions are editable heuristics and not technical/safety validation. Stock checks compare same-date confirmed events only. Invoice PDFs are marked DEMO DRAFT and the app cannot send or collect payments.
+
+---
+
+## Broader design studio roadmap (retained from the first concept)
+
 # Phaenomenon: product vision and engineering roadmap
 
 ## Product hypothesis
