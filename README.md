@@ -14,8 +14,12 @@ The existing **Design → Connect → Review → Export** stage lighting planner
 - Production readiness, assignments, run-of-show cues and draft creative lighting looks.
 - A nested **event crew hierarchy** with in-charge, second-in-charge, team lead and helper positions, reporting-line editor, direct-report links, and protection against circular team structures. Each event has its own team tree.
 - Change-impact review before a revised installation pack is published.
+- Event-specific **load-in and return scheduling** with provisional equipment availability against overlapping confirmed bookings, including supplier-provided quantities and linked-layout checks.
+- **Crew pack review tracking** per named team member and published revision, without treating it as a verified signature.
+- Optional **video devices and video signal connections** in the existing 3D and technical planning workflows, with video/audio schematic topology views.
+- Same-browser cross-tab update detection and safeguards against silently overwriting more recent work.
 
-**Prototype limitation:** The new roles are UI presets, not security permissions. Data is stored in the same browser's local storage as the classic demo; there are no accounts, synchronisation or safety approvals. The Abbotsford Convent two-stage example and named demo crew are fictional/illustrative.
+**Prototype limitation:** The new roles are UI presets, not security permissions. Data is stored in the same browser's local storage as the classic demo; other tabs on the same origin refresh changes, but there are no accounts, cross-device synchronisation or safety approvals. The Abbotsford Convent two-stage example and named demo crew are fictional/illustrative.
 
 To run regression tests with a recent Node.js installation: `node --test tests/production-os.test.mjs`.
 
