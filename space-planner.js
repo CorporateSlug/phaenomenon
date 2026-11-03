@@ -8,6 +8,7 @@
   const cableTypes={power:['Power','#eea368'],network:['Ethernet / network','#61c7d0'],dmx:['DMX','#b7a2ed'],audio:['Audio','#89b7f3']};
   const style=document.createElement('style');
   style.textContent=`
+  .sp-wrap [hidden]{display:none!important}
   .sp-wrap{color:#32484b}.sp-card{background:#fff;border:1px solid #e4ebea;border-radius:13px;padding:18px;margin:0 0 16px;min-width:0}
   .sp-grid{display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:16px}.sp-row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
   .sp-flex{flex:1;min-width:140px}.sp-wrap label{font:600 11px system-ui;color:#607579;display:grid;gap:6px}
@@ -125,8 +126,7 @@
       root.querySelector('#sp-zoom-out').onclick=()=>{zoom=clamp(zoom/1.2,.5,2.8);draw();};
       root.querySelector('#sp-add-route').onclick=()=>{const from=root.querySelector('#sp-from').value,to=root.querySelector('#sp-to').value;if(!from||!to||from===to){alert('Choose two different placed objects.');return;}plan().runs.push({id:newid('run-'),from,to,type:root.querySelector('#sp-type').value,slack:clamp(num(root.querySelector('#sp-slack').value,15),0,100)});persist();refresh();};
       root.querySelector('#sp-sync').onclick=()=>{const counts={};plan().items.forEach(o=>{if(o.eqId)counts[o.eqId]=(counts[o.eqId]||0)+1;});if(!Object.keys(counts).length){flash('Link placed equipment to the inventory first.');return;}event().kit=Object.entries(counts).map(([id,qty])=>({id,qty}));persist();flash('Event kit updated. Review the equipment list.');};
-      root.addEventListener('click',click);
-      root.addEventListener('change',change);
+      if(!root.dataset.spBound){root.addEventListener('click',click);root.addEventListener('change',change);root.dataset.spBound='1';}
       canvas.addEventListener('pointerdown',pointerDown);
       canvas.addEventListener('pointermove',pointerMove);
       canvas.addEventListener('pointerup',pointerUp);
