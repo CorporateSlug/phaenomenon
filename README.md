@@ -43,3 +43,18 @@ No packages, API keys or build step are required. GitHub Pages deploys the stati
 Walk through two or three real past events: identify the input parameters he actually considers, the equipment he chose, and exceptions such as venue power, rigging, weather, transport and crew. Use those examples to replace the demonstration rules with a reliable, explainable, editable planning model. A commercial version should then add secure multi-user data, proper scheduling/reservations, job pick lists, invoicing, payments and accounting integrations.
 
 See [VISION.md](VISION.md) for the longer roadmap.
+
+
+## 3D venue and cable planning
+
+Open **3D space planner** in the app sidebar, or go directly to `/#/spaces` on GitHub Pages. You can:
+
+- reuse an existing venue or create a new one with width, length and height in metres
+- switch between a lightweight 3D/isometric view and a top-down plan
+- place, drag, duplicate and edit lighting, audio, power, network, control, rigging and other equipment
+- give placed objects heights and link them to equipment catalogue entries
+- create approximate power, Ethernet, DMX and audio routes with configurable slack
+- review estimated lengths and copy linked fixtures into the event kit
+- duplicate event bookings and retain their associated layouts and cable routes
+
+**Prototype limitations:** dimensions and routes are user-supplied estimates; route length is an orthogonal approximation with slack, not an as-installed measurement. This is not a validated electrical, rigging, network or safety design tool. Review all technical plans with appropriately qualified people. The demo stores changes locally in your browser and does not send or reconcile live invoices.
