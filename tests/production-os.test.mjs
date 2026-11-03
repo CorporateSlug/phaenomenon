@@ -267,3 +267,71 @@ test('reporting structure is scoped to each event',()=>{
   assert.equal(updated[copy]['ent-demo-hand'].position,'In charge');
   assert.equal(updated[e]['ent-demo-hand'].reportsTo,original);
 });
+
+test('crew pack reviews are revision-specific and visible to production',()=>{
+  const memory=new Map(),h=harness(memory),id='ev-abbotsford-two-stage-demo';
+  h.navigate('#/crew');
+  h.change({id:'crew-person-picker',dataset:{},value:'ent-demo-hand'});
+  assert.match(h.ui.innerHTML,/Record review of revision 1/);
+  h.click('ack-pack');
+  assert.ok(h.read().productionOS.packAcknowledgements[id].some(x=>x.personId==='ent-demo-hand'&&x.revision===1));
+  h.navigate('#/production');
+  assert.match(h.ui.innerHTML,/Reviewed r1/);
+  const next=h.read();
+  next.venuePlans[id].items.find(x=>x.kind==='light').x+=2;
+  memory.set('phaenomenon-demo-v1',JSON.stringify(next));
+  const another=harness(memory);
+  another.navigate('#/design');
+  another.click('publish');
+  another.navigate('#/crew');
+  another.change({id:'crew-person-picker',dataset:{},value:'ent-demo-hand'});
+  assert.match(another.ui.innerHTML,/Record review of revision 2/);
+  assert.equal(another.read().productionOS.packAcknowledgements[id].length,1);
+});
+
+test('load-in windows and confirmed overlapping bookings drive stock gap warnings',()=>{
+  const memory=new Map();
+  const original=harness(memory).read();
+  const eventId='ev-abbotsford-two-stage-demo';
+  const first=original.eventJobs.find(x=>x.id===eventId);
+  original.equipment=[{id:'eq-case',name:'Example light case',owned:2,category:'Lighting',rate:20,watts:50}];
+  first.kit=[{id:'eq-case',qty:4}];
+  original.eventJobs.push({...first,id:'ev-other-confirmed',title:'Overlapping festival',status:'Confirmed',kit:[{id:'eq-case',qty:2}]});
+  memory.set('phaenomenon-demo-v1',JSON.stringify(original));
+  const h=harness(memory);
+  h.navigate('#/production');
+  assert.match(h.ui.innerHTML,/Equipment and logistics/);
+  assert.match(h.ui.innerHTML,/Short 4/);
+  h.submit('operations-form',{loadInDate:'2026-12-05',loadInTime:'08:00',packOutDate:'2026-12-05',packOutTime:'21:00'});
+  assert.equal(h.read().productionOS.operations[eventId].loadInTime,'08:00');
+  const copy=h.read();
+  copy.productionOS.operations['ev-other-confirmed']={loadInDate:'2026-12-05',loadInTime:'21:30',packOutDate:'2026-12-05',packOutTime:'23:00'};
+  memory.set('phaenomenon-demo-v1',JSON.stringify(copy));
+  const fresh=harness(memory);
+  fresh.navigate('#/production');
+  assert.match(fresh.ui.innerHTML,/Short 2/);
+  fresh.submit('operations-form',{loadInDate:'2026-12-05',loadInTime:'22:00',packOutDate:'2026-12-05',packOutTime:'19:00'});
+  assert.equal(fresh.read().productionOS.operations[eventId].loadInTime,'08:00');
+});
+
+test('stale browser tab is blocked from overwriting newer event logistics',()=>{
+  const memory=new Map(),oldTab=harness(memory),newTab=harness(memory),id='ev-abbotsford-two-stage-demo';
+  newTab.submit('operations-form',{loadInDate:'2026-12-05',loadInTime:'07:00',packOutDate:'2026-12-05',packOutTime:'23:00'});
+  assert.equal(newTab.read().productionOS.operations[id].loadInTime,'07:00');
+  oldTab.submit('operations-form',{loadInDate:'2026-12-05',loadInTime:'09:00',packOutDate:'2026-12-05',packOutTime:'23:00'});
+  assert.equal(oldTab.read().productionOS.operations[id].loadInTime,'07:00');
+  oldTab.navigate('#/production');
+  assert.match(oldTab.ui.innerHTML,/07:00/);
+});
+
+test('technical core supports typed video signal cables alongside audio and DMX',()=>{
+  const runtime={window:{}};
+  const source=readFileSync(new URL('../technical-core.js',import.meta.url),'utf8');
+  runInNewContext(source,runtime,{filename:'technical-core.js'});
+  const core=runtime.window.PhaenomenonTechCore;
+  assert.ok(core.TYPES.includes('video'));
+  assert.ok(core.TYPES.includes('audio'));
+  assert.ok(core.TYPES.includes('dmx'));
+  assert.ok(core.CONNECTORS.video.includes('HDMI'));
+  assert.equal(core.title('video'),'Video / SDI / HDMI');
+});
