@@ -17,6 +17,7 @@ The prototype shares the existing `localStorage` key `phaenomenon-demo-v1`, with
 | `productionOS.entities` | Canonical people, organisations, venues, spaces and event profiles; aliases and notes; deterministic links to the existing clients, venues, areas and bookings. |
 | `productionOS.relationships` | Typed entity edges, including source-derived venue/space and event/venue links and user-defined relationships. |
 | `productionOS.assignments` | Event-specific person/organisation roles and area responsibilities. Identity is independent of the role on a particular event. |
+| `productionOS.teamHierarchy[eventId]` | Event-specific reporting hierarchy for people: a position such as In charge, Second in charge, Team lead or Helper; optional supervisor entity ID and responsibilities. Separate from job roles, identity and permissions. |
 | `productionOS.published[eventId]` | A numbered immutable-by-convention snapshot of the current venue layout, connections and technical records; corresponding instruction tasks, their statuses and archived revisions. |
 | `productionOS.issues` | Reported discrepancies or problems tied to an event and optionally an installation task. |
 | `productionOS.show[eventId]` | Lightweight run-of-show activities and optional links to creative lighting looks. |
@@ -37,6 +38,8 @@ The prototype shares the existing `localStorage` key `phaenomenon-demo-v1`, with
 5. **Entities:** search people, organisations, venues, spaces and events; add aliases, notes and relationships; drill into profiles with Back/Forward history.
 
 A **starting workspace** selector offers designer/lead, lighting technician, installation crew and production manager presets. These guide the starting screen only. Changing a view **does not** change permission.
+
+**Team hierarchy:** The Production workspace includes an expandable, nested reporting tree for the people working on an event. Each person appears once even if they have several event roles. Select a tree node to assign their position (In charge, Second in charge, Team lead, Helper, Crew member or Other), choose a supervisor and add optional responsibilities. Hierarchies belong to individual events; the same person can lead one show and report to someone else at another. Multiple independent team leaders are allowed. Self-supervision and reporting cycles are rejected. Removing a person's final event assignment removes their node from the tree, reconnects any direct reports to the removed person's supervisor, and preserves the underlying canonical person. A crew member's reporting contact appears in Crew, and their linked reporting relationships are navigable from their entity profile. The tree is an operational chart, not a security model or a replacement for formal safety and engineering authority.
 
 **Task ownership:** Production managers can link each published installation task to a person assigned to that event. Crew can filter tasks by stage and by member, without creating duplicate people. An assignment outside a person's listed event area is flagged for review. These assignments are lightweight organisational records, not authenticated user accounts or actual access restrictions.
 
