@@ -1,3 +1,24 @@
+# Phaenomenon · connected event production
+
+**Product direction (November 2026):** Phaenomenon is evolving from a lighting-studio demo into an integrated, task-driven event production workspace. The goal is a **single event model**, not one universal screen or a loose bundle of specialist apps.
+
+The core system should maintain reusable canonical records for **people, organisations, venues, spaces and events**; separate a product model, a physical equipment unit, and that unit's event allocation; connect each event's technical layout to its physical cable/power/data/audio/video systems; and relate all of that to production schedules, tasks, crews and show cues.
+
+The experience is intentionally **progressively disclosed**: an event home asks what the person needs to accomplish. Design, Technical, Crew and Production expose different slices of the same data. Production itself is broken into People & team, Equipment, Installation and Show & cues; crew sees assigned tasks and approved-plan revisions, not the entire technical model. Selecting a view is not a security boundary.
+
+Key rules:
+
+1. **Identity is not a role.** A person can be a technician, helper, organiser or leader depending on the event. Reporting hierarchies are event-specific.
+2. **Physical, logical and temporal models remain distinct but connected.** A fixture position, a cable connection, a show cue and a crew assignment must be related without being the same record.
+3. **No invisible propagation of safety-critical instructions.** Revisions are published after review. Unchanged installation tasks may retain completion; changed tasks need new checks and pack reviews.
+4. **Actual safety sign-offs require real expertise and authenticated authority.** Early prototypes must not turn a checkbox or calculated wattage into a safety approval.
+5. **Import and integrate rather than recreate everything.** Video/audio routing and creative lighting looks are provisional. Future GDTF/MVR interchange, console/TouchDesigner interfaces, and professional CAD integration must be validated against actual tool support.
+6. **An event can span stages, rooms, dates and suppliers.** Reusable venues share physical data, while each booking has independent equipment allocation, team, run sheet and issued documents.
+
+The current incremental implementation is documented in [PRODUCTION_OS.md](PRODUCTION_OS.md), with regression checks in [tests/production-os.test.mjs](tests/production-os.test.mjs). Remaining major engineering work includes secure shared storage, verified identities and permissions, per-asset stock tracking, formal change acknowledgements, auditable publishing, realistic audiovisual device modelling and professional import/export standards.
+
+---
+
 # Phaenomenon: unified event production
 
 ## Current direction: connected event production (November 2026)
