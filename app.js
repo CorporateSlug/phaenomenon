@@ -194,7 +194,7 @@
       '</aside>';
   }
 
-  function topbar(){const page=ui.view==='search'?'Search':navLinks.find(x=>x[0]===ui.view)?.[1]||'Overview';return `<header class="topbar"><div class="breadcrumbs">Studio <span style="color:#b2bcc1">/</span> <span>${page}</span></div><div class="top-actions"><label class="top-search">${icon('search',14)}<input id="global-search" aria-label="Search projects and leads" placeholder="Search workspace" value="${attr(ui.search)}" /></label><button class="button primary" data-action="open-modal" data-type="booking">${icon('plus',15)} New event</button></div></header>`;}
+  function topbar(){const page=ui.view==='search'?'Search':navLinks.find(x=>x[0]===ui.view)?.[1]||'Overview';return `<header class="topbar"><div class="breadcrumbs"><span class="breadcrumbs-root">Studio</span><span class="breadcrumbs-divider" aria-hidden="true">/</span><span class="breadcrumbs-page">${page}</span></div><div class="top-actions"><label class="top-search">${icon('search',14)}<input id="global-search" aria-label="Search projects and leads" placeholder="Search workspace" value="${attr(ui.search)}" /></label><button class="button primary" data-action="open-modal" data-type="booking">${icon('plus',15)} New event</button></div></header>`;}
   function mobileDock(){
     const id=ui.eventId&&db.eventJobs.some(x=>x.id===ui.eventId)?encodeURIComponent(ui.eventId):'';
     const tab=(label,glyph,href,active)=>'<a class="studio-mobile-tab'+(active?' is-active':'')+'" href="'+href+'" '+(active?'aria-current="page"':'')+'>'+icon(glyph,19)+'<span>'+label+'</span></a>';
