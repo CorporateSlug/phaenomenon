@@ -8,6 +8,19 @@
 
 The objective is not to test every control. It is to see whether a new user can understand the natural sequence without explanations.
 
+## Five-minute phone usability check
+
+Open the [Event Builder](https://corporateslug.github.io/phaenomenon/production.html#/builder) on an iPhone or Android phone in its usual browser.
+
+1. Check that the bottom bar shows **Build · 3D · Tech · Crew · More**, and that **More** opens a readable full-height menu. Tap the background or use the close control to dismiss it.
+2. Use the **active event** selector at the top, then return to **Build**. Check that you can see the suggested next action without scrolling through lots of settings.
+3. Open **Event details** and **Venue & spaces**. Check the touch sizes, form text and bottom-sheet pop-ups. Confirm the keyboard doesn't obscure the action buttons.
+4. Open **3D**. Check the room/space selector, model controls and object inspector. If technical tables are wider than the screen they should scroll within their panel, not make the entire page move sideways.
+5. Switch to **Studio → Events** from **More**. The current booking should appear immediately above its details, with a short **Choose event** control to switch bookings.
+6. Try the phone in portrait and landscape. Look for accidental zoom, horizontal overflow, controls hidden by the keyboard or browser bottom bar, and any screen that feels needlessly dense.
+
+**Mobile testing is separate from a live reliability guarantee.** Data is still local to the browser; don't enter real customer details, rely on storage across devices, or treat the technical planning data as a verified install plan. Export JSON backups for any draft worth retaining.
+
 ## The suggested 20-minute route
 
 1. Open **Event Builder**. Find the sample Abbotsford Convent event. Explain, in your own words, what you think you should do next.
