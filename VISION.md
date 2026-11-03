@@ -1,21 +1,21 @@
 # Phaenomenon: event lighting operations first
 
-The primary use case is **repeat-customer event bookings**, followed by equipment planning and invoicing. The previous architectural lighting project ideas are retained below as optional long-term possibilities, not the immediate priority.
+**Updated product direction:** Aaron primarily works with repeat customers on events. The immediate product is not a generic architectural lighting-design workflow. It should help him book recurring events, translate a compact event brief into a practical draft equipment kit, check owned stock, produce event costing, and then prepare invoice drafts.
 
-## Practical next milestones
+## Near-term priorities
 
-1. Populate Aaron's actual equipment inventory, kit templates, hire prices and stock levels.
-2. Reconstruct two or three real jobs and determine which parameters he uses to select equipment. Replace the current demonstration-only rules with his own decision model.
-3. Add event duration, equipment reservation windows, returns, maintenance, transport and crew planning.
-4. Produce job packs, equipment picklists, site notes and check-in / check-out records.
-5. Support customer-specific rates, quotes and deposits, then proper Australian invoice details and secure integration with his chosen invoicing/accounting system.
-6. Move from browser-only local storage to a secured multi-user backend before real business use.
+1. Real equipment catalogue with stock counts, hire rates, kit templates, ownership versus subcontracted gear, and condition/maintenance.
+2. Event intake: repeat customer, venue, dates/times, event type, audience, lighting zones, scope, budget, crew and technical constraints.
+3. Explainable, adjustable equipment suggestions tuned to Aaron's real decision rules rather than an invented universal algorithm.
+4. Availability with full date/time interval overlap, dispatch/return buffers, transport and kit reservations.
+5. Quotes and invoices: correct Australian business and tax details; customer-specific price rules; progress payments, deposits and credit notes; email and payment provider/accounting integration after authentication.
+6. Printable equipment picklists, venue setup notes and job packs.
 
-**Current limitations:** Gear suggestions are editable heuristics and not technical/safety validation. Stock checks compare same-date confirmed events only. Invoice PDFs are marked DEMO DRAFT and the app cannot send or collect payments.
+**Current prototype limitations:** The suggestions are illustrative, stock conflicts are same-date only, all demo data is stored in the browser, and the invoice PDFs are intentionally marked as non-production drafts. Safety-critical decisions (power, rigging, suitability and venue compliance) must be checked by a qualified human.
 
 ---
 
-## Broader design studio roadmap (retained from the first concept)
+## Original broader design-studio roadmap (retained for reference)
 
 # Phaenomenon: product vision and engineering roadmap
 
@@ -148,3 +148,26 @@ The shared foundation is still clients, projects, scheduling, resources, documen
 ## Responsible data handling
 
 Before real customer use: choose a data controller and privacy policy, determine hosting jurisdiction and retention expectations, implement tested account permissions, backups, encryption in transit and at rest, meaningful logs, breach-response processes, and export/deletion paths. Ensure actual commercial proposals and invoices comply with applicable tax and consumer obligations. Lighting design calculations and compliance decisions should remain under qualified human review.
+
+
+## Venue models, layout planning and cable routing (prototype delivered)
+
+The initial space planner is available under **3D space planner**. Its simplified isometric canvas maintains true X, Y and Z coordinates (in metres) for equipment placements inside dimensioned rectangular rooms, with a top-down view for layout editing. Venue dimensions are reusable records, while placed objects and cable runs are event-specific. Repeat-booking duplication copies its event layout as a starting point. Event equipment kits can be explicitly updated from catalogue-linked placed objects.
+
+The first-pass cable estimate assumes drops to the floor, right-angle travel along the floor, rises to targets and configurable slack. It does not take actual approved routes into account. A future route engine should support user-drawn waypoints, overhead cable paths, cable trays, obstacles, connector/power compatibility, real reel lengths and labels for pack lists. Do not equate a summed fixture wattage with safe circuit loading.
+
+Next engineering phases:
+1. **Measured venue capture:** wall segments, polygon rooms, obstacle locations, existing network/power outlets, uploaded floorplan and photo calibration. Keep uncertainty in measurements explicit.
+2. **Genuine 3D asset models:** real equipment footprints, elevations, truss geometry and fixture orientation with snap-to-surface controls. Consider a render engine only after core data contracts settle.
+3. **Physical cable graph:** route waypoints, cable type/connector family, reel inventory, distribution, patch points, protocol limits and safe working plans reviewed by qualified contractors.
+4. **Job and commercial integration:** event layout -> assigned inventory -> pick list -> dispatch/returns -> custom quotation -> deposit -> compliant invoice and payments.
+5. **Production backend:** Authenticated users, business-scoped access control, version history and shared collaboration, plus eventual accounting integration.
+
+
+## Flexible venues: implemented geometry prototype (November 2026)
+
+The space planner now represents a venue using an editable 2D **simple polygon** footprint (local X/Y metres), plus an independent indoor/outdoor property and a schematic roof profile (none/flat/mono-slope/gable/custom heights). Perimeter points have stable identifiers, and legacy rectangular venues are upgraded non-destructively. Each event references a saved venue but has its own equipment placements and power/data/audio cable connections.
+
+**Editing model:** Top-down drag handles and numeric coordinates, polygon validation, L/U/angled templates, vertex addition/removal, site resizing, per-corner custom roof heights and a projected orbitable 3D-style view. Equipment outside a newly edited footprint is relocated inside. For cables, a shortest 2D path inside the footprint uses visibility edges around concave corners, then adds the two endpoint elevation changes and a slack allowance. All calculations are estimates and must not imply certified installation paths.
+
+**Next engineering milestones:** Replace the flat-floor-only representation with a measured terrain/floor elevation mesh; allow multiple separate structures and roof patches in one site; add doors, interior walls, columns, truss and obstacles; add editable cable waypoints/cable trays with types, routing rules and cable inventory; import floorplan images with scale calibration; import IFC/DXF or other 3D files through validated conversion; add viewer transparency controls and snap precision; introduce qualified electrical/rigging review workflows. Validation, permissions, backups, stable IDs, asset provenance and audit history are necessary before anyone relies on the results commercially.
