@@ -581,3 +581,10 @@
   .breadcrumbs-root,.breadcrumbs-divider{display:none}
   .breadcrumbs-page{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:750;color:#33484a}
 }
+
+
+/* Keep desktop breadcrumb spacing while mobile shows only the active page. */
+@media(min-width:841px){
+  .breadcrumbs{display:flex;align-items:center;gap:8px}
+  .breadcrumbs-divider{color:#aab8bd}
+}
