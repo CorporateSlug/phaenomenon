@@ -25,7 +25,7 @@
     catch(e){return starter();}
   }
   const storedRaw=()=>{try{return localStorage.getItem(KEY);}catch(e){return null;}};
-  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'home',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
+  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'home',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',homeVenueOpen:false,teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
   try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.crewPerson=saved.crewPerson||'all';ui.role=saved.role||'lead';ui.productionTab=saved.productionTab||'team';}catch(e){}
   function store(){
     try{
@@ -396,13 +396,15 @@
   }
   function venueSettings(e){
     const v=venue(e),selected=Array.isArray(e?.spaceIds)?e.spaceIds:undefined;
-    return '<section class="panel section" id="event-venue-settings"><div class="section-head"><div><h2>Venue &amp; spaces</h2><p class="muted">Choose a saved venue and the specific spaces this event uses. Create a missing space in the existing venue rather than duplicating it.</p></div><a class="btn small" href="index.html#/spaces/'+encodeURIComponent(e.id)+'">Edit venue geometry ↗</a></div>'+
+    return '<details class="panel section event-venue-details" id="event-venue-settings" '+(ui.homeVenueOpen||plan(e).needsVenueReview?'open':'')+'>'+
+      '<summary class="event-venue-summary"><span><strong>Venue &amp; spaces</strong><small>'+esc(v?.name||'Choose a venue')+' · '+areas(e).length+' spaces selected</small></span><span class="detail-toggle">Manage ▾</span></summary>'+
+      '<div class="event-venue-body"><div class="section-head"><p class="muted">Select reusable spaces for this event or create a missing venue or space.</p><a class="btn small" href="index.html#/spaces/'+encodeURIComponent(e.id)+'">Edit venue geometry ↗</a></div>'+
       (plan(e).needsVenueReview?'<div class="notice section"><strong>Venue changed.</strong> Previously placed equipment has not been repositioned or verified for the new venue. Open the 3D layout to review coordinates and physical routing before publishing another crew pack. <button class="btn small" data-act="venue-layout-reviewed">Mark layout reviewed (planning only)</button></div>':'')+
       '<form id="event-venue-form" class="stack"><div class="form-grid"><label>Venue<select name="venueId" id="production-venue-select" data-current-venue="'+esc(v?.id||'')+'" required>'+venuePickerOptions(v?.id)+'</select></label>'+
       '<div class="row" style="align-self:end"><button type="button" class="btn" data-act="venue-create">+ Create venue</button>'+
       '<button type="button" class="btn" data-act="space-create" '+(!v?'disabled':'')+'>+ Create missing space</button></div></div>'+
       '<div><label>Spaces used by this event</label><div id="production-space-choices">'+venueSpaceChoices(v?.id,selected)+'</div></div>'+
-      '<div class="row"><button class="btn primary" type="submit">Save venue &amp; spaces</button><span class="form-note">Spaces belong to the venue library; selections belong to this event.</span></div></form></section>';
+      '<div class="row"><button class="btn primary" type="submit">Save venue &amp; spaces</button><span class="form-note">Spaces belong to the venue library; selections belong to this event.</span></div></form></div></details>';
   }
   let quickVenueOpen=false;
   function productionQuickClose(){document.querySelector('[data-venue-quick-overlay]')?.remove();quickVenueOpen=false;}
@@ -451,19 +453,18 @@
       '<div class="stats">'+stat('Spaces',areas(e).length,'Selected for this event')+stat('Placed equipment',(plan(e).items||[]).length,'All equipment and structures')+
       stat('Installation',c.installed+' / '+c.all,'Tasks marked installed')+stat('Open issues',c.issues,'Awaiting resolution')+'</div>'+
       '<div class="section-head"><h2>What are you working on?</h2><span class="muted">Choose a task, not an expertise level</span></div>'+
-      '<div class="grid cols3 section">'+[
-        ['design','⌑','Design the event','Build stages, position fixtures and manage the 3D model.'],
-        ['technical','⚡','Connect equipment','Inspect power, patch, DMX and cable records.'],
-        ['crew','✓','Prepare and install','Give crew area-specific instructions and track installation.'],
-        ['production','▤','Run production','Coordinate people, suppliers, readiness, cues and changes.'],
-        ['entities','◇','Explore the entity network','Find venues, people, organisations and their roles.']
+      '<div class="grid cols4 section">'+[
+        ['design','⌑','3D design','Position equipment and plan the physical layout.'],
+        ['technical','⚡','Connections','Review patching, cables and power.'],
+        ['crew','✓','Crew installation','Follow task-specific installation instructions.'],
+        ['production','▤','Production','Coordinate team, equipment and show schedule.']
       ].map(x=>'<a class="work-card" href="#/'+x[0]+'"><span class="symbol">'+x[1]+'</span><strong>'+x[2]+'</strong><p>'+x[3]+'</p></a>').join('')+'</div>'+
-      '<div class="grid cols2">'+
+      '<details class="event-overview-more section"><summary>Spaces &amp; installation progress <span aria-hidden="true">⌄</span></summary><div class="grid cols2">'+
       '<section class="panel"><h2>Spaces in this event</h2><div class="stack">'+areas(e).map(a=>'<div class="area-card"><div class="row between"><strong>'+esc(a.name)+'</strong>'+pill(a.kind||'Stage')+'</div><p class="muted">'+(plan(e).items||[]).filter(i=>groupArea(e,i)===a.id).length+' placed items · '+(plan(e).runs||[]).filter(r=>{const to=(plan(e).items||[]).find(i=>i.id===r.to);return to&&groupArea(e,to)===a.id;}).length+' incoming/local cable records</p></div>').join('')+'</div></section>'+
       '<section class="panel"><h2>Current state</h2><p class="muted">The event record connects a reusable venue, its selected spaces, equipment placements, technical connections, named assignments and a published crew revision.</p>'+
       '<div class="sep"></div><div class="row between"><span>Installed</span><strong>'+c.installed+' / '+c.all+'</strong></div><div class="progress" style="margin:12px 0"><div style="width:'+(c.all?100*c.installed/c.all:0)+'%"></div></div>'+
       '<p class="muted">'+c.verified+' independently marked verified · '+c.issues+' open issue(s)</p>'+
-      '<a class="btn" href="#/production">Open production overview →</a></section></div>';
+      '<a class="btn" href="#/production">Open production overview →</a></section></div></details>';
   }
   function design(e,c){
     const p=plan(e),v=venue(e);
@@ -795,7 +796,7 @@
   }
 
 
-  const PRODUCTION_TABS=[['team','People & team'],['logistics','Equipment'],['installation','Installation'],['show','Show & cues']];
+  const PRODUCTION_TABS=[['team','Team'],['logistics','Equipment & logistics'],['installation','Installation'],['show','Show schedule']];
   function productionTabs(){
     return '<nav class="tabs production-tabs section no-print" role="tablist" aria-label="Production work areas">'+
       PRODUCTION_TABS.map(([key,label])=>
@@ -893,6 +894,9 @@
   function route(){
     const parts=location.hash.replace(/^#\/?/,'').split('/'),view=parts[0];
     ui.view=['home','design','technical','crew','production','entities'].includes(view)?view:'home';
+    ui.homeVenueOpen=ui.view==='home'&&parts[1]==='venue';
+    const routeEvent=ui.view==='home'&&parts[1]==='venue'?parts[2]:ui.view==='entities'?null:parts[1];
+    if(routeEvent&&events().some(x=>x.id===decodeURIComponent(routeEvent)))ui.eventId=decodeURIComponent(routeEvent);
     if(ui.view==='entities'&&parts[1]&&entity(decodeURIComponent(parts[1]))){
       const id=decodeURIComponent(parts[1]);if(ui.entityId!==id){ui.entityId=id;if(ui.history[ui.histIndex]!==id){ui.history=ui.history.slice(0,ui.histIndex+1);ui.history.push(id);ui.histIndex=ui.history.length-1;}}
     }
@@ -1122,6 +1126,9 @@
   window.addEventListener('focus',refreshFromStorage);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshFromStorage();});
   document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&quickVenueOpen)productionQuickClose();});
+  document.addEventListener('toggle',ev=>{
+    if(ev.target?.id==='event-venue-settings')ui.homeVenueOpen=ev.target.open;
+  },true);
   window.addEventListener('hashchange',route);
   ensure();store();route();
 })();
