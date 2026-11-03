@@ -80,6 +80,7 @@ test('Studio sidebar groups advanced destinations without hiding Events and Stud
   assert.match(html,/Equipment library/);
   assert.match(html,/Studio management/);
   assert.match(html,/Event workspace/);
+  assert.match(html,/production\.html#\/technical\//);
   assert.match(html,/Studio overview/);
   assert.match(html,/data-action="toggle-sidebar"/);
   assert.doesNotMatch(html,/More studio tools/);
