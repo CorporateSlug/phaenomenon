@@ -59,7 +59,7 @@
       this.root=root;this.db=db;this.save=onSave;this.notify=onNotify;
       this.eventId=(db.eventJobs||[]).some(e=>e.id===initialEventId)?initialEventId:(db.eventJobs||[])[0]?.id;
       this.mode='three';this.yaw=-.65;this.tilt=.54;this.zoom=1;this.selected=null;this.drag=null;
-      this.creatingVenue=false;this.showRuns=true;this.geometry=null;this.editOutline=false;this.selectedVertex=null;
+      this.creatingVenue=false;this.showRuns=true;this.geometry=null;this.editOutline=false;this.selectedVertex=null;this.canvasActive=false;
       this.ensureActive();this.build();
     }
     get event(){return this.db.eventJobs.find(e=>e.id===this.eventId);}
@@ -118,7 +118,7 @@
             <button type="button" id="sp-zoom-in" class="sp-tool sp-zoom-btn" aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
           </div>
         </div></div>
-          <div class="sp-canvas-wrap"><canvas id="sp-canvas" role="img" aria-label="Interactive, dimensioned event layout. Select objects on the canvas or use the editable equipment list."></canvas><div class="sp-canvas-corner"><span>METRES · NOT TO SCALE FOR CONSTRUCTION</span></div></div>
+          <div class="sp-canvas-wrap"><canvas id="sp-canvas" tabindex="0" role="region" aria-label="Interactive event layout" aria-describedby="sp-canvas-status"></canvas><div id="sp-canvas-status" class="sp-canvas-activation" role="status" aria-live="polite"><span class="sp-canvas-activation-dot" aria-hidden="true"></span><span class="sp-canvas-activation-text">Click model to interact · scroll page normally</span></div><div class="sp-canvas-corner"><span>METRES · NOT TO SCALE FOR CONSTRUCTION</span></div></div>
           <div class="sp-floor-tools"><strong>Add to layout</strong><div class="sp-palette">${TYPES.map(([kind,label])=>`<button class="sp-add" data-kind="${kind}" type="button"><i style="background:${palette[kind]}"></i>${esc(label)}</button>`).join('')}</div></div>
           <div class="sp-hint"><span class="sp-dot" style="background:${CABLES.power.color}"></span> Power <span class="sp-dot" style="background:${CABLES.network.color}"></span> Network <span class="sp-dot" style="background:${CABLES.dmx.color}"></span> DMX <span class="sp-dot" style="background:${CABLES.audio.color}"></span> Audio <label><input id="sp-show-runs" type="checkbox" checked> Show cables</label></div>
         </section>
@@ -172,17 +172,28 @@
       viewControls.appendChild(focus);
       focus.addEventListener('click',()=>this.setFocusMode(!this.isFocus));
       if(this.boundFocusKeydown)window.removeEventListener('keydown',this.boundFocusKeydown);
-      this.boundFocusKeydown=e=>{if(e.key==='Escape'&&this.isFocus){e.preventDefault();this.setFocusMode(false);this.root.querySelector('#sp-focus')?.focus();}};
+      this.boundFocusKeydown=e=>{if(e.key!=='Escape')return;if(this.isFocus){e.preventDefault();this.setFocusMode(false);this.root.querySelector('#sp-focus')?.focus();}else if(this.canvasActive){e.preventDefault();this.setCanvasActive(false);this.canvas?.blur();}};
       window.addEventListener('keydown',this.boundFocusKeydown);
       this.isFocus=false;
     }
     setFocusMode(active){
       this.isFocus=!!active;
+      this.setCanvasActive(this.isFocus);
       const workspace=this.root.querySelector('.sp-workspace');
       workspace?.classList.toggle('sp-is-focused',this.isFocus);
       const button=this.root.querySelector('#sp-focus');
       if(button){button.setAttribute('aria-pressed',String(this.isFocus));button.setAttribute('aria-label',this.isFocus?'Exit expanded space planner':'Expand space planner');button.querySelector('span').textContent=this.isFocus?'Exit focus':'Focus';}
       this.resize();
+    }
+    setCanvasActive(active){
+      this.canvasActive=!!active;
+      const badge=this.root.querySelector('#sp-canvas-status');
+      if(badge){
+        badge.classList.toggle('is-active',this.canvasActive);
+        const label=badge.querySelector('.sp-canvas-activation-text');
+        if(label)label.textContent=this.canvasActive?'Editor active · scroll to zoom · Esc to release':'Click model to interact · scroll page normally';
+      }
+      this.canvas?.setAttribute('data-interactive',String(this.canvasActive));
     }
     bind(){
       const $=s=>this.root.querySelector(s);
@@ -232,7 +243,12 @@
       this.canvas.addEventListener('pointermove',e=>this.pointerMove(e));
       this.canvas.addEventListener('pointerup',()=>this.pointerUp());
       this.canvas.addEventListener('pointercancel',()=>this.pointerUp());
-      this.canvas.addEventListener('wheel',e=>{e.preventDefault();this.zoom=clamp(this.zoom*(e.deltaY>0?.91:1.1),.55,2.7);this.draw();},{passive:false});
+      this.canvas.addEventListener('focus',()=>this.setCanvasActive(true));
+      this.canvas.addEventListener('wheel',e=>{if(!this.canvasActive)return;e.preventDefault();this.zoom=clamp(this.zoom*(e.deltaY>0?.91:1.1),.55,2.7);this.draw();},{passive:false});
+      if(this.boundCanvasOutsidePointerdown)document.removeEventListener('pointerdown',this.boundCanvasOutsidePointerdown);
+      this.boundCanvasOutsidePointerdown=e=>{if(this.canvasActive&&!this.isFocus&&!this.canvas.contains(e.target)){this.setCanvasActive(false);}};
+      document.addEventListener('pointerdown',this.boundCanvasOutsidePointerdown);
+      this.setCanvasActive(false);
     }
     constrainItem(o){
       const v=this.venue,poly=v.geometry.footprint;
@@ -482,7 +498,7 @@
       c.font='11px system-ui';c.fillStyle='#b5ccc7aa';c.textAlign='left';c.fillText(this.mode==='top'?'TOP PLAN · EDITABLE VENUE OUTLINE':'3D CONCEPT VIEW · ELEVATION REPRESENTED',17,25);
     }
     coord(e){const r=this.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
-    pointerDown(e){if(e.button!==0)return;const pos=this.coord(e);
+    pointerDown(e){if(e.button!==0)return;this.setCanvasActive(true);this.canvas.focus({preventScroll:true});const pos=this.coord(e);
       if(this.editOutline&&this.mode==='top'){const vertex=this.venue.geometry.footprint.find(p=>{const screen=this.project({...p,z:0});return Math.hypot(screen.x-pos.x,screen.y-pos.y)<17;});
         if(vertex){this.selectedVertex=vertex.id;this.updateGeometry();this.draw();this.drag={mode:'vertex',last:pos,changed:false};this.canvas.setPointerCapture(e.pointerId);return;}}
       const hit=(this.hitNodes||[]).find(({p})=>Math.hypot(p.x-pos.x,p.y-pos.y)<23);
@@ -498,6 +514,6 @@
     pointerUp(){if(this.drag?.mode==='vertex'&&this.drag.changed){this.rehomeAll();this.save();this.updateGeometry();this.updateAll();}
       else if(this.drag?.mode==='object'&&this.drag.changed){this.save();this.updateInspector();this.updateRoutes();this.updateSummary();}this.drag=null;}
   }
-  function mount(root,db,onSave,onNotify,eventId){if(!root)return;ensure(db);if(window.__phaenomenonActivePlanner?.resizeObserver)window.__phaenomenonActivePlanner.resizeObserver.disconnect();if(window.__phaenomenonActivePlanner?.boundFocusKeydown)window.removeEventListener('keydown',window.__phaenomenonActivePlanner.boundFocusKeydown);window.__phaenomenonActivePlanner=new Planner(root,db,onSave,onNotify,eventId);}
+  function mount(root,db,onSave,onNotify,eventId){if(!root)return;ensure(db);if(window.__phaenomenonActivePlanner?.resizeObserver)window.__phaenomenonActivePlanner.resizeObserver.disconnect();if(window.__phaenomenonActivePlanner?.boundFocusKeydown)window.removeEventListener('keydown',window.__phaenomenonActivePlanner.boundFocusKeydown);if(window.__phaenomenonActivePlanner?.boundCanvasOutsidePointerdown)document.removeEventListener('pointerdown',window.__phaenomenonActivePlanner.boundCanvasOutsidePointerdown);window.__phaenomenonActivePlanner=new Planner(root,db,onSave,onNotify,eventId);}
   window.PhaenomenonSpacePlanner={ensure,mount};
 })();
