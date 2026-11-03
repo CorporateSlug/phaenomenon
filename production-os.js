@@ -316,7 +316,7 @@
     return {all:t.length,installed:t.filter(x=>x.state!=='pending').length,verified:t.filter(x=>x.state==='verified').length,issues:org().issues.filter(x=>x.eventId===e?.id&&x.status!=='Resolved').length};
   }
   function notice(message){if(saveConflict){message='Another tab updated the event. Your latest edit was not saved. Please retry it.';saveConflict=false;}ui.notice=message;render();setTimeout(()=>{if(ui.notice===message){ui.notice='';document.querySelector('#message')?.remove();}},4200);}
-  function viewName(){return ({home:'Event overview',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'Directory'}[ui.view]||'Event overview');}
+  function viewName(){return ({builder:'Event builder',home:'Event overview',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'Directory'}[ui.view]||'Event overview');}
   function render(){
     const e=current(),c=counts(e);
     const navItem=(href,label,glyph,active)=>'<a href="'+href+'" class="nav'+(active?' active':'')+'"'+(active?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+glyph+'</span><span>'+esc(label)+'</span></a>';
@@ -326,6 +326,7 @@
     const eventId=e?.id?encodeURIComponent(e.id):'';
     const navigation=
       '<div class="rail-label">EVENT</div>'+
+      navItem('#/builder/'+eventId,'Event builder','◈',ui.view==='builder')+
       navItem('#/home','Event overview','⌂',ui.view==='home'&&!ui.homeVenueOpen)+
       navItem('index.html#/bookings/'+eventId,'Event details','▤',false)+
       '<div class="rail-label">WORKSPACES</div>'+
@@ -359,7 +360,7 @@
       '<div class="rail-bottom"><strong>ONE EVENT · CONNECTED WORK</strong><p>Switch between tasks without switching your event.</p>'+
       '<p>Local prototype · Role views are not security permissions.</p></div></aside>'+
       '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / Event</div><div class="header-title">'+viewName()+'</div></div>'+
-      '<div class="header-tools"><label class="event-header-select">ACTIVE EVENT<select id="event-picker">'+
+      '<div class="header-tools"><button type="button" class="btn primary" data-act="builder-new">+ New event</button><label class="event-header-select">ACTIVE EVENT<select id="event-picker">'+
       events().map(x=>'<option value="'+esc(x.id)+'" '+(x.id===e?.id?'selected':'')+'>'+esc(x.title)+'</option>').join('')+
       '</select></label><details class="header-more"><summary class="btn" aria-label="More workspace options">Options ▾</summary>'+
       '<div class="header-more-menu"><label>Default starting view<select id="role-picker">'+
@@ -367,7 +368,7 @@
       '</select></label><button type="button" class="btn" data-act="export-backup">Export JSON backup</button>'+
       '<a class="btn" href="index.html#/bookings/'+eventId+'">Edit event booking ↗</a></div></details></div></header>'+
       '<div class="content">'+(ui.notice?'<div id="message" class="notice good section" role="status">'+esc(ui.notice)+'</div>':'')+
-      (ui.view==='home'?home(e,c):ui.view==='design'?design(e,c):ui.view==='technical'?technical(e,c):ui.view==='crew'?crew(e,c):ui.view==='production'?production(e,c):entities(e))+
+      (ui.view==='builder'?builderPage(e,c):ui.view==='home'?home(e,c):ui.view==='design'?design(e,c):ui.view==='technical'?technical(e,c):ui.view==='crew'?crew(e,c):ui.view==='production'?production(e,c):entities(e))+
       '<p class="footnote">Phaenomenon prototype · Single-browser storage only · Data and technical calculations are provisional · Role views are not security permissions.</p></div></main></div>';
     $.innerHTML=html;
     document.title=viewName()+' · Phaenomenon';
@@ -445,6 +446,55 @@
     const btn=document.querySelector('#event-venue-form [data-act="space-create"]');
     if(btn)btn.disabled=!v;
   }
+
+
+  function builderPage(e,c){
+    const model=window.PhaenomenonEventBuilder;
+    if(!e)return hero('EVENT BUILDER','Start a production','Create an event to begin.','<button class="btn primary" data-act="builder-new">+ Create event</button>');
+    const steps=model?.steps(db,e,{changed:isChanged(e)})||[];
+    const setup=steps.filter(x=>x.state==='complete').length;
+    const next=steps.find(x=>x.state!=='complete');
+    const gear=model?.mapEquipment(db,e);
+    const progress=steps.length?Math.round(setup/steps.length*100):0;
+    const actionLink=step=>'<a class="btn '+(step.id===(next?.id)?'primary':'small')+'" href="'+esc(step.href)+'">'+esc(step.action)+' →</a>';
+    return hero('GUIDED EVENT BUILDER',e.title,'Choose the next step or jump directly to any part of the event. Nothing is locked.',
+        '<button class="btn" data-act="builder-new">+ Another event</button>')+
+      changeNotice(e)+
+      '<section class="builder-summary section"><div><strong>'+setup+' of '+steps.length+' steps configured</strong><p class="muted">Planning progress only. A configured step does not mean it has been checked or approved for safe installation.</p>'+
+      '<div class="builder-progress" role="progressbar" aria-label="Event setup progress" aria-valuenow="'+setup+'" aria-valuemin="0" aria-valuemax="'+steps.length+'"><div style="width:'+progress+'%"></div></div></div>'+
+      (next?'<div class="builder-next"><span class="eyebrow">SUGGESTED NEXT</span><strong>'+esc(next.title)+'</strong><small>'+esc(next.summary)+'</small>'+actionLink(next)+'</div>':
+      '<div class="builder-next"><strong>All steps contain planning information</strong><small>Review technical assumptions and publish updates as needed.</small><a class="btn" href="#/design/'+encodeURIComponent(e.id)+'">Review &amp; publish →</a></div>')+
+      '</section>'+
+      '<ol class="builder-step-list section">'+steps.map((step,index)=>{
+        const stateLabel=({complete:'Configured',attention:'Needs attention',todo:'Not started'})[step.state]||'Draft';
+        return '<li class="builder-step '+esc(step.state)+'"><div class="builder-number">'+(index+1)+'</div>'+
+          '<div class="builder-step-content"><div class="builder-step-top"><h2>'+esc(step.title)+'</h2><span class="builder-state '+esc(step.state)+'">'+stateLabel+'</span></div>'+
+          '<p>'+esc(step.description)+'</p><div class="builder-step-summary">'+esc(step.summary)+'</div></div><div class="builder-step-action">'+actionLink(step)+'</div></li>';
+      }).join('')+'</ol>'+
+      (gear&&gear.incomplete.length?'<section class="panel section builder-action-panel"><div class="section-head"><div><h2>Event kit is behind the layout</h2><p class="muted">Placed items linked to the equipment catalogue need matching quantities in this event’s kit. Existing unrelated quantities are preserved.</p></div><span class="builder-state attention">'+gear.incomplete.length+' gaps</span></div>'+
+      '<div class="stack">'+gear.incomplete.map(x=>'<div class="linkrow"><strong>'+esc(x.name)+'</strong><span class="muted">'+x.placed+' placed · '+x.requested+' allocated</span></div>').join('')+'</div>'+
+      '<button class="btn primary" style="margin-top:13px" data-act="builder-reconcile-kit">Bring kit up to placed quantities</button></section>':'')+
+      (gear&&(gear.unlinked.length||gear.unknown.length)?'<div class="notice info section"><strong>Equipment catalogue links to review:</strong> '+gear.unlinked.length+' placed object(s) not linked to the equipment library and '+gear.unknown.length+' with missing catalogue references. <a href="index.html#/spaces/'+encodeURIComponent(e.id)+'">Review the 3D design ↗</a></div>':'')+
+      '<div class="builder-footnote">You can leave an event as a draft and return to any step. Layout revisions, technical verification and crew sign-offs remain separate from these planning markers.</div>';
+  }
+  let builderEventOpen=false;
+  function openBuilderEvent(){
+    closeBuilderEvent();
+    const overlay='<div class="venue-quick-backdrop" data-builder-event-overlay><section class="venue-quick-dialog" role="dialog" aria-modal="true" aria-label="Create a new event">'+
+      '<header class="venue-picker-top"><div><h2>Create an event</h2><p class="venue-hint">Start with the basics. You can select a Venue and its Spaces in the next step.</p></div>'+
+      '<button class="btn" type="button" data-act="builder-new-close" aria-label="Close">×</button></header>'+
+      '<form id="builder-new-event-form" class="venue-quick-form">'+
+      '<label>Event name<input class="input" name="title" required maxlength="120" placeholder="e.g. Saturday warehouse party"></label>'+
+      '<label>Date<input class="input" name="date" required type="date"></label>'+
+      '<label>Existing client<select name="clientId"><option value="">Choose or add a client…</option>'+
+      (db.clients||[]).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
+      '<label>Or new client name<input class="input" name="clientName" maxlength="120" placeholder="Only needed if not in the list"></label>'+
+      '<div class="venue-quick-actions"><button class="btn" type="button" data-act="builder-new-close">Cancel</button>'+
+      '<button class="btn primary" type="submit">Create draft event</button></div></form></section></div>';
+    document.body.insertAdjacentHTML('beforeend',overlay);builderEventOpen=true;
+    document.querySelector('#builder-new-event-form input[name="title"]')?.focus();
+  }
+  function closeBuilderEvent(){document.querySelector('[data-builder-event-overlay]')?.remove();builderEventOpen=false;}
 
   function home(e,c){
     if(!e)return '<div class="empty">Create an event in the original workspace to begin.</div>';
@@ -894,9 +944,10 @@
   }
   function route(){
     const parts=location.hash.replace(/^#\/?/,'').split('/'),view=parts[0];
-    ui.view=['home','design','technical','crew','production','entities'].includes(view)?view:'home';
+    ui.view=['builder','home','design','technical','crew','production','entities'].includes(view)?view:'home';
     ui.homeVenueOpen=ui.view==='home'&&parts[1]==='venue';
-    const routeEvent=ui.view==='home'&&parts[1]==='venue'?parts[2]:ui.view==='entities'?null:parts[1];
+    const routeEvent=ui.view==='home'&&parts[1]==='venue'?parts[2]:ui.view==='production'&&['team','logistics','installation','show'].includes(parts[1])?parts[2]:ui.view==='entities'?null:parts[1];
+    if(ui.view==='production'&&['team','logistics','installation','show'].includes(parts[1]))ui.productionTab=parts[1];
     if(routeEvent&&events().some(x=>x.id===decodeURIComponent(routeEvent)))ui.eventId=decodeURIComponent(routeEvent);
     if(ui.view==='entities'&&parts[1]&&entity(decodeURIComponent(parts[1]))){
       const id=decodeURIComponent(parts[1]);if(ui.entityId!==id){ui.entityId=id;if(ui.history[ui.histIndex]!==id){ui.history=ui.history.slice(0,ui.histIndex+1);ui.history.push(id);ui.histIndex=ui.history.length-1;}}
@@ -904,9 +955,17 @@
     render();
   }
   document.addEventListener('click',ev=>{
-    const el=ev.target.closest('[data-act]');if(!el||(!$.contains(el)&&!el.closest('[data-venue-quick-overlay]')))return;
+    const el=ev.target.closest('[data-act]');if(!el||(!$.contains(el)&&!el.closest('[data-venue-quick-overlay]')&&!el.closest('[data-builder-event-overlay]')))return;
     const action=el.dataset.act,id=el.dataset.id,e=current(),p=published(e);
     ev.preventDefault();
+    if(action==='builder-new-close'){closeBuilderEvent();return;}
+    if(action==='builder-new'){openBuilderEvent();return;}
+    if(action==='builder-reconcile-kit'){
+      const result=window.PhaenomenonEventBuilder?.reconcileKit(db,e.id);
+      if(!result||result.error){notice(result?.error||'Unable to update event kit.');return;}
+      if(store())notice(result.updated?'Updated '+result.updated+' event kit allocation(s) to match linked placed objects.':'Kit already covers linked placed objects.');
+      return;
+    }
     if(action==='venue-quick-close'){productionQuickClose();return;}
     if(action==='venue-create'){productionQuickOpen('venue');return;}
     if(action==='space-create'){productionQuickOpen('space');return;}
@@ -1035,6 +1094,20 @@
   });
   document.addEventListener('submit',ev=>{
     const f=ev.target;
+    if(f.id==='builder-new-event-form'){
+      ev.preventDefault();
+      const data=new FormData(f),fields={title:clean(data.get('title')),date:clean(data.get('date')),
+        clientId:clean(data.get('clientId')),clientName:clean(data.get('clientName'))};
+      const result=window.PhaenomenonEventBuilder?.create(db,fields);
+      if(!result||result.error){alert(result?.error||'Unable to create event.');return;}
+      ui.eventId=result.event.id;ui.area='all';ui.crewPerson='all';
+      ensure();
+      if(!store())return;
+      closeBuilderEvent();
+      location.hash='#/builder/'+encodeURIComponent(result.event.id);
+      route();
+      return;
+    }
     if(f.id==='production-venue-quick-form'){
       ev.preventDefault();
       const data=new FormData(f),val=k=>clean(data.get(k)),W=window.PhaenomenonVenueWorkflow;
@@ -1127,7 +1200,7 @@
   window.addEventListener('storage',event=>{if(event.key===KEY)refreshFromStorage();});
   window.addEventListener('focus',refreshFromStorage);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshFromStorage();});
-  document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&quickVenueOpen)productionQuickClose();});
+  document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){if(builderEventOpen)closeBuilderEvent();else if(quickVenueOpen)productionQuickClose();}});
   document.addEventListener('toggle',ev=>{
     if(ev.target?.id==='event-venue-settings')ui.homeVenueOpen=ev.target.open;
   },true);
