@@ -63,7 +63,7 @@ function mountInspector(el,o,onChange){if(!o||el.querySelector('.sp-optics'))ret
  block.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===o.colorMode));
 }
 function build3D(T,o,group,add,beams){ensure(o);const p=get(o.fixtureType),color=effectiveColor(o);
- const shell=new T.MeshStandardMaterial({color:0x56717b,metalness:.46,roughness:.46}),metal=new T.MeshStandardMaterial({color:0x1f3035,roughness:.4,metalness:.6}),lens=new T.MeshBasicMaterial({color,transparent:true,opacity:.9});
+ const shell=new T.MeshStandardMaterial({color:0x56717b,metalness:.46,roughness:.46}),metal=new T.MeshStandardMaterial({color:0x1f3035,roughness:.4,metalness:.6}),lens=new T.MeshBasicMaterial({color,side:T.DoubleSide,transparent:true,opacity:Math.max(.13,num(o.intensity,90)/100)});
  const pivot=new T.Group();pivot.rotation.order='YXZ';pivot.rotation.y=-num(o.pan)*Math.PI/180;pivot.rotation.x=-num(o.tilt)*Math.PI/180;group.add(pivot);
  const mesh=(g,m,x=0,y=0,z=0,fixed=false)=>{const obj=add(new T.Mesh(g,m));if(!fixed)pivot.add(obj);obj.position.set(x,y,z);return obj};
  const can=(r=.23)=>{const head=mesh(new T.CylinderGeometry(r*.9,r,.5,24),shell);head.rotation.x=Math.PI/2;mesh(new T.CircleGeometry(r*.74,30),lens,0,0,-.26);mesh(new T.TorusGeometry(r*.92,.025,8,30),metal,0,0,-.265)};
