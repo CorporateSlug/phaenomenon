@@ -246,3 +246,50 @@
 #space-planner-root .sp3-fields label{min-width:0;display:flex;flex-direction:column;gap:5px;font-size:10px;font-weight:650;color:#70847c}
 #space-planner-root .sp3-fields .field{min-width:0;width:100%;min-height:34px;padding:7px 9px;font-size:11px}
 @media(max-width:650px){#space-planner-root .sp3-hud{top:9px;left:9px;gap:5px}#space-planner-root .sp3-hud button{padding:5px 7px;font-size:9px;min-height:29px}#space-planner-root .sp3-label{font-size:9px;max-width:114px;padding:4px 6px}#space-planner-root .sp3-status{font-size:9px;right:8px;bottom:8px}#space-planner-root .sp-view-controls #sp-view-perspective{min-width:67px}}
+
+/* Fixture families and live beam/optical controls */
+#space-planner-root .sp-object-row .sp-fixture-icon{width:21px;height:21px;flex:none;color:#528677;margin-left:-2px}
+#space-planner-root .sp-optics{grid-column:1/-1;display:grid;gap:10px;min-width:0;border-top:1px solid #e3eeea;padding-top:12px}
+#space-planner-root .sp-optic-head{display:flex;gap:11px;align-items:center;padding:9px 10px;border:1px solid #dfeee5;background:#f4faf6;border-radius:10px}
+#space-planner-root .sp-optic-head>svg{width:33px;height:33px;flex:none;color:#427d65;background:#e4f3eb;padding:6px;border-radius:8px}
+#space-planner-root .sp-optic-head strong{font-weight:800;font-size:12px;color:#2c5145;display:block}
+#space-planner-root .sp-optic-head small{font-size:10px;color:#7e9b8b;display:block;margin-top:3px;line-height:1.45}
+#space-planner-root .sp-optics h4{font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.075em;color:#527a67;margin:6px 0 0;padding-top:10px;border-top:1px solid #ebf1ee}
+#space-planner-root .sp-optic-choice{display:grid;gap:5px;color:#6a8277;font-size:10px;font-weight:750}
+#space-planner-root .sp-optic-choice select{background:#fff;color:#315348;border:1px solid #dbe9df;border-radius:8px;height:36px;padding:0 9px;font-size:11px;min-width:0;width:100%}
+#space-planner-root .sp-optic-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#space-planner-root .sp-optic-fields label{display:grid;gap:5px;min-width:0;color:#789183;font-size:10px}
+#space-planner-root .sp-optic-input{display:flex;align-items:center;border-radius:8px;background:#fff;border:1px solid #dce8e0;overflow:hidden}
+#space-planner-root .sp-optic-input input{width:100%;min-width:0;height:35px;background:transparent;border:0;outline:none;font-size:11px;color:#325649;font-variant-numeric:tabular-nums;padding:6px 7px}
+#space-planner-root .sp-optic-input small{padding-right:7px;font-size:10px;color:#9cb0a4}
+#space-planner-root .sp-optic-range{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 10px;font-size:10px;color:#668172;font-weight:700}
+#space-planner-root .sp-optic-range output{color:#386b57;font-variant-numeric:tabular-nums}
+#space-planner-root .sp-optic-range input{grid-column:1/-1;width:100%;margin:0;height:17px;cursor:ew-resize;accent-color:#4b8c6e}
+#space-planner-root .sp-optics details{border:1px solid #e4eee7;border-radius:9px;overflow:hidden}
+#space-planner-root .sp-optics details summary{padding:10px;color:#4a745f;font-size:11px;font-weight:700;background:#f4f9f5;cursor:pointer}
+#space-planner-root .sp-optics details .sp-optic-fields{padding:9px}
+#space-planner-root .sp-optic-modes{display:flex;gap:3px;padding:3px;border:1px solid #e2ece5;background:#f3f7f4;border-radius:9px}
+#space-planner-root .sp-optic-modes button{flex:1;border:0;border-radius:6px;font-size:10px;font-weight:750;height:30px;background:transparent;color:#779082;cursor:pointer}
+#space-planner-root .sp-optic-modes button.active{background:#fff;color:#2f6a4d;box-shadow:0 1px 3px #163d2422}
+#space-planner-root .sp-optic-colour{display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:750;color:#667e71}
+#space-planner-root .sp-optic-colour input{width:48px;height:32px;padding:3px;border:1px solid #dbe8df;border-radius:7px;background:#fff;cursor:pointer}
+#space-planner-root .sp-optic-swatches{display:flex;gap:7px;flex-wrap:wrap}
+#space-planner-root .sp-optic-swatches button{width:23px;height:23px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px #cadfd1;cursor:pointer}
+#space-planner-root .sp-optic-swatches button:hover{box-shadow:0 0 0 2px #397b5e}
+#space-planner-root .sp-optic-note{font-size:10px;line-height:1.5;color:#91a69a;margin:0}
+.sp-fixture-picker{border:1px solid #dce9e0;border-radius:17px;padding:0;width:min(680px,calc(100vw - 25px));max-height:82dvh;overflow:auto;background:#fff;color:#2b493d;box-shadow:0 22px 75px #0d332350}
+.sp-fixture-picker::backdrop{background:#14362d9e;backdrop-filter:blur(5px)}
+.sp-fixture-picker header{padding:24px 24px 12px}
+.sp-fixture-picker header>span{font-size:9px;font-weight:850;letter-spacing:.16em;color:#bd8b59}
+.sp-fixture-picker header h2{font:800 24px Manrope,'DM Sans',system-ui;margin:5px 0;letter-spacing:-.045em}
+.sp-fixture-picker header p{font-size:12px;color:#90a096;line-height:1.5;margin:0}
+.sp-fixture-picker header>button{float:right;border:1px solid #e2eae4;border-radius:8px;background:#f8fbf9;width:33px;height:33px;font-size:22px;cursor:pointer;color:#657f70}
+.sp-fixture-picker .sp-fixture-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:12px 24px 20px}
+.sp-fixture-picker .sp-fixture-grid button{min-width:0;display:flex;align-items:center;gap:11px;text-align:left;border:1px solid #e2ece5;background:#fcfdfc;border-radius:11px;padding:13px;cursor:pointer;min-height:72px;color:#315647}
+.sp-fixture-picker .sp-fixture-grid button:hover,.sp-fixture-picker .sp-fixture-grid button:focus-visible{border-color:#78a993;background:#f3faf5;box-shadow:0 2px 12px #1a56331b}
+.sp-fixture-picker .sp-fixture-grid svg{flex:none;width:40px;height:40px;color:#4b856d;background:#e8f4eb;padding:8px;border-radius:9px}
+.sp-fixture-picker .sp-fixture-grid strong{display:block;font-size:12px;font-weight:800}
+.sp-fixture-picker .sp-fixture-grid small{display:block;font-size:10px;color:#8ba093;margin-top:3px;line-height:1.4}
+.sp-fixture-picker .sp-fixture-grid b{margin-left:auto;color:#81a291;font-size:20px}
+.sp-fixture-picker footer{border-top:1px solid #e6eee8;padding:12px 24px 16px;color:#9aad9f;font-size:10px;line-height:1.5}
+@media(max-width:620px){.sp-fixture-picker .sp-fixture-grid{grid-template-columns:1fr;padding:10px 15px}.sp-fixture-picker header{padding:20px 15px 10px}.sp-fixture-picker footer{padding:12px 15px}}
