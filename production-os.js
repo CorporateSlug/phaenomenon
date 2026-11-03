@@ -400,12 +400,22 @@
         navItem('index.html#/invoices','Invoices','▤',false),
         navItem('index.html#/settings','Settings','⚙',false)
       ],false);
+    const mobileTab=(href,label,glyph,active)=>'<a class="mobile-tab'+(active?' is-active':'')+'" href="'+href+'" '+(active?'aria-current="page"':'')+'><span aria-hidden="true" class="mobile-tab-icon">'+glyph+'</span><span>'+label+'</span></a>';
+    const mobileNavigation='<nav class="mobile-tabbar production-mobile-tabs" aria-label="Quick event navigation">'+
+      mobileTab('#/builder/'+eventId,'Build','◈',ui.view==='builder'||ui.view==='home')+
+      mobileTab('index.html#/spaces/'+eventId,'3D','▧',false)+
+      mobileTab('#/technical/'+eventId,'Tech','⚡',ui.view==='technical')+
+      mobileTab('#/crew/'+eventId,'Crew','✓',ui.view==='crew')+
+      '<button type="button" class="mobile-tab mobile-more-tab'+(['production','entities','design'].includes(ui.view)?' is-active':'')+'" data-act="toggle-rail" aria-controls="production-navigation" aria-expanded="false">'+
+      '<span class="mobile-tab-icon" aria-hidden="true">☰</span><span>More</span></button></nav>';
     const html='<div class="shell"><aside class="rail" id="production-rail">'+
       '<div class="rail-top"><a class="brand" href="#/home">phaenomenon<span>.</span></a>'+
       '<button type="button" class="rail-mobile-toggle" data-act="toggle-rail" aria-expanded="false" aria-controls="production-navigation">☰ <span>Menu</span></button></div>'+
+      '<button type="button" class="rail-quick-new" data-act="builder-new">+ New event</button>'+
       '<nav id="production-navigation" aria-label="Production navigation">'+navigation+'</nav>'+
       '<div class="rail-bottom"><strong>ONE EVENT · CONNECTED WORK</strong><p>Switch between tasks without switching your event.</p>'+
       '<p>Local prototype · Role views are not security permissions.</p></div></aside>'+
+      '<button type="button" class="mobile-nav-backdrop" data-act="close-rail" aria-label="Close navigation"></button>'+
       '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / Event</div><div class="header-title">'+viewName()+'</div></div>'+
       '<div class="header-tools"><button type="button" class="btn primary" data-act="builder-new">+ New event</button><label class="event-header-select">ACTIVE EVENT<select id="event-picker">'+
       events().map(x=>'<option value="'+esc(x.id)+'" '+(x.id===e?.id?'selected':'')+'>'+esc(x.title)+'</option>').join('')+
@@ -418,7 +428,7 @@
       '<small id="save-status" class="save-status" title="This is local browser storage, not cloud sync.">Saved in this browser</small></div></header>'+
       '<div class="content">'+(ui.notice?'<div id="message" class="notice good section" role="status">'+esc(ui.notice)+'</div>':'')+
       (ui.view==='builder'?builderPage(e,c):ui.view==='home'?home(e,c):ui.view==='design'?design(e,c):ui.view==='technical'?technical(e,c):ui.view==='crew'?crew(e,c):ui.view==='production'?production(e,c):entities(e))+
-      '<p class="footnote">Phaenomenon prototype · Single-browser storage only · Data and technical calculations are provisional · Role views are not security permissions.</p></div></main></div>';
+      '<p class="footnote">Phaenomenon prototype · Single-browser storage only · Data and technical calculations are provisional · Role views are not security permissions.</p></div></main></div>'+mobileNavigation;
     $.innerHTML=html;
     document.title=viewName()+' · Phaenomenon';
   }
@@ -1077,6 +1087,7 @@
       (selected?entityProfile(selected,e):'<section class="panel inspector"><div class="empty">Select an entity to see its profile, aliases, relationships, roles and linked events.</div></section>')+'</div>';
   }
   function route(){
+    document.body?.classList?.remove('ph-mobile-menu-open');
     const parts=location.hash.replace(/^#\/?/,'').split('/'),view=parts[0];
     ui.view=['builder','home','design','technical','crew','production','entities'].includes(view)?view:'home';
     ui.builderFocus=ui.view==='builder'&&['brief','spaces','design','equipment','connections','team','review'].includes(parts[2])?parts[2]:'';
@@ -1130,10 +1141,15 @@
       if(store())notice('Venue placement review marked complete. Engineering and technical safety verification remain separate.');
       return;
     }
-    if(action==='toggle-rail'){
+    if(action==='toggle-rail'||action==='close-rail'){
       const rail=document.getElementById('production-rail');
-      const open=rail?.classList.toggle('is-expanded');
+      const open=action==='toggle-rail'?!rail?.classList?.contains('is-expanded'):false;
+      rail?.classList?.toggle('is-expanded',open);
+      document.body?.classList?.toggle('ph-mobile-menu-open',open);
       rail?.querySelector('.rail-mobile-toggle')?.setAttribute('aria-expanded',open?'true':'false');
+      document.querySelector('.production-mobile-tabs .mobile-more-tab')?.setAttribute('aria-expanded',open?'true':'false');
+      if(open)rail?.querySelector('nav a[href]')?.focus();
+      else if(action==='close-rail')document.querySelector('.production-mobile-tabs .mobile-more-tab')?.focus();
       return;
     }
     if(action==='print'){window.print();return;}
@@ -1444,7 +1460,11 @@
   window.addEventListener('storage',event=>{if(event.key===KEY)refreshFromStorage();});
   window.addEventListener('focus',refreshFromStorage);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshFromStorage();});
-  document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){if(cueEditorOpen)closeCueEditor();else if(builderEventOpen)closeBuilderEvent();else if(quickVenueOpen)productionQuickClose();}});
+  document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){if(document.getElementById('production-rail')?.classList?.contains('is-expanded')){
+    document.getElementById('production-rail').classList.remove('is-expanded');
+    document.body?.classList?.remove('ph-mobile-menu-open');
+    document.querySelector('.production-mobile-tabs .mobile-more-tab')?.focus();
+  }else if(cueEditorOpen)closeCueEditor();else if(builderEventOpen)closeBuilderEvent();else if(quickVenueOpen)productionQuickClose();}});
   document.addEventListener('toggle',ev=>{
     if(ev.target?.id==='event-venue-settings')ui.homeVenueOpen=ev.target.open;
   },true);
