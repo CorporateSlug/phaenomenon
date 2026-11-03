@@ -198,7 +198,7 @@ function attach(p){
  const o={p,ui,disposed:false,
   render(){
    const v=p.venue;ensure(v);const active=p.focusSpaceId||'all';
-   const areas=v.spaces||[];
+   const areas=(v.spaces||[]).filter(sp=>!Array.isArray(p.event?.spaceIds)||p.event.spaceIds.includes(sp.id));
    ui.innerHTML='<div class="msp-top"><div class="msp-top-left"><span class="msp-overline">VENUE SPACES</span><div class="msp-tabs" role="group" aria-label="Viewing area"><button type="button" data-msp-focus="all" class="'+(active==='all'?'is-active':'')+'">Whole venue</button>'+areas.map(a=>'<button type="button" data-msp-focus="'+esc(a.id)+'" class="'+(active===a.id?'is-active':'')+'">'+(a.geometry.kind==='outdoor'?'☀ ':'⌂ ')+esc(a.name)+'</button>').join('')+'</div></div><div class="msp-actions">'+(areas.length?'<button type="button" data-msp-open="edit">Edit spaces</button>':'<button type="button" data-msp-action="convert">+ Add another space</button>')+'</div></div>'+
     (v.approximate?'<p class="msp-disclaimer"><strong>Illustrative only.</strong> Room geometry, positions, paths and power points are not surveyed or approved.</p>':'')+
     '<div class="msp-details" '+(this.open?'':'hidden')+'><div class="msp-editor-head"><strong>Spaces & shared pathways</strong><button type="button" data-msp-open="close">Close</button></div>'+
@@ -227,8 +227,8 @@ function attach(p){
   const focus=e.target.closest('[data-msp-focus]');if(focus){p.focusSpaceId=focus.dataset.mspFocus;p.plan.focusSpaceId=p.focusSpaceId;p.save();o.render();focusView(p);return}
   const open=e.target.closest('[data-msp-open]');if(open){o.open=open.dataset.mspOpen!=='close';o.render();return}
   const action=e.target.closest('[data-msp-action]')?.dataset.mspAction;if(!action)return;
-  if(action==='convert'){convert(p.venue);p.plan.items.forEach(x=>constrain(p.venue,x));p.focusSpaceId=p.venue.spaces[0].id;p.plan.focusSpaceId=p.focusSpaceId;o.open=true;p.save();o.render();p.draw();return}
-  if(action==='add'){const a=addSpace(p.venue);p.focusSpaceId=a.id;p.plan.focusSpaceId=a.id;p.save();o.render();focusView(p);return}
+  if(action==='convert'){convert(p.venue);if(p.event)p.event.spaceIds=p.venue.spaces.map(x=>x.id);p.plan.items.forEach(x=>constrain(p.venue,x));p.focusSpaceId=p.venue.spaces[0].id;p.plan.focusSpaceId=p.focusSpaceId;o.open=true;p.save();o.render();p.draw();return}
+  if(action==='add'){const a=addSpace(p.venue);if(p.event){if(!Array.isArray(p.event.spaceIds))p.event.spaceIds=p.venue.spaces.filter(x=>x.id!==a.id).map(x=>x.id);if(!p.event.spaceIds.includes(a.id))p.event.spaceIds.push(a.id);}p.focusSpaceId=a.id;p.plan.focusSpaceId=a.id;p.save();o.render();focusView(p);return}
   if(action==='link'){
    const src=ui.querySelector('#msp-link-from')?.value,dst=ui.querySelector('#msp-link-to')?.value;
    if(!src||!dst||src===dst){p.notify?.('Choose two different spaces.');return}
@@ -243,10 +243,10 @@ function attach(p){
   const el=e.target,spaceId=el.dataset.mspArea,field=el.dataset.mspField;
   if(spaceId&&field){
    const a=p.venue.spaces.find(x=>x.id===spaceId);if(!a)return;
-   if(field==='kind'){a.geometry.kind=el.value;a.geometry.roof.type=el.value==='outdoor'?'none':'flat'}
+   if(field==='kind'){a.geometry.kind=el.value;a.kind=el.value;a.geometry.roof.type=el.value==='outdoor'?'none':'flat'}
    else if(field==='roof'){a.geometry.roof.type=el.value;}
    else if(field==='shape'){const ok=window.confirm('Replace this area’s outline with a '+el.value+' template? Equipment will remain in the nearest valid position.');if(!ok)return;a.geometry.footprint=G.template(el.value==='l'?'L':el.value==='u'?'U':el.value,a.width,a.length);a.shape=el.value;}
-   else if(field==='name'){a.name=String(el.value).slice(0,75).trim()||a.name;}
+   else if(field==='name'){const newName=String(el.value).slice(0,75).trim();if(newName&&p.venue.spaces.some(x=>x.id!==a.id&&x.name.trim().toLowerCase()===newName.toLowerCase())){p.notify?.('A space with that name already exists in this venue.');el.value=a.name;return;}a.name=newName||a.name;}
    else{
     const previous={x:a.x,y:a.y,width:a.width,length:a.length,height:a.height};
     a[field]=cap(n(el.value,a[field]),field==='height'?.5:field==='x'||field==='y'?0:2,field==='height'?40:200);
