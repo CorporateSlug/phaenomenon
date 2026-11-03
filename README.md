@@ -5,6 +5,8 @@
 
 **Start here:** [Event Builder](production.html#/builder) — the central place to create an event and move through its stages, without duplicating the existing planners or requiring a rigid wizard.
 
+**For Aaron’s first Windows test:** [Usability trial guide](USER_TESTING.md). It contains a short practical route and feedback prompts, using fictional event data.
+
 The guided flow has seven independent steps:
 
 1. **Event details** — name, date, client, type, status and basic brief. Create a new event or client in Production and edit details inline.
