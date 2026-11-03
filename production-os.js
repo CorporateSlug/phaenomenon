@@ -489,6 +489,7 @@
       '<div class="sep"></div><h3>Notes</h3><form id="entity-note-form"><input type="hidden" name="id" value="'+esc(ent.id)+'"><textarea name="notes" maxlength="4000">'+esc(ent.notes||'')+'</textarea><button class="btn small" type="submit">Save notes</button></form>'+
       (v?'<div class="sep"></div><h3>Spaces</h3><div class="chiprow">'+(v.spaces||[]).map(x=>{const sub=org().entities.find(y=>y.legacyType==='space'&&y.legacyVenueId===v.id&&y.legacySpaceId===x.id);return '<button class="btn small" data-act="profile" data-id="'+esc(sub?.id||'')+'">'+esc(x.name)+'</button>';}).join('')+'</div>':'')+
       '<div class="sep"></div><h3>Events</h3><div class="stack">'+(relatedEvents(ent).map(x=>'<button class="linkrow" data-act="select-event" data-id="'+esc(x.id)+'"><div><strong>'+esc(x.title)+'</strong><div class="detail">'+date(x.date)+'</div></div>→</button>').join('')||'<p class="muted">No linked events.</p>')+'</div>'+
+      (ent.legacyType==='event'?'<div class="sep"></div><h3>Production team &amp; suppliers</h3><div class="stack">'+(org().assignments.filter(a=>a.eventId===ent.legacyId).map(a=>'<button class="linkrow" data-act="profile" data-id="'+esc(a.entityId)+'"><div><strong>'+esc(aname(a.entityId))+'</strong><div class="detail">'+esc(a.role)+' · '+esc(a.areaId==='all'?'Entire event':areaName(events().find(x=>x.id===ent.legacyId),a.areaId))+(a.equipmentId&&a.quantity?' · '+esc(a.quantity)+' × '+esc((db.equipment||[]).find(x=>x.id===a.equipmentId)?.name||'equipment'):'')+'</div></div>→</button>').join('')||'<p class="muted">No team linked.</p>')+'</div>':'')+
       '<div class="sep"></div><h3>Event roles</h3><div class="stack">'+(al.map(x=>'<div class="tag">'+esc(x.role)+' · '+esc(events().find(t=>t.id===x.eventId)?.title||'Unknown event')+(x.equipmentId&&x.quantity?' · '+esc(x.quantity)+' × '+esc((db.equipment||[]).find(g=>g.id===x.equipmentId)?.name||'Unknown equipment'):'')+'</div>').join('')||'<p class="muted">No event assignments.</p>')+'</div>'+
       '<div class="sep"></div><h3>Relationships</h3><div class="stack">'+(r.map(x=>'<button class="linkrow" data-act="profile" data-id="'+esc(x.from===ent.id?x.to:x.from)+'"><div><strong>'+esc(aname(x.from===ent.id?x.to:x.from))+'</strong><div class="detail">'+esc(x.type)+(x.notes?' · '+esc(x.notes):'')+'</div></div>→</button>').join('')||'<p class="muted">No relationships recorded.</p>')+'</div>'+
       '<div class="sep"></div><h3>Add relationship</h3><form id="relation-form" class="stack"><input type="hidden" name="from" value="'+esc(ent.id)+'">'+
@@ -581,9 +582,9 @@
     ev.preventDefault();const d=new FormData(f),val=k=>clean(d.get(k)),e=current(),o=org();
     if(f.id==='assign-form'){
       if(!entity(val('entityId')))return;
-      const previous=o.assignments.find(x=>x.eventId===e.id&&x.entityId===val('entityId')&&x.role===val('role')&&x.areaId===val('areaId'));
-      if(previous){notice('This entity already has that role in the selected area.');return;}
       const eqId=(db.equipment||[]).some(g=>g.id===val('equipmentId'))?val('equipmentId'):null;
+      const previous=o.assignments.find(x=>x.eventId===e.id&&x.entityId===val('entityId')&&x.role===val('role')&&x.areaId===val('areaId')&&(x.equipmentId||'')===(eqId||''));
+      if(previous){notice('This entity already has that role and equipment assignment in the selected area.');return;}
       const qty=Math.max(0,Math.min(9999,Math.floor(num(val('quantity')))));
       if(qty&&!eqId){notice('Choose an equipment type for a supplied quantity.');return;}
       o.assignments.push({id:uid('assignment'),eventId:e.id,entityId:val('entityId'),role:val('role'),areaId:val('areaId'),responsibility:val('responsibility').slice(0,180),equipmentId:eqId,quantity:eqId?qty:0});
@@ -603,7 +604,7 @@
     }
     if(f.id==='entity-form'){
       if(!val('name'))return;
-      const existing=o.entities.find(x=>x.name.toLowerCase()===val('name').toLowerCase()&&x.kind===val('kind'));
+      const existing=o.entities.find(x=>x.kind===val('kind')&&(x.name.toLowerCase()===val('name').toLowerCase()||(x.aliases||[]).some(alias=>alias.toLowerCase()===val('name').toLowerCase())));
       if(existing){navigateProfile(existing.id);notice('Existing entity opened instead of creating a duplicate.');return;}
       const x={id:uid('ent'),name:val('name').slice(0,140),kind:entityKind(val('kind')),aliases:val('aliases').split(',').map(x=>x.trim()).filter(Boolean).slice(0,30),notes:val('notes').slice(0,4000)};
       o.entities.push(x);store();navigateProfile(x.id);notice('Entity created.');return;
