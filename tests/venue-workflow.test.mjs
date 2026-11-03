@@ -119,3 +119,16 @@ test('user-facing entry points both expose venue and space workflow',()=>{
   assert.match(production,/production-venue-quick-form/);
   assert.match(threeD,/PhaenomenonVenueWorkflow.*updateEvent/);
 });
+
+test('legacy placements without space IDs prevent deselection of their physical space',()=>{
+  const W=harness(),db={venues:[],eventJobs:[],venuePlans:{}};
+  const first=W.addVenue(db,{name:'Venue Legacy',spaceName:'Hall',width:12,length:12});
+  const other=W.addSpace(db,first.venue.id,{name:'Backstage',width:8,length:8}).space;
+  db.eventJobs=[{id:'ev',title:'Test',venueId:first.venue.id,venue:first.venue.name,spaceIds:[first.space.id,other.id]}];
+  db.venuePlans.ev={venueId:first.venue.id,items:[{
+    id:'unassigned-location',name:'Old fixture',x:other.x+3,y:other.y+3
+  }],runs:[]};
+  const result=W.updateEvent(db,'ev',first.venue.id,[first.space.id]);
+  assert.match(result.error,/contain placed equipment/);
+  assert.ok(db.eventJobs[0].spaceIds.includes(other.id));
+});
