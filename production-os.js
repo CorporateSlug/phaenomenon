@@ -842,9 +842,10 @@
     render();
   }
   document.addEventListener('click',ev=>{
-    const el=ev.target.closest('[data-act]');if(!el||!$.contains(el))return;
+    const el=ev.target.closest('[data-act]');if(!el||(!$.contains(el)&&!el.closest('[data-venue-quick-overlay]')))return;
     const action=el.dataset.act,id=el.dataset.id,e=current(),p=published(e);
     ev.preventDefault();
+    if(action==='venue-quick-close'){productionQuickClose();return;}
     if(action==='venue-create'){productionQuickOpen('venue');return;}
     if(action==='space-create'){productionQuickOpen('space');return;}
     if(action==='venue-layout-reviewed'){plan(e).needsVenueReview=false;if(store())notice('Venue layout review marker recorded. Technical safety checks remain separate.');return;}
@@ -949,7 +950,24 @@
     if(el.id==='entity-search'){ui.query=el.value;const start=el.selectionStart;render();const next=document.getElementById('entity-search');next?.focus();next?.setSelectionRange(start,start);}
   });
   document.addEventListener('submit',ev=>{
-    const f=ev.target;if(!$.contains(f))return;
+    const f=ev.target;
+    if(f.id==='production-venue-quick-form'){
+      ev.preventDefault();
+      const data=new FormData(f),val=k=>clean(data.get(k)),W=window.PhaenomenonVenueWorkflow;
+      const mode=val('mode');
+      const params={name:val('venueName'),spaceName:val('spaceName'),width:val('width'),length:val('length'),height:val('height'),kind:val('kind')};
+      const result=mode==='venue'?W.addVenue(db,params):W.addSpace(db,val('venueId'),{...params,name:val('spaceName')});
+      if(result.error&&!result.existing){alert(result.error);return;}
+      if(result.venue&&!result.error){ensure();if(!store())return;}
+      const targetVenue=result.venue?.id||(mode==='venue'?result.existing?.id:val('venueId'));
+      const targetSpace=result.space?.id||(mode==='space'?result.existing?.id:undefined);
+      productionQuickClose();
+      renderVenuePicker(targetVenue,targetSpace);
+      const host=document.querySelector('.content');
+      if(host)host.insertAdjacentHTML('afterbegin','<div class="notice info section" role="status">'+esc(result.error||'Saved in the reusable venue library. Select the spaces and save the event.')+'</div>');
+      return;
+    }
+    if(!$.contains(f))return;
     if(!['assign-form','cue-form','look-form','entity-form','entity-note-form','relation-form','team-hierarchy-form','operations-form','event-venue-form'].includes(f.id))return;
     ev.preventDefault();const d=new FormData(f),val=k=>clean(d.get(k)),e=current(),o=org();
     if(f.id==='event-venue-form'){
@@ -1024,6 +1042,7 @@
   window.addEventListener('storage',event=>{if(event.key===KEY)refreshFromStorage();});
   window.addEventListener('focus',refreshFromStorage);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshFromStorage();});
+  document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&quickVenueOpen)productionQuickClose();});
   window.addEventListener('hashchange',route);
   ensure();store();route();
 })();
