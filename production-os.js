@@ -316,7 +316,7 @@
     return {all:t.length,installed:t.filter(x=>x.state!=='pending').length,verified:t.filter(x=>x.state==='verified').length,issues:org().issues.filter(x=>x.eventId===e?.id&&x.status!=='Resolved').length};
   }
   function notice(message){if(saveConflict){message='Another tab updated the event. Your latest edit was not saved. Please retry it.';saveConflict=false;}ui.notice=message;render();setTimeout(()=>{if(ui.notice===message){ui.notice='';document.querySelector('#message')?.remove();}},4200);}
-  function viewName(){return ({home:'Event overview',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'People & organisations'}[ui.view]||'Event overview');}
+  function viewName(){return ({home:'Event overview',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'Directory'}[ui.view]||'Event overview');}
   function render(){
     const e=current(),c=counts(e);
     const navItem=(href,label,glyph,active)=>'<a href="'+href+'" class="nav'+(active?' active':'')+'"'+(active?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+glyph+'</span><span>'+esc(label)+'</span></a>';
@@ -339,12 +339,12 @@
       ],['crew','production'].includes(ui.view))+
       navGroup('library','Library & people','◇',[
         navItem('#/home/venue/'+eventId,'Venues & spaces','⌘',ui.view==='home'&&ui.homeVenueOpen),
-        navItem('#/entities','People & organisations','♧',ui.view==='entities'),
+        navItem('#/entities','Directory','♧',ui.view==='entities'),
         navItem('index.html#/equipment','Equipment','◫',false),
-        navItem('index.html#/fixtures','Fixture profiles','◉',false)
+        navItem('index.html#/fixtures','Fixture library','◉',false)
       ],ui.view==='entities'||(ui.view==='home'&&ui.homeVenueOpen))+
       navGroup('studio','Studio management','▤',[
-        navItem('index.html#/overview','Studio home','⌂',false),
+        navItem('index.html#/overview','Studio overview','⌂',false),
         navItem('index.html#/projects','Projects','◇',false),
         navItem('index.html#/pipeline','Opportunities','▥',false),
         navItem('index.html#/schedule','Calendar','▦',false),
@@ -878,7 +878,7 @@
     const all=org().entities.filter(x=>(ui.entityType==='All'||x.kind===ui.entityType)&&
       (x.name+' '+(x.aliases||[]).join(' ')+' '+(x.notes||'')).toLowerCase().includes(ui.query.toLowerCase()));
     const selected=entity(ui.entityId);
-    return hero('CONNECTED ENTITY REGISTRY','People, organisations and venues','Canonical records with aliases, event-specific roles, typed relationships and navigable profiles.')+
+    return hero('DIRECTORY','People, places and organisations','Canonical records with aliases, event-specific roles, typed relationships and navigable profiles.')+
       '<div class="side-by-side"><div><section class="panel section"><div class="section-head"><h2>Browse entities</h2>'+pill(all.length+' records')+'</div>'+
       '<div class="form-grid section"><label>Search name, alias or notes<input class="input" id="entity-search" placeholder="Search entities" value="'+esc(ui.query)+'"></label>'+
       '<label>Entity type<select id="entity-filter">'+['All','Person','Organisation','Venue','Space','Event'].map(x=>'<option '+(ui.entityType===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label></div>'+
