@@ -1,5 +1,25 @@
 # Phaenomenon
 
+
+## New: Connected Event Production workspace
+
+**[Open the role-aware event production workspace](production.html)** · [Architecture and limitations](PRODUCTION_OS.md)
+
+The existing **Design → Connect → Review → Export** stage lighting planner is retained. A new shared event workspace provides:
+
+- Event-first, task-based navigation for design, technical, crew and production responsibilities.
+- Casebook-style people, organisations, venues, spaces and event entity profiles, aliases and typed links, with event-specific roles and Back/Forward navigation.
+- Versioned crew instruction packs generated from the existing venue, equipment, DMX and cable records.
+- Area-specific printable installation diagrams, task completion, technical verification and issue reporting.
+- Production readiness, assignments, run-of-show cues and draft creative lighting looks.
+- Change-impact review before a revised installation pack is published.
+
+**Prototype limitation:** The new roles are UI presets, not security permissions. Data is stored in the same browser's local storage as the classic demo; there are no accounts, synchronisation or safety approvals. The Abbotsford Convent two-stage example and named demo crew are fictional/illustrative.
+
+To run regression tests with a recent Node.js installation: \`node --test tests/production-os.test.mjs\`.
+
+---
+
 **Event bookings, equipment planning and draft invoicing for a lighting business.**
 
 Phaenomenon is an interactive, browser-based proof of concept for a small event-lighting studio working with repeat customers. It is intended as a starting point for Aaron to explore what an app tailored to his real workflow could look like.
