@@ -415,7 +415,7 @@
     const pub=published(e),total=(pub?.tasks||[]).filter(t=>matchesCrew(e,t)),done=total.filter(t=>t.state!=='pending').length;
     return hero('CREW WORKSPACE','Install the event','Simple, area-specific instructions from a versioned crew pack. Track installation separately from technical verification.',
       areaPicker(e)+crewSelector(e))+
-      changeNotice(e)+
+      changeNotice(e)+reportingSummary(e)+
       (!pub?'<div class="empty">Publish a crew pack from Design to begin.</div>':
       '<div class="row between section no-print"><button class="btn" data-act="print">Print area crew pack / Save as PDF</button><span class="form-note">Select one area for a concise handout.</span></div><div class="notice info section">Crew pack revision <strong>'+pub.revision+'</strong> · issued '+new Date(pub.at).toLocaleString('en-AU')+'. '+
       (isChanged(e)?' A newer design has not been published. Do not use unreviewed new instructions.':' Instructions reflect the currently published plan.')+'</div>'+
@@ -460,6 +460,33 @@
     org().teamHierarchy[e.id][personId]={position,reportsTo:supervisorId||'',notes:clean(notes).slice(0,320)};
     return '';
   }
+
+  function reportingSummary(e){
+    if(ui.crewPerson==='all')return '';
+    const person=teamEntries(e).find(x=>x.person.id===ui.crewPerson);
+    if(!person)return '';
+    const peers=teamEntries(e).filter(x=>x.reportsTo===person.person.id);
+    return '<div class="notice info section"><strong>'+esc(person.person.name)+'</strong> · '+esc(person.position)+' · '+
+      (person.reportsTo?'Reports to '+esc(aname(person.reportsTo)):'Top of reporting tree / no manager assigned')+
+      (peers.length?' · '+peers.length+' direct report'+(peers.length===1?'':'s'):'')+
+      '. <span class="form-note">Reporting lines are for team coordination only.</span></div>';
+  }
+  function profileReporting(ent){
+    if(ent.kind!=='Person')return '';
+    const memberships=events().flatMap(e=>{
+      const nodes=teamEntries(e),person=nodes.find(n=>n.person.id===ent.id);
+      if(!person)return [];
+      return [{event:e,entry:person,reports:nodes.filter(x=>x.reportsTo===ent.id)}];
+    });
+    if(!memberships.length)return '';
+    return '<div class="sep"></div><h3>Reporting structure by event</h3><div class="stack">'+memberships.map(x=>
+      '<div class="area-card"><strong>'+esc(x.event.title)+'</strong><p class="muted">'+esc(x.entry.position)+'</p>'+
+      (x.entry.reportsTo?'<button class="linkrow" data-act="profile" data-id="'+esc(x.entry.reportsTo)+'"><div><strong>Reports to '+esc(aname(x.entry.reportsTo))+'</strong></div>→</button>':'<p class="muted">No supervisor in this event</p>')+
+      (x.reports.length?'<p class="muted">Direct reports:</p>'+x.reports.map(n=>
+        '<button class="linkrow" data-act="profile" data-id="'+esc(n.person.id)+'"><div><strong>'+esc(n.person.name)+'</strong><div class="detail">'+esc(n.position)+'</div></div>→</button>').join(''):'')+
+      '</div>').join('')+'</div>';
+  }
+
   function teamStructure(e){
     const records=teamEntries(e);
     if(!records.length)return '<section class="panel section"><h2>Team hierarchy</h2><div class="empty">Add a person to this event team to start building a hierarchy.</div></section>';
@@ -580,6 +607,7 @@
       (v?'<div class="sep"></div><h3>Spaces</h3><div class="chiprow">'+(v.spaces||[]).map(x=>{const sub=org().entities.find(y=>y.legacyType==='space'&&y.legacyVenueId===v.id&&y.legacySpaceId===x.id);return '<button class="btn small" data-act="profile" data-id="'+esc(sub?.id||'')+'">'+esc(x.name)+'</button>';}).join('')+'</div>':'')+
       '<div class="sep"></div><h3>Events</h3><div class="stack">'+(relatedEvents(ent).map(x=>'<button class="linkrow" data-act="select-event" data-id="'+esc(x.id)+'"><div><strong>'+esc(x.title)+'</strong><div class="detail">'+date(x.date)+'</div></div>→</button>').join('')||'<p class="muted">No linked events.</p>')+'</div>'+
       (ent.legacyType==='event'?'<div class="sep"></div><h3>Production team &amp; suppliers</h3><div class="stack">'+(org().assignments.filter(a=>a.eventId===ent.legacyId).map(a=>'<button class="linkrow" data-act="profile" data-id="'+esc(a.entityId)+'"><div><strong>'+esc(aname(a.entityId))+'</strong><div class="detail">'+esc(a.role)+' · '+esc(a.areaId==='all'?'Entire event':areaName(events().find(x=>x.id===ent.legacyId),a.areaId))+(a.equipmentId&&a.quantity?' · '+esc(a.quantity)+' × '+esc((db.equipment||[]).find(x=>x.id===a.equipmentId)?.name||'equipment'):'')+'</div></div>→</button>').join('')||'<p class="muted">No team linked.</p>')+'</div>':'')+
+      profileReporting(ent)+
       '<div class="sep"></div><h3>Event roles</h3><div class="stack">'+(al.map(x=>'<div class="tag">'+esc(x.role)+' · '+esc(events().find(t=>t.id===x.eventId)?.title||'Unknown event')+(x.equipmentId&&x.quantity?' · '+esc(x.quantity)+' × '+esc((db.equipment||[]).find(g=>g.id===x.equipmentId)?.name||'Unknown equipment'):'')+'</div>').join('')||'<p class="muted">No event assignments.</p>')+'</div>'+
       '<div class="sep"></div><h3>Relationships</h3><div class="stack">'+(r.map(x=>'<button class="linkrow" data-act="profile" data-id="'+esc(x.from===ent.id?x.to:x.from)+'"><div><strong>'+esc(aname(x.from===ent.id?x.to:x.from))+'</strong><div class="detail">'+esc(x.type)+(x.notes?' · '+esc(x.notes):'')+'</div></div>→</button>').join('')||'<p class="muted">No relationships recorded.</p>')+'</div>'+
       '<div class="sep"></div><h3>Add relationship</h3><form id="relation-form" class="stack"><input type="hidden" name="from" value="'+esc(ent.id)+'">'+
