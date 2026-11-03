@@ -110,6 +110,7 @@
         return false;
       }
       const payload=JSON.stringify(db);
+      if(latest&&latest!==payload)window.PhaenomenonWorkspaceSafety?.checkpoint(localStorage,latest,'Before Studio edit',force);
       localStorage.setItem(STORE_KEY,payload);
       storageBaseline=payload;
       return true;
@@ -545,7 +546,7 @@
   });
   window.addEventListener('afterprint',()=>{if(ui.printInvoiceId){ui.printInvoiceId=null;render();}});
   function exportData(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`phaenomenon-demo-${iso(new Date())}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);flash('Workspace exported as JSON');}
-  $import.addEventListener('change',async()=>{const f=$import.files?.[0];if(!f)return;try{if(f.size>5_000_000)throw Error('File is too large.');const x=JSON.parse(await f.text());if(!valid(x))throw Error('This is not a compatible Phaenomenon export.');if(!confirm('Import this file and replace the workspace data stored in this browser?'))return;db=x;assureEventData(db);window.PhaenomenonSpacePlanner?.ensure(db);save(true);ui.modal=null;ui.projectId=null;ui.search='';ui.fixtureSearch='';location.hash='#/overview';renderRoute();flash('Workspace imported');}catch(err){alert('Import failed: '+err.message);}finally{$import.value='';}});
+  $import.addEventListener('change',async()=>{const f=$import.files?.[0];if(!f)return;try{if(f.size>5_000_000)throw Error('File is too large.');const x=JSON.parse(await f.text());const report=window.PhaenomenonWorkspaceSafety?.inspect(x);if(!valid(x)||report&&!report.valid)throw Error(report?.error||'This is not a compatible Phaenomenon export.');if(!confirm('Restore '+(x.eventJobs||[]).length+' events, '+(x.venues||[]).length+' venues and '+(x.clients||[]).length+' clients from this file?\nThis replaces the current workspace stored in this browser.'+(report?.warnings?.length?'\n\nWarnings:\n'+report.warnings.slice(0,3).join('\n'):'')))return;db=x;assureEventData(db);window.PhaenomenonSpacePlanner?.ensure(db);if(!save(true))throw Error('The browser could not save the imported workspace.');ui.modal=null;ui.projectId=null;ui.search='';ui.fixtureSearch='';location.hash='#/overview';renderRoute();flash('Workspace imported');}catch(err){alert('Import failed: '+err.message);}finally{$import.value='';}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.querySelector('[data-venue-quick-overlay]'))closeVenueQuick();else if(ui.modal){ui.modal=null;render();}else if(ui.projectId)closeProject();}});
   // Other tabs and the Production workspace share this browser's data, not a backend.
   // Refresh on storage/focus so a stale tab does not overwrite a newer event model.
