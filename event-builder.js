@@ -87,7 +87,7 @@
         team.length?'complete':'todo',team.length+' event role'+(team.length===1?'':'s')+' assigned',
         'Manage team','#/production/team/'+encodeURIComponent(e.id)),
       mark('review','Review & publish','Issue a revisioned crew pack after human review.',
-        isPublished&&!revisionStale?'complete':items.length?'attention':'todo',
+        isPublished?(revisionStale?'attention':'complete'):items.length?'attention':'todo',
         isPublished?'Published revision '+pub.revision+(revisionStale?' (review required)':''):'No crew pack published',
         'Review changes','#/design/'+encodeURIComponent(e.id))
     ];
