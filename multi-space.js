@@ -40,13 +40,13 @@ function seed(db){
   const itm=(id,name,kind,areaId,x,y,z,watts=0,extra={})=>({id,name,kind,areaId,x,y,z,watts,eqId:'',...extra});
   db.venuePlans[DEMO_ID]={venueId:VENUE_ID,focusSpaceId:'all',
    items:[
-    itm('ab-indoor-stage','Indoor performance platform','stage','ab-indoor',12,16,0),
+    itm('ab-indoor-stage','Indoor performance platform','stage','ab-indoor',12,16,0,0,{width:5.8,depth:3.6}),
     itm('ab-i-console','Indoor lighting control','control','ab-indoor',7,7,0,80),
     itm('ab-i-node','Indoor DMX / network node','network','ab-indoor',19,12,0,20),
     itm('ab-i-distro','Indoor power distribution','power','ab-indoor',5,13,0),
     itm('ab-i-wash1','Indoor wash · left','light','ab-indoor',8,13,3.8,180,{fixtureType:'movingWash',pan:15,tilt:60,beamAngle:36,colorHex:'#ffb26d'}),
     itm('ab-i-wash2','Indoor wash · right','light','ab-indoor',17,13,3.8,180,{fixtureType:'movingWash',pan:-15,tilt:60,beamAngle:36,colorHex:'#8ba4ff'}),
-    itm('ab-outdoor-stage','Outdoor performance platform','stage','ab-outdoor',38,18,0),
+    itm('ab-outdoor-stage','Outdoor performance platform','stage','ab-outdoor',38,18,0,0,{width:6.5,depth:4}),
     itm('ab-o-node','Outdoor DMX / network node','network','ab-outdoor',31,12,0,20),
     itm('ab-o-distro','Outdoor power distribution (illustrative)','power','ab-outdoor',31,9,0),
     itm('ab-o-wash1','Outdoor wash · left','light','ab-outdoor',33,17,3,160,{fixtureType:'par',pan:15,tilt:58,beamAngle:28,colorHex:'#a9e8cb'}),
