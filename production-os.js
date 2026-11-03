@@ -301,7 +301,7 @@
       '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / Production</div><div class="header-title">'+viewName()+'</div></div>'+
       '<div class="header-tools"><label style="min-width:160px">STARTING WORKSPACE<select id="role-picker">'+[['lead','Designer / lead'],['tech','Lighting technician'],['crew','Installation crew'],['manager','Production manager']].map(x=>'<option value="'+x[0]+'" '+(ui.role===x[0]?'selected':'')+'>'+x[1]+'</option>').join('')+'</select></label><label style="min-width:190px" aria-label="Active event"><span style="font-size:10px">ACTIVE EVENT</span><select id="event-picker">'+
       events().map(x=>'<option value="'+esc(x.id)+'" '+(x.id===e?.id?'selected':'')+'>'+esc(x.title)+'</option>').join('')+
-      '</select></label><a class="btn" href="index.html#/bookings/'+encodeURIComponent(e?.id||'')+'">Open booking ↗</a></div></header>'+
+      '</select></label><button type="button" class="btn" data-act="export-backup">Export backup</button><a class="btn" href="index.html#/bookings/'+encodeURIComponent(e?.id||'')+'">Open booking ↗</a></div></header>'+
       '<div class="content">'+(ui.notice?'<div id="message" class="notice good section" role="status">'+esc(ui.notice)+'</div>':'')+
       (ui.view==='home'?home(e,c):ui.view==='design'?design(e,c):ui.view==='technical'?technical(e,c):ui.view==='crew'?crew(e,c):ui.view==='production'?production(e,c):entities(e))+
       '<p class="footnote">Phaenomenon prototype · Single-browser storage only · Data and technical calculations are provisional · Role views are not security permissions.</p></div></main></div>';
@@ -777,6 +777,17 @@
     const action=el.dataset.act,id=el.dataset.id,e=current(),p=published(e);
     ev.preventDefault();
     if(action==='print'){window.print();return;}
+    if(action==='export-backup'){
+      try{
+        const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+        const url=URL.createObjectURL(blob),a=document.createElement('a');
+        a.href=url;a.download='phaenomenon-workspace-'+new Date().toISOString().slice(0,10)+'.json';
+        document.body.appendChild(a);a.click();a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),2000);
+        notice('Workspace backup exported. Store it somewhere secure.');
+      }catch(error){notice('Could not export a backup. Try the classic Settings export.');}
+      return;
+    }
     if(action==='ack-pack'){
       if(ui.crewPerson==='all'){notice('Select a crew member first.');return;}
       if(acknowledgePack(e,ui.crewPerson)){
