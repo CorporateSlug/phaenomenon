@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 
 const source=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 function deps(window) {
-  for (const file of ['venue-geometry.js','multi-space.js','venue-workflow.js']) {
+  for (const file of ['venue-geometry.js','multi-space.js','venue-workflow.js','event-builder.js','workspace-safety.js']) {
     runInNewContext(source(file),{window},{filename:file});
   }
 }
@@ -165,7 +165,7 @@ test('Event Builder is a non-blocking seven-step flow with focused editing',()=>
   assert.match(h.root.innerHTML,/GUIDED EVENT BUILDER/);
   assert.equal((h.root.innerHTML.match(/class="builder-step /g)||[]).length,7);
   assert.match(h.root.innerHTML,/Suggested next/i);
-  assert.match(h.root.innerHTML,/Add person or supplier|Resolve|Bring kit up|Configure|Not started|Needs attention/i);
+  assert.match(h.root.innerHTML,/Configured|Not started|Needs attention/i);
   const eventId=h.window.__test?.current?.()?.id||'ev-abbotsford-two-stage-demo';
   h.navigate('#/builder/'+eventId+'/brief');
   assert.match(h.root.innerHTML,/id="builder-basics-form"/);
