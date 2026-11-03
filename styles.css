@@ -574,3 +574,10 @@
   .sidebar{padding-top:calc(18px + env(safe-area-inset-top,0px))}
   .modal,.drawer{-webkit-overflow-scrolling:touch}
 }
+
+
+@media(max-width:840px){
+  .breadcrumbs{display:block;flex:0 1 112px;max-width:112px;font-size:12px;line-height:1.35}
+  .breadcrumbs-root,.breadcrumbs-divider{display:none}
+  .breadcrumbs-page{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:750;color:#33484a}
+}
