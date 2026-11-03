@@ -43,9 +43,31 @@ Tests: [tests/venue-workflow.test.mjs](tests/venue-workflow.test.mjs) and [tests
 
 ---
 
+## Navigation and screen complexity
+
+Phaenomenon uses a short always-visible event core with expandable menus. **Events** are selected once and carried across Studio → Production deep links; workspaces represent tasks, not separate copies of the event. The user-facing structure is:
+
+| Section | Content |
+| --- | --- |
+| Event | Event overview; event booking details and selected Venue/Spaces |
+| Plan & design | 3D design; technical connections, including the retained Design → Connect → Review → Export sequence |
+| Deliver the event | Crew installation and production operations |
+| Library & people | Venue/Space library, entities and their event roles, equipment and fixture profiles |
+| Studio management | Projects, opportunities, calendar, clients, invoices and settings |
+
+The classic Studio sidebar offers **Plan & design**, **Equipment library** and **Studio management** submenus; the Production sidebar offers **Plan & design**, **Deliver the event**, **Library & people** and **Studio management**. On mobile the sidebar is a deliberate expandable vertical menu. The role-based starting view is optional and lives inside **Options**; it does not determine user permissions.
+
+In Events, **Event details** and **Equipment kit** are two tabs backed by the same booking. The inactive tab is hidden rather than destroyed, so changing tabs preserves unsaved form fields. Booking KPIs, Venue/Space configuration, secondary progress reporting, entity creation, crew assignments, draft lighting looks and show cue forms use opt-in disclosures rather than occupying screen space at all times.
+
+The Event overview intentionally shows just four task choices. Within Production, the four tabs are **Team**, **Equipment & logistics**, **Installation** and **Show schedule**; the technical planner's established four-step flow remains intact. This is progressive disclosure rather than removal of technical capabilities.
+
+The navigation test suite is [tests/navigation.test.mjs](tests/navigation.test.mjs). It checks the menus, selected-event links, section tab behaviour, retained workflow links and reduced default clutter.
+
+---
+
 ## User experience
 
-**Event home** provides five task choices rather than a wall of specialist tools:
+**Event overview** provides four primary task choices rather than a wall of specialist tools (entity discovery is under Library & people):
 
 1. **Design:** inspect the live multi-area venue and positioned equipment, then jump to the classic planner. Draft creative lighting looks.
 2. **Technical:** inspect current fixture patch, power circuits and cable runs. Independently mark already-installed tasks as verified.
