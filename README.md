@@ -18,6 +18,16 @@ Phaenomenon is an interactive, browser-based proof of concept for a small event-
 
 The original design-project, fixture-specification and pipeline example sections remain available to explore, but event operations are now the primary workflow.
 
+
+## Lighting fixture library and optical controls
+
+The 3D planner now has a **fixture-family picker**: select **Lighting fixture** in the scene palette to choose an LED PAR, Fresnel, profile spotlight, moving wash, moving spot, LED batten, stage blinder or followspot. Each family has a distinct SVG icon in the equipment list and a different simplified 3D housing/lens silhouette.
+
+- **Saved per-item optics:** Type, orientation, pan, downward tilt, beam spread, throw range, intensity and light colour or colour temperature persist with the event layout. Existing generic lights migrate to a PAR starting profile without losing their saved aiming or placement settings.
+- **Capability-aware controls:** Profile-dependent zoom ranges, moving-head aiming, colour vs variable-white controls, iris on compatible spots and followspots, four illustrative framing shutter inputs on profiles, gobo-style preview and edge softness. Changing a family applies its starting parameters without changing the item's venue coordinates.
+- **3D preview:** The beam's colour, direction, spread, approximate aperture, iris and intensity affect its translucent cone and floor footprint. The fixture body is aimed separately from whole-item rotation. Colour swatches and sliders update the model while editing.
+- **Manufacturer data:** The built-in presets are *examples of fixture families*, not validated technical limits for a specific product. A future version should import verified manufacturer models and optical parameters (for example GDTF fixture data). Light coverage is visual-only, not a photometric simulation. Do not derive electrical capacity, safe exposure or rigging approval from these models.
+
 ## Space planner: what is working now
 
 - **Reusable venue geometry:** Existing records are automatically given rectangular footprints without erasing events or equipment data. New venues can be indoor or outdoor. Resize the site dimensions to scale a saved footprint across bookings.
