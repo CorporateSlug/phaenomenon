@@ -43,7 +43,7 @@ function harness(state) {
   };
   const navigate=route=>{location.hash=route;handlers['window.hashchange']();};
   const change=target=>handlers.change({target});
-  return {storage,ui,read,click,submit,navigate,change,get printed(){return printed;}};
+  return {storage,ui,location,read,click,submit,navigate,change,get printed(){return printed;}};
 }
 
 test('migrates and connects canonical venue, stage and event records',()=>{
@@ -367,4 +367,41 @@ test('schematic cross-stage video route is geometrically navigable but unverifie
   assert.equal(route.betweenSpaces,true);
   assert.equal(route.provisional,true);
   assert.ok(route.length>0);
+});
+
+
+test('all events is a top-level destination with list and monthly schedule',()=>{
+  const h=harness();
+  h.navigate('#/events');
+  assert.match(h.ui.innerHTML,/All events &amp; schedule/);
+  assert.match(h.ui.innerHTML,/Event list/);
+  assert.match(h.ui.innerHTML,/Month calendar/);
+  assert.match(h.ui.innerHTML,/Abbotsford Convent/);
+  h.click('schedule-mode','calendar');
+  h.click('schedule-selected');
+  assert.match(h.ui.innerHTML,/December 2026/);
+  assert.match(h.ui.innerHTML,/calendar-event/);
+  h.click('schedule-month','-1');
+  assert.match(h.ui.innerHTML,/November 2026/);
+  h.click('schedule-month','1');
+  assert.match(h.ui.innerHTML,/December 2026/);
+  h.click('schedule-mode','list');
+  assert.match(h.ui.innerHTML,/Past events|Upcoming/);
+});
+
+test('switching active events updates builder route and persists without dropping bookings',()=>{
+  const memory=new Map(),first=harness(memory),saved=first.read();
+  saved.eventJobs.push({id:'ev-second-test',title:'Second independent event',date:'2026-11-15',status:'Confirmed',venue:'Second venue',clientId:'c1',kit:[]});
+  memory.set('phaenomenon-demo-v1',JSON.stringify(saved));
+  const h=harness(memory);
+  h.navigate('#/builder/ev-abbotsford-two-stage-demo');
+  h.change({id:'event-picker',value:'ev-second-test'});
+  assert.equal(h.location.hash,'#/builder/ev-second-test');
+  assert.match(h.ui.innerHTML,/Second independent event/);
+  assert.equal(JSON.parse(memory.get('phaenomenon-production-prefs-v1')).eventId,'ev-second-test');
+  h.navigate('#/production/ev-second-test');
+  assert.match(h.ui.innerHTML,/option value="ev-second-test" selected/);
+  h.navigate('#/events');
+  assert.match(h.ui.innerHTML,/Second independent event/);
+  assert.equal(h.read().eventJobs.length,saved.eventJobs.length);
 });
