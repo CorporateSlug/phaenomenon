@@ -34,3 +34,13 @@
 @media(max-width:1030px){.team-hierarchy-layout{grid-template-columns:1fr}.team-editor{position:static}}
 @media(max-width:550px){.team-structure{padding:11px}.team-branch{margin-left:9px;padding-left:11px}.team-branch>li::before{left:-11px;width:11px}.team-person{gap:7px;padding:9px}.team-avatar{height:29px;width:29px}.team-progress{min-width:37px}}
 @media print{.team-editor{display:none}.team-structure,.team-person{background:white;border:1px solid #bbb;color:black}.team-person-info small,.team-person-info>span,.team-progress{color:#444}}
+
+
+/* Progressive disclosure: production work is organised by active task. */
+.production-tabs{width:fit-content;max-width:100%;overflow-x:auto;margin-bottom:18px}
+.production-tabs .tab{white-space:nowrap}
+.production-pane{display:block;min-width:0}
+.production-pane:not(.active){display:none}
+.production-pane>.panel:last-child{margin-bottom:0}
+@media(max-width:750px){.production-tabs{width:100%;justify-content:flex-start}.production-tabs .tab{padding:10px 11px;font-size:11px}}
+@media print{.production-tabs{display:none!important}.production-pane:not(.active){display:none}}
