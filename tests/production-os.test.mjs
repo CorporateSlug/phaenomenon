@@ -192,3 +192,78 @@ test('task assignment outside member work area is visibly flagged',()=>{
   h.navigate('#/crew');
   assert.match(h.ui.innerHTML,/Check assignment: different work area/);
 });
+
+test('crew hierarchy displays three levels of event-specific responsibility',()=>{
+  const h=harness(),e='ev-abbotsford-two-stage-demo';
+  const hierarchy=h.read().productionOS.teamHierarchy[e];
+  assert.equal(hierarchy['ent-demo-manager'].position,'In charge');
+  assert.equal(hierarchy['ent-demo-tech'].position,'Second in charge');
+  assert.equal(hierarchy['ent-demo-tech'].reportsTo,'ent-demo-manager');
+  assert.equal(hierarchy['ent-demo-hand'].position,'Helper');
+  assert.equal(hierarchy['ent-demo-hand'].reportsTo,'ent-demo-tech');
+  h.navigate('#/production');
+  assert.match(h.ui.innerHTML,/Team hierarchy/);
+  assert.match(h.ui.innerHTML,/team-branch/);
+  assert.match(h.ui.innerHTML,/REPORTING TREE/);
+  h.click('team-select','ent-demo-hand');
+  assert.match(h.ui.innerHTML,/SELECTED PERSON/);
+  assert.match(h.ui.innerHTML,/Sam · demonstration stagehand/);
+});
+
+test('editing reporting lines rejects self-supervision and circular relationships',()=>{
+  const h=harness(),e='ev-abbotsford-two-stage-demo';
+  h.navigate('#/production');
+  h.submit('team-hierarchy-form',{personId:'ent-demo-manager',position:'In charge',reportsTo:'ent-demo-hand',notes:'Invalid loop'});
+  assert.equal(h.read().productionOS.teamHierarchy[e]['ent-demo-manager'].reportsTo,'');
+  h.submit('team-hierarchy-form',{personId:'ent-demo-hand',position:'Helper',reportsTo:'ent-demo-hand',notes:''});
+  assert.equal(h.read().productionOS.teamHierarchy[e]['ent-demo-hand'].reportsTo,'ent-demo-tech');
+  h.submit('team-hierarchy-form',{personId:'ent-demo-hand',position:'Team lead',reportsTo:'ent-demo-manager',notes:'Coordinates outdoor load-in'});
+  const entry=h.read().productionOS.teamHierarchy[e]['ent-demo-hand'];
+  assert.equal(entry.position,'Team lead');
+  assert.equal(entry.reportsTo,'ent-demo-manager');
+  assert.equal(entry.notes,'Coordinates outdoor load-in');
+});
+
+test('removing the last role for a middle supervisor reparents their direct reports',()=>{
+  const h=harness(),e='ev-abbotsford-two-stage-demo';
+  const original=h.read().productionOS.entities.length;
+  h.navigate('#/production');
+  h.click('remove-assignment','as-demo1');
+  const d=h.read();
+  assert.equal(d.productionOS.teamHierarchy[e]['ent-demo-tech'],undefined);
+  assert.equal(d.productionOS.teamHierarchy[e]['ent-demo-hand'].reportsTo,'ent-demo-manager');
+  assert.equal(d.productionOS.entities.length,original);
+  assert.ok(d.productionOS.entities.some(x=>x.id==='ent-demo-tech'));
+});
+
+test('crew sees reporting lead and entity profiles navigate supervisory relationships',()=>{
+  const h=harness();
+  h.navigate('#/crew');
+  h.change({id:'crew-person-picker',dataset:{},value:'ent-demo-hand'});
+  assert.match(h.ui.innerHTML,/Reports to Alex/);
+  h.navigate('#/entities');
+  h.click('profile','ent-demo-hand');
+  assert.match(h.ui.innerHTML,/Reporting structure by event/);
+  assert.match(h.ui.innerHTML,/Reports to Alex/);
+  h.click('profile','ent-demo-tech');
+  assert.match(h.ui.innerHTML,/Direct reports/);
+  assert.match(h.ui.innerHTML,/Sam · demonstration stagehand/);
+});
+
+test('reporting structure is scoped to each event',()=>{
+  const memory=new Map(),first=harness(memory),e='ev-abbotsford-two-stage-demo',copy='ev-second-show';
+  const state=first.read(),original=state.productionOS.teamHierarchy[e]['ent-demo-hand'].reportsTo;
+  state.eventJobs.push({...state.eventJobs.find(x=>x.id===e),id:copy,title:'Second show example'});
+  state.productionOS.assignments.push(
+    {id:'another-tech',eventId:copy,entityId:'ent-demo-tech',role:'Stagehand',areaId:'all'},
+    {id:'another-hand',eventId:copy,entityId:'ent-demo-hand',role:'Helper',areaId:'all'}
+  );
+  memory.set('phaenomenon-demo-v1',JSON.stringify(state));
+  const second=harness(memory);
+  second.change({id:'event-picker',dataset:{},value:copy});
+  second.navigate('#/production');
+  second.submit('team-hierarchy-form',{personId:'ent-demo-hand',position:'In charge',reportsTo:'',notes:'Leads the other event'});
+  const updated=second.read().productionOS.teamHierarchy;
+  assert.equal(updated[copy]['ent-demo-hand'].position,'In charge');
+  assert.equal(updated[e]['ent-demo-hand'].reportsTo,original);
+});
