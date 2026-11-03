@@ -61,7 +61,11 @@
   function current(){return events().find(e=>e.id===ui.eventId)||events()[0];}
   function plan(e){return (db.venuePlans||{})[e?.id]||{venueId:e?.venueId||'',items:[],runs:[]};}
   function venue(e){const p=plan(e);return venues().find(v=>v.id===(p.venueId||e?.venueId))||venues().find(v=>v.name===e?.venue)||null;}
-  function areas(e,snapshot){const v=snapshot?.venue||venue(e);return Array.isArray(v?.spaces)&&v.spaces.length?v.spaces:[{id:'main',name:'Main area',x:0,y:0,width:v?.width||15,length:v?.length||12,height:v?.height||4,kind:v?.geometry?.kind||'indoor'}];}
+  function areas(e,snapshot){
+    const v=snapshot?.venue||venue(e),all=Array.isArray(v?.spaces)&&v.spaces.length?v.spaces:[{id:'main',name:'Main space',x:0,y:0,width:v?.width||15,length:v?.length||12,height:v?.height||4,kind:v?.geometry?.kind||'indoor'}];
+    const ids=snapshot?.spaceIds||e?.spaceIds;
+    return Array.isArray(ids)?all.filter(space=>ids.includes(space.id)):all;
+  }
   function areaName(e,id,s){return areas(e,s).find(a=>a.id===(id||'main'))?.name||'General site';}
   function groupArea(e,obj,s){return obj.areaId||areas(e,s)[0]?.id||'main';}
   function entity(id){return org().entities.find(x=>x.id===id);}
@@ -125,6 +129,7 @@
   }
   function ensure(){
     demoSeed();
+    window.PhaenomenonVenueWorkflow?.ensureAll(db);
     if(!db.productionOS||typeof db.productionOS!=='object')db.productionOS={};
     const o=org();o.version=1;
     for(const [key] of [['entities'],['relationships'],['assignments'],['issues']])if(!Array.isArray(o[key]))o[key]=[];
@@ -182,12 +187,13 @@
   }
   function snapshot(e){
     if(!e)return null;
-    return {plan:jsonClone(plan(e)),venue:jsonClone(venue(e)||{}),technical:jsonClone((db.technicalPlans||{})[e.id]||{})};
+    return {plan:jsonClone(plan(e)),venue:jsonClone(venue(e)||{}),spaceIds:jsonClone(e.spaceIds||[]),technical:jsonClone((db.technicalPlans||{})[e.id]||{})};
   }
   function signature(s){
     if(!s)return '';
     const p=s.plan||{},v=s.venue||{},t=s.technical||{};
     return JSON.stringify({
+      spaceIds:s.spaceIds||[],
       plan:{venueId:p.venueId,items:p.items||[],runs:p.runs||[]},
       venue:{id:v.id,width:v.width,length:v.length,geometry:v.geometry,spaces:v.spaces,links:v.links},
       technical:{patch:t.patch,power:t.power,deviceSpecs:t.deviceSpecs,circuits:t.circuits,universeCount:t.universeCount}
@@ -319,10 +325,72 @@
     if(!published(e))return '<div class="notice section">There is no published installation pack for this event. Design the event first, then publish instructions. <button class="btn small" data-act="publish">Publish first pack</button></div>';
     return '';
   }
+
+  function venuePickerOptions(venueId){
+    return '<option value="">Select a venue…</option>'+venues().slice().sort((a,b)=>a.name.localeCompare(b.name)).map(x=>
+      '<option value="'+esc(x.id)+'" '+(x.id===venueId?'selected':'')+'>'+esc(x.name)+'</option>').join('')+
+      '<option value="__create__">+ Create new venue…</option>';
+  }
+  function venueSpaceChoices(venueId,selected){
+    const v=window.PhaenomenonVenueWorkflow?.findVenue(db,venueId);
+    if(!v)return '<p class="muted">Choose a saved venue to see its reusable spaces.</p>';
+    const picked=new Set(selected||v.spaces.map(x=>x.id));
+    return '<div class="venue-space-grid">'+v.spaces.map(x=>'<label class="venue-space-option"><input type="checkbox" name="spaceIds" value="'+esc(x.id)+'" '+(picked.has(x.id)?'checked':'')+'><span><strong>'+esc(x.name)+'</strong><small>'+esc(x.geometry?.kind||x.kind||'indoor')+' · '+num(x.width)+' × '+num(x.length)+' m</small></span></label>').join('')+'</div>';
+  }
+  function venueSettings(e){
+    const v=venue(e),selected=Array.isArray(e?.spaceIds)?e.spaceIds:undefined;
+    return '<section class="panel section" id="event-venue-settings"><div class="section-head"><div><h2>Venue &amp; spaces</h2><p class="muted">Choose a saved venue and the specific spaces this event uses. Create a missing space in the existing venue rather than duplicating it.</p></div><a class="btn small" href="index.html#/spaces/'+encodeURIComponent(e.id)+'">Edit venue geometry ↗</a></div>'+
+      (plan(e).needsVenueReview?'<div class="notice section"><strong>Venue changed.</strong> Previously placed equipment has not been repositioned or verified for the new venue. Open the 3D layout to review coordinates and physical routing before publishing another crew pack. <button class="btn small" data-act="venue-layout-reviewed">Mark layout reviewed (planning only)</button></div>':'')+
+      '<form id="event-venue-form" class="stack"><div class="form-grid"><label>Venue<select name="venueId" id="production-venue-select" data-current-venue="'+esc(v?.id||'')+'" required>'+venuePickerOptions(v?.id)+'</select></label>'+
+      '<div class="row" style="align-self:end"><button type="button" class="btn" data-act="venue-create">+ Create venue</button>'+
+      '<button type="button" class="btn" data-act="space-create" '+(!v?'disabled':'')+'>+ Create missing space</button></div></div>'+
+      '<div><label>Spaces used by this event</label><div id="production-space-choices">'+venueSpaceChoices(v?.id,selected)+'</div></div>'+
+      '<div class="row"><button class="btn primary" type="submit">Save venue &amp; spaces</button><span class="form-note">Spaces belong to the venue library; selections belong to this event.</span></div></form></section>';
+  }
+  let quickVenueOpen=false;
+  function productionQuickClose(){document.querySelector('[data-venue-quick-overlay]')?.remove();quickVenueOpen=false;}
+  function productionQuickOpen(kind){
+    productionQuickClose();
+    const venueId=document.getElementById('production-venue-select')?.value||venue(current())?.id||'';
+    if(kind==='space'&&!window.PhaenomenonVenueWorkflow?.findVenue(db,venueId)){notice('Choose an existing venue to add a space.');return;}
+    const label=kind==='venue'?'Create a reusable venue':'Add space to '+window.PhaenomenonVenueWorkflow.findVenue(db,venueId).name;
+    const title='<div><h2>'+esc(label)+'</h2><p class="venue-hint">Venue geometry is reusable. Dimensions are placeholders until surveyed.</p></div>';
+    const html='<div class="venue-quick-backdrop" data-venue-quick-overlay><section class="venue-quick-dialog" role="dialog" aria-modal="true" aria-label="'+esc(label)+'">'+
+      '<div class="venue-picker-top">'+title+'<button type="button" class="btn" data-act="venue-quick-close" aria-label="Close">×</button></div>'+
+      '<form id="production-venue-quick-form" class="venue-quick-form">'+
+      '<input name="mode" type="hidden" value="'+kind+'"><input name="venueId" type="hidden" value="'+esc(venueId)+'">'+
+      (kind==='venue'?'<label>Venue name<input name="venueName" class="input" required maxlength="120" placeholder="e.g. Abbotsford Convent"></label>':'<p class="venue-hint">Adds a new space to the selected existing venue. It will remain available for future events.</p>')+
+      '<label>Space name<input name="spaceName" class="input" required maxlength="120" value="'+(kind==='venue'?'Main space':'')+'" placeholder="e.g. Courtyard"></label>'+
+      '<div class="form-grid"><label>Width (m)<input name="width" class="input" type="number" min="2" max="200" step=".5" value="16" required></label>'+
+      '<label>Length (m)<input name="length" class="input" type="number" min="2" max="200" step=".5" value="12" required></label>'+
+      '<label>Height (m)<input name="height" class="input" type="number" min=".5" max="40" step=".5" value="4" required></label>'+
+      '<label>Environment<select name="kind"><option value="indoor">Indoor</option><option value="outdoor">Outdoor</option></select></label></div>'+
+      '<div class="venue-quick-actions"><button type="button" class="btn" data-act="venue-quick-close">Cancel</button><button class="btn primary" type="submit">'+(kind==='venue'?'Create venue':'Add space')+'</button></div></form></section></div>';
+    document.body.insertAdjacentHTML('beforeend',html);
+    quickVenueOpen=true;
+    document.querySelector('#production-venue-quick-form input[name="'+(kind==='venue'?'venueName':'spaceName')+'"]')?.focus();
+  }
+  function renderVenuePicker(venueId,extra){
+    const select=document.getElementById('production-venue-select');
+    if(!select)return;
+    const old=select.dataset.currentVenue||'';
+    const selected=old===venueId?[...document.querySelectorAll('#production-space-choices input[name="spaceIds"]:checked')].map(x=>x.value):undefined;
+    select.innerHTML=venuePickerOptions(venueId);
+    select.value=venueId;
+    select.dataset.currentVenue=venueId;
+    const v=window.PhaenomenonVenueWorkflow?.findVenue(db,venueId);
+    const ids=selected||v?.spaces.map(x=>x.id)||[];
+    if(extra&&!ids.includes(extra))ids.push(extra);
+    const node=document.getElementById('production-space-choices');
+    if(node)node.innerHTML=venueSpaceChoices(venueId,ids);
+    const btn=document.querySelector('#event-venue-form [data-act="space-create"]');
+    if(btn)btn.disabled=!v;
+  }
+
   function home(e,c){
     if(!e)return '<div class="empty">Create an event in the original workspace to begin.</div>';
     return hero('YOUR EVENT WORKSPACE',e.title, date(e.date)+' · '+(venue(e)?.name||e.venue||'Venue not set'),pill(e.status||'Enquiry')+' '+pill('Crew pack r'+(published(e)?.revision||0)))+
-      changeNotice(e)+
+      changeNotice(e)+venueSettings(e)+
       '<div class="stats">'+stat('Areas',areas(e).length,'Spaces in venue')+stat('Placed equipment',(plan(e).items||[]).length,'All equipment and structures')+
       stat('Installation',c.installed+' / '+c.all,'Tasks marked installed')+stat('Open issues',c.issues,'Awaiting resolution')+'</div>'+
       '<div class="section-head"><h2>What are you working on?</h2><span class="muted">Choose a task, not an expertise level</span></div>'+
@@ -777,6 +845,9 @@
     const el=ev.target.closest('[data-act]');if(!el||!$.contains(el))return;
     const action=el.dataset.act,id=el.dataset.id,e=current(),p=published(e);
     ev.preventDefault();
+    if(action==='venue-create'){productionQuickOpen('venue');return;}
+    if(action==='space-create'){productionQuickOpen('space');return;}
+    if(action==='venue-layout-reviewed'){plan(e).needsVenueReview=false;if(store())notice('Venue layout review marker recorded. Technical safety checks remain separate.');return;}
     if(action==='print'){window.print();return;}
     if(action==='export-backup'){
       try{
@@ -844,6 +915,11 @@
   document.addEventListener('change',ev=>{
     const el=ev.target;if(!$.contains(el))return;
     if(el.id==='role-picker'){ui.role=el.value;store();location.hash='#/'+({lead:'home',tech:'technical',crew:'crew',manager:'production'}[ui.role]||'home');route();}
+    if(el.id==='production-venue-select'){
+      if(el.value==='__create__'){el.value=el.dataset.currentVenue||'';productionQuickOpen('venue');}
+      else renderVenuePicker(el.value);
+      return;
+    }
     if(el.id==='event-picker'){ui.eventId=el.value;ui.area='all';ui.crewPerson='all';store();render();}
     if(el.id==='area-picker'){ui.area=el.value;store();render();}
     if(el.id==='crew-person-picker'){ui.crewPerson=el.value;store();render();}
@@ -874,8 +950,21 @@
   });
   document.addEventListener('submit',ev=>{
     const f=ev.target;if(!$.contains(f))return;
-    if(!['assign-form','cue-form','look-form','entity-form','entity-note-form','relation-form','team-hierarchy-form','operations-form'].includes(f.id))return;
+    if(!['assign-form','cue-form','look-form','entity-form','entity-note-form','relation-form','team-hierarchy-form','operations-form','event-venue-form'].includes(f.id))return;
     ev.preventDefault();const d=new FormData(f),val=k=>clean(d.get(k)),e=current(),o=org();
+    if(f.id==='event-venue-form'){
+      const v=window.PhaenomenonVenueWorkflow?.findVenue(db,val('venueId'));
+      const checked=(d.getAll?d.getAll('spaceIds'):[]).map(String);
+      if(!v||!checked.length){notice('Select a venue and at least one space.');return;}
+      const p=plan(e),different=!!((e.venueId||p.venueId)!==v.id);
+      if(different&&p.items?.length&&!confirm('This event already has equipment placed in another venue. Keep its positions marked for review until you inspect them in the 3D planner?'))return;
+      const res=window.PhaenomenonVenueWorkflow.updateEvent(db,e.id,v.id,checked);
+      if(res.error){notice(res.error);return;}
+      ui.area='all';
+      ensure();
+      if(store())notice(res.needsReview?'Venue changed. Review all placed equipment before publishing.':'Venue and selected spaces saved to this event.');
+      return;
+    }
     if(f.id==='operations-form'){
       const startDate=val('loadInDate'),endDate=val('packOutDate'),st=val('loadInTime'),et=val('packOutTime');
       const validDate=x=>/^\d{4}-\d{2}-\d{2}$/.test(x)&&Number.isFinite(new Date(x+'T12:00:00').getTime());
