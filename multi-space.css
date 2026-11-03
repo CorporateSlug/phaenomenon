@@ -68,3 +68,5 @@
 #space-planner-root .tech-area-head span{font-size:10px;color:#5b8a72;background:#e6f3e9;padding:4px 7px;border-radius:20px}
 #space-planner-root .tech-area-card p{font-size:10px;color:#7f9586;margin:7px 0}
 #space-planner-root .tech-area-card ul{margin:7px 0 0;padding-left:17px;color:#456353;font-size:11px;line-height:1.7}
+
+#space-planner-root .sp-venue-pane .sp-dimensions[hidden],#space-planner-root .sp-venue-pane .sp-geometry-panel[hidden]{display:none!important}
