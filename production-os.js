@@ -38,11 +38,11 @@
   function groupArea(e,obj,s){return obj.areaId||areas(e,s)[0]?.id||'main';}
   function entity(id){return org().entities.find(x=>x.id===id);}
   function aname(id){return entity(id)?.name||'Unknown entity';}
-  function entityKind(k){return ['Person','Organisation','Venue','Space'].includes(k)?k:'Organisation';}
+  function entityKind(k){return ['Person','Organisation','Venue','Space','Event'].includes(k)?k:'Organisation';}
   function savedByKind(kind,legacy,id,name,extra){
     const existing=org().entities.find(x=>x.legacyType===kind&&x.legacyId===id);
     if(existing){if(!existing.customName)existing.name=name;return existing;}
-    const row=Object.assign({id:'ent-'+kind+'-'+id,kind:kind==='client'?'Organisation':'Venue',name,aliases:[],notes:'',legacyType:kind,legacyId:id,customName:false,demo:!!extra?.demo},extra||{});
+    const row=Object.assign({id:'ent-'+kind+'-'+id,kind:kind==='client'?'Organisation':kind==='venue'?'Venue':kind==='event'?'Event':kind==='space'?'Space':kind,name,aliases:[],notes:'',legacyType:kind,legacyId:id,customName:false,demo:!!extra?.demo},extra||{});
     org().entities.push(row);return row;
   }
   function demoSeed(){
@@ -92,7 +92,21 @@
     for(const [key] of [['entities'],['relationships'],['assignments'],['issues']])if(!Array.isArray(o[key]))o[key]=[];
     for(const key of ['published','show'])if(!o[key]||typeof o[key]!=='object'||Array.isArray(o[key]))o[key]={};
     db.clients.forEach(x=>savedByKind('client','client',x.id,x.name,{demo:!!x.demo||x.name.toLowerCase().includes('demo')}));
-    db.venues.forEach(x=>savedByKind('venue','venue',x.id,x.name,{demo:!!x.demo}));
+    db.venues.forEach(x=>{
+      const parent=savedByKind('venue','venue',x.id,x.name,{demo:!!x.demo});
+      (x.spaces||[]).forEach(sp=>{
+        const child=savedByKind('space','space',x.id+'-'+sp.id,sp.name,{legacyVenueId:x.id,legacySpaceId:sp.id,demo:!!x.demo});
+        const linkId='rel-location-'+x.id+'-'+sp.id;
+        if(!o.relationships.some(r=>r.id===linkId))o.relationships.push({id:linkId,from:child.id,to:parent.id,type:'Located within',notes:'Derived from reusable venue geometry',system:true});
+      });
+    });
+    db.eventJobs.forEach(x=>{
+      const eventRecord=savedByKind('event','event',x.id,x.title,{demo:!!x.demo});
+      const location=venue(x);
+      const venueEntity=location&&o.entities.find(z=>z.legacyType==='venue'&&z.legacyId===location.id);
+      const linkId='rel-event-location-'+x.id;
+      if(venueEntity&&!o.relationships.some(r=>r.id===linkId))o.relationships.push({id:linkId,from:eventRecord.id,to:venueEntity.id,type:'Takes place at',notes:'Derived from event booking',system:true});
+    });
     const example=org().entities.find(x=>x.id==='ent-demo-supplier');
     if(!example){org().entities.push(
       {id:'ent-demo-supplier',kind:'Organisation',name:'Sample Production Supplier',aliases:[],notes:'Fictional demonstration supplier.',demo:true},
@@ -136,7 +150,7 @@
       if(x.kind==='stage')return;
       const an=areaName(e,groupArea(e,x,snap),snap);
       const detail='Position at X '+num(x.x).toFixed(1)+' m, Y '+num(x.y).toFixed(1)+' m, height '+num(x.z).toFixed(1)+' m. Confirm actual site reference and safe mounting.';
-      list.push(specTask('place',x.id,'Position '+x.name,groupArea(e,x,snap),detail,[x.id,x.name,x.kind,x.areaId,x.x,x.y,x.z,x.fixtureType,x.rotation]));
+      list.push(specTask('place',x.id,'Position '+x.name,groupArea(e,x,snap),detail,[x.id,x.name,x.kind,x.areaId,x.x,x.y,x.z,x.fixtureType,x.rotation,areas(e,snap).find(a=>a.id===groupArea(e,x,snap)),snap.technical?.patch?.[x.id]]));
     });
     (p.runs||[]).forEach(r=>{
       const from=byId[r.from],to=byId[r.to];
@@ -146,7 +160,7 @@
       const detail=from.name+' → '+to.name+' · '+String(r.type||'Connection').toUpperCase()+
         (r.connector?' · '+r.connector:'')+(r.cableLength?' · nominal '+r.cableLength+' m cable':' · cable length unconfirmed')+
         '. Check route, connector, length and protection on site.';
-      list.push(specTask('connect',r.id,'Connect '+name,a,detail,[r.id,r.cableId,r.type,r.from,r.to,r.cableLength,r.connector,r.slack,r.linkType,r.waypoints]));
+      list.push(specTask('connect',r.id,'Connect '+name,a,detail,[r.id,r.cableId,r.type,r.from,r.to,r.cableLength,r.connector,r.slack,r.linkType,r.waypoints,snap.venue?.links,snap.technical?.patch?.[r.from],snap.technical?.patch?.[r.to]]));
     });
     return list;
   }
@@ -195,7 +209,7 @@
   function pill(text,type){return '<span class="pill '+(type||'')+'">'+esc(text)+'</span>';}
   function stat(label,value,sub){return '<div class="stat"><small>'+esc(label)+'</small><strong>'+esc(value)+'</strong><small>'+esc(sub)+'</small></div>';}
   function changeNotice(e){
-    if(isChanged(e))return '<div class="notice section"><strong>Unpublished design changes detected.</strong> The published crew pack remains on revision '+published(e).revision+'. Review the design and publish a new revision before relying on changed instructions. <button class="btn small" data-act="publish">Review &amp; publish revision</button></div>';
+    if(isChanged(e))return '<div class="notice section"><strong>Unpublished design changes detected.</strong> The published crew pack remains on revision '+published(e).revision+'. Crews can continue using that published revision; review the pending changes before issuing updated instructions. <button class="btn small" data-act="publish">Review &amp; publish revision</button></div>';
     if(!published(e))return '<div class="notice section">There is no published installation pack for this event. Design the event first, then publish instructions. <button class="btn small" data-act="publish">Publish first pack</button></div>';
     return '';
   }
@@ -274,7 +288,7 @@
       const buttons=opt.verify?
         (t.state==='installed'?'<button class="btn small" data-act="verify" data-id="'+esc(t.id)+'">Mark verified</button>':pill('Verified','good')):
         '<button class="btn small" data-act="report" data-id="'+esc(t.id)+'">Report issue</button>';
-      return '<div class="task-row"><input class="task-check" type="checkbox" data-act="installed" data-id="'+esc(t.id)+'" aria-label="Mark installed: '+esc(t.title)+'" '+(t.state!=='pending'?'checked':'')+(opt.verify||locked?' disabled':'')+'>'+
+      return '<div class="task-row"><input class="task-check" type="checkbox" data-act="installed" data-id="'+esc(t.id)+'" aria-label="Mark installed: '+esc(t.title)+'" '+(t.state!=='pending'?'checked':'')+(opt.verify?' disabled':'')+'>'+
         '<div class="task-main"><strong>'+esc(t.title)+'</strong> '+(t.state==='verified'?pill('Verified','good'):t.state==='installed'?pill('Installed','good'):pill('To do'))+(bad?' '+pill('Issue open','bad'):'')+
         '<p>'+esc(t.details)+'</p><div class="form-note">'+esc(areaName(e,t.areaId,pub.snapshot))+' · '+esc(t.kind)+' · revision '+pub.revision+'</div></div>'+
         '<div class="task-actions">'+buttons+'</div></div>';
@@ -414,7 +428,7 @@
     }
     if(action==='select-event'){ui.eventId=id;ui.area='all';store();location.hash='#/home';render();return;}
     if(action==='publish'){if(!plan(e).items?.length){notice('Add equipment in the 3D planner before publishing.');return;}publish(e.id,false);return;}
-    if(action==='installed'){const t=p?.tasks.find(x=>x.id===id);if(!t||isChanged(e))return;t.state=t.state==='pending'?'installed':'pending';t.installedAt=t.state==='installed'?now():null;t.verifiedAt=null;store();render();return;}
+    if(action==='installed'){const t=p?.tasks.find(x=>x.id===id);if(!t)return;t.state=t.state==='pending'?'installed':'pending';t.installedAt=t.state==='installed'?now():null;t.verifiedAt=null;store();render();return;}
     if(action==='verify'){const t=p?.tasks.find(x=>x.id===id);if(!t||t.state!=='installed')return;t.state='verified';t.verifiedAt=now();store();notice('Task recorded as verified. This is not a safety certification.');return;}
     if(action==='report'){
       const note=prompt('Describe the issue or discrepancy (no sensitive information):');if(!clean(note))return;
