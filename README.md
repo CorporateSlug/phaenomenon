@@ -1,6 +1,34 @@
 # Phaenomenon
 
 
+## New: Guided Event Builder, equipment links and local recovery
+
+**Start here:** [Event Builder](production.html#/builder) — the central place to create an event and move through its stages, without duplicating the existing planners or requiring a rigid wizard.
+
+The guided flow has seven independent steps:
+
+1. **Event details** — name, date, client, type, status and basic brief. Create a new event or client in Production and edit details inline.
+2. **Venue & spaces** — choose reusable venues and spaces or create missing ones inside the current workflow.
+3. **3D design** — open the existing spatial planner to position equipment and model the event.
+4. **Equipment kit** — review and allocate stock; reconcile quantities of catalogue-linked objects with the event kit, without deleting other assignments. Link scene objects to existing stock, create clearly empty placeholders or intentionally exclude non-hire features.
+5. **Technical connections** — retain existing DMX, power, network, audio and video planners.
+6. **People & responsibilities** — assign event roles, reporting lines and installation tasks.
+7. **Review & publish** — review changes and issue revisioned crew packs without conflating planning completion with technical approval.
+
+The steps are **non-blocking**: jump to any stage, change a draft, return later and use the suggested next step. Event details, venue setup, equipment logistics and publish review can open inside the Builder. Specialist 3D and technical editors remain separate but connected.
+
+**Browser persistence and recovery:** Both workspaces save to the same browser-local data model. The app now offers a visible local save indicator, limited best-effort browser recovery points, JSON export and validated JSON restore. These recovery points are subject to browser storage quotas and can disappear if browser data is cleared. They are **not central backups and do not synchronise Aaron’s computer with yours**. Export important work as JSON.
+
+**Future shared backend:** [Proposed database and access model](supabase/README.md) includes a PostgreSQL/Supabase migration with multi-workspace membership, reusable Venue/Space records and default-restricted access policies. **The migration is not deployed or connected to the public demo.** Real user accounts, secure invitations, audited publication and cross-device synchronisation still require a configured backend and database-level permission tests.
+
+The integrated regression suite uses Node 22 and the built-in test runner:
+
+    node --test tests/*.test.mjs
+
+The web prototype remains for demonstration and planning, **not** live technical safety assessment, verified stock reservation, signed compliance approval or production customer data.
+
+---
+
 ## Simplified navigation and focused workspaces (November 2026)
 
 The classic Studio and Production views now use the same task-based information architecture. The main menus keep **Event workspace**, **Events** and **Studio overview** immediately accessible; specialised links sit in expandable groups:
