@@ -39,6 +39,7 @@
     download:'<path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/>',upload:'<path d="M12 16V4m-5 5 5-5 5 5M4 17v4h16v-4"/>',
     reset:'<path d="M3 11a9 9 0 1 1 2 6m-2 3v-9h9"/>',file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Zm0 0v6h6M8 13h8M8 17h8"/>',
     layers:'<path d="m12 2 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 17l9 5 9-5"/>',
+    box:'<path d="m12 2 9 5-9 5-9-5 9-5ZM3 7v10l9 5 9-5V7M12 12v10"/>',
     pin:'<path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
     menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',sliders:'<path d="M4 7h8m4 0h4M4 17h3m4 0h9"/><circle cx="14" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
     spark:'<path d="m12 2 1.8 7.2L21 11l-7.2 1.8L12 20l-1.8-7.2L3 11l7.2-1.8L12 2ZM19 18l1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2Z"/>',
@@ -561,12 +562,18 @@
   window.addEventListener('afterprint',()=>{if(ui.printInvoiceId){ui.printInvoiceId=null;render();}});
   function exportData(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`phaenomenon-demo-${iso(new Date())}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);flash('Workspace exported as JSON');}
   $import.addEventListener('change',async()=>{const f=$import.files?.[0];if(!f)return;try{if(f.size>5_000_000)throw Error('File is too large.');const x=JSON.parse(await f.text());const report=window.PhaenomenonWorkspaceSafety?.inspect(x);if(!valid(x)||report&&!report.valid)throw Error(report?.error||'This is not a compatible Phaenomenon export.');if(!confirm('Restore '+(x.eventJobs||[]).length+' events, '+(x.venues||[]).length+' venues and '+(x.clients||[]).length+' clients from this file?\nThis replaces the current workspace stored in this browser.'+(report?.warnings?.length?'\n\nWarnings:\n'+report.warnings.slice(0,3).join('\n'):'')))return;db=x;assureEventData(db);window.PhaenomenonSpacePlanner?.ensure(db);if(!save(true))throw Error('The browser could not save the imported workspace.');ui.modal=null;ui.projectId=null;ui.search='';ui.fixtureSearch='';location.hash='#/overview';renderRoute();flash('Workspace imported');}catch(err){alert('Import failed: '+err.message);}finally{$import.value='';}});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('studio-sidebar')?.classList?.contains('is-expanded')){document.getElementById('studio-sidebar').classList.remove('is-expanded');document.body?.classList?.remove('ph-studio-menu-open');document.querySelector('.studio-mobile-more')?.focus();}else if(document.querySelector('[data-venue-quick-overlay]'))closeVenueQuick();else if(ui.modal){ui.modal=null;render();}else if(ui.projectId)closeProject();}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('studio-sidebar')?.classList?.contains('is-expanded')){document.getElementById('studio-sidebar').classList.remove('is-expanded');document.body?.classList?.remove('ph-studio-menu-open');document.querySelector('.studio-mobile-more')?.setAttribute('aria-expanded','false');document.querySelector('.studio-mobile-more')?.focus();}else if(document.querySelector('[data-venue-quick-overlay]'))closeVenueQuick();else if(ui.modal){ui.modal=null;render();}else if(ui.projectId)closeProject();}});
   // Other tabs and the Production workspace share this browser's data, not a backend.
   // Refresh on storage/focus so a stale tab does not overwrite a newer event model.
   window.addEventListener('storage',event=>{if(event.key===STORE_KEY)refreshFromStorage();});
   window.addEventListener('focus',refreshFromStorage);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshFromStorage();});
+  document.addEventListener('click',event=>{
+    const link=event.target?.closest?.('#studio-navigation a[href]');
+    if(!link)return;
+    document.getElementById('studio-sidebar')?.classList?.remove('is-expanded');
+    document.body?.classList?.remove('ph-studio-menu-open');
+  });
   window.addEventListener('hashchange',renderRoute);
   if(!location.hash)location.hash='#/overview';
   renderRoute();
