@@ -374,3 +374,15 @@
   .production-mobile-tabs,.mobile-nav-backdrop,.rail-quick-new{display:none!important}
   body.ph-mobile-menu-open{overflow:visible}
 }
+
+
+@media(max-width:840px){
+  .header{padding-top:max(9px,env(safe-area-inset-top,0px))}
+  .rail{padding-top:calc(17px + env(safe-area-inset-top,0px))}
+  .mobile-local-note{
+    display:block;margin:0;padding:9px 10px;border-radius:8px;
+    background:#1d3433;color:#b8dbd3;font-size:11px;line-height:1.5;
+  }
+  body:has(.venue-quick-backdrop){overflow:hidden}
+}
+@media(min-width:841px){.mobile-local-note{display:none}}
