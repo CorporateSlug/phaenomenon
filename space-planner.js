@@ -11,14 +11,14 @@
   const uid = prefix => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,7)}`;
   const r1 = x => Math.round(x*10)/10;
   const palette = {
-    light:'#eeb96b', audio:'#a58ce0', power:'#e29a5c', network:'#62c4cf', control:'#c1a6ec', rigging:'#91a8b3', stage:'#728d89', other:'#cad2d0'
+    light:'#eeb96b', audio:'#a58ce0', video:'#ef94bb', power:'#e29a5c', network:'#62c4cf', control:'#c1a6ec', rigging:'#91a8b3', stage:'#728d89', other:'#cad2d0'
   };
   const TYPES = [
-    ['light','Lighting fixture'],['audio','Audio / speaker'],['power','Power / distribution'],
+    ['light','Lighting fixture'],['audio','Audio / speaker'],['video','Video / screen / projector'],['power','Power / distribution'],
     ['network','Network / data'],['control','Control desk'],['rigging','Rigging / truss'],
     ['stage','Stage / structure'],['other','Other equipment']
   ];
-  const CABLES = {power:{label:'Power',color:'#e4a568'},network:{label:'Ethernet / network',color:'#67cfd7'},dmx:{label:'DMX / control',color:'#bba3ff'},audio:{label:'Audio',color:'#8bb9ef'}};
+  const CABLES = {power:{label:'Power',color:'#e4a568'},network:{label:'Ethernet / network',color:'#67cfd7'},dmx:{label:'DMX / control',color:'#bba3ff'},audio:{label:'Audio',color:'#8bb9ef'},video:{label:'Video / SDI / HDMI',color:'#f7a0ce'}};
   const defaults = ()=>[
     {id:'ven-harbour',name:'Harbour Hall',width:20,length:14,height:5.5,notes:'Fictional repeat venue. Dimensions are placeholders.'},
     {id:'ven-arts',name:'Arts Warehouse',width:25,length:17,height:7,notes:'Fictional multi-purpose venue.'},
@@ -422,7 +422,7 @@
     }
     setView(mode){this.mode=mode;for(const [id,active] of [['sp-view-three',mode==='three'],['sp-view-top',mode==='top'],['sp-view-perspective',mode==='perspective']]){const button=this.root.querySelector('#'+id);if(!button)continue;button.classList.toggle('is-active',active);button.setAttribute('aria-pressed',String(active));}if(this.threeView)this.threeView.setMode(mode);else this.draw();}
     selectedItem(){return this.plan.items.find(x=>x.id===this.selected);}
-    kindForGear(g){const s=(g?.category||'').toLowerCase();return s.includes('light')?'light':s.includes('audio')?'audio':s.includes('power')?'power':s.includes('control')?'control':s.includes('rig')?'rigging':s.includes('network')?'network':'other';}
+    kindForGear(g){const s=(g?.category||'').toLowerCase();return s.includes('video')||s.includes('projection')||s.includes('screen')||s.includes('display')||s.includes('media server')?'video':s.includes('light')?'light':s.includes('audio')?'audio':s.includes('power')?'power':s.includes('control')?'control':s.includes('rig')?'rigging':s.includes('network')?'network':'other';}
     add(kind,fixtureType=null){
       const F=window.PhaenomenonFixtures;
       if(kind==='light'&&!fixtureType&&F){F.pick(type=>this.add('light',type));return;}
