@@ -56,3 +56,15 @@
  #space-planner-root .msp-link{align-items:flex-start}
  #space-planner-root .msp-create-link{gap:5px}
 }
+
+/* Room-specific crew preparation summaries in Export. */
+#space-planner-root .tech-areas{margin:18px 0}
+#space-planner-root .tech-areas>h3{font-size:14px;color:#345c49;margin:0 0 5px}
+#space-planner-root .tech-areas>p{color:#819489;font-size:11px;margin:0 0 12px}
+#space-planner-root .tech-area-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+#space-planner-root .tech-area-card{border:1px solid #deebe2;background:#f8fbf8;border-radius:10px;padding:13px}
+#space-planner-root .tech-area-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#space-planner-root .tech-area-head strong{font-size:12px;color:#2f5646}
+#space-planner-root .tech-area-head span{font-size:10px;color:#5b8a72;background:#e6f3e9;padding:4px 7px;border-radius:20px}
+#space-planner-root .tech-area-card p{font-size:10px;color:#7f9586;margin:7px 0}
+#space-planner-root .tech-area-card ul{margin:7px 0 0;padding-left:17px;color:#456353;font-size:11px;line-height:1.7}
