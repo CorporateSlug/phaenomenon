@@ -1,5 +1,11 @@
 # Phaenomenon
 
+## Interface-wide compactness and scrolling
+
+**Standing rule:** Phaenomenon is a dense, task-first workspace. On desktop the header and navigation stay visible while the central workspace scrolls independently. Long equipment, technical and other data tables scroll within bounded panels, with sticky column headings. Long event directories and record collections have internal scrolling rather than indefinitely extending the page. Forms and mobile views retain natural scrolling where appropriate.
+
+The shared implementation is in `compact-workspace.css`; new views should follow the acceptance checklist in [UI principles](UI_PRINCIPLES.md) rather than introducing a new set of oversized cards or long pages.
+
 ## Event switching and event schedule
 
 Open [All events & schedule](production.html#/events) from the Production OS sidebar (or the **All events** button beside the event selector). The event index reads the same saved bookings as the classic studio workspace, with an **Event list** showing upcoming, past and undated events and a **Month calendar** with previous/next month, Today and Selected event controls. Select any event to open its guided builder directly. The **Switch event** selector remains available throughout each event workspace and updates the browser route to the newly selected event, so follow-on navigation remains consistent. The classic [Studio calendar](index.html#/schedule) is linked from the event index for broader diary needs.
