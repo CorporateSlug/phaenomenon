@@ -90,7 +90,7 @@
     if(!db.productionOS||typeof db.productionOS!=='object')db.productionOS={};
     const o=org();o.version=1;
     for(const [key] of [['entities'],['relationships'],['assignments'],['issues']])if(!Array.isArray(o[key]))o[key]=[];
-    for(const key of ['published','show'])if(!o[key]||typeof o[key]!=='object'||Array.isArray(o[key]))o[key]={};
+    for(const key of ['published','show','looks'])if(!o[key]||typeof o[key]!=='object'||Array.isArray(o[key]))o[key]={};
     db.clients.forEach(x=>savedByKind('client','client',x.id,x.name,{demo:!!x.demo||x.name.toLowerCase().includes('demo')}));
     db.venues.forEach(x=>{
       const parent=savedByKind('venue','venue',x.id,x.name,{demo:!!x.demo});
@@ -294,7 +294,25 @@
       '<div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))">'+stat('Equipment',p.items?.length||0,'Positioned objects')+stat('Connections',p.runs?.length||0,'Signal and power lines')+'</div>'+
       '<button class="btn" data-act="publish">Publish current install pack</button><p class="form-note">Publishing snapshots a revision. Only changed tasks are reset.</p></section></div>'+
       '<section class="panel"><h2>Equipment positioned by area</h2><div class="table-scroll"><table><thead><tr><th>Item</th><th>Type</th><th>Area</th><th>Position (m)</th></tr></thead><tbody>'+
-      (p.items||[]).map(i=>'<tr><td>'+esc(i.name)+'</td><td>'+esc(i.kind)+'</td><td>'+esc(areaName(e,groupArea(e,i)))+'</td><td>'+[i.x,i.y,i.z].map(x=>num(x).toFixed(1)).join(', ')+'</td></tr>').join('')+'</tbody></table></div></section>';
+      (p.items||[]).map(i=>'<tr><td>'+esc(i.name)+'</td><td>'+esc(i.kind)+'</td><td>'+esc(areaName(e,groupArea(e,i)))+'</td><td>'+[i.x,i.y,i.z].map(x=>num(x).toFixed(1)).join(', ')+'</td></tr>').join('')+'</tbody></table></div></section>'+showDesign(e);
+  }
+
+  function showDesign(e){
+    const looks=org().looks[e.id]||[];
+    return '<section class="panel section"><div class="section-head"><div><h2>Creative looks and effects</h2><p class="muted">Plan lighting looks within the same event record.</p></div>'+pill(looks.length+' draft looks')+'</div>'+
+      '<div class="notice info section">Creative-planning metadata only. No live DMX output, TouchDesigner processing, console playback or photometric simulation.</div>'+
+      '<div class="grid cols3 section">'+(looks.length?looks.map(x=>
+        '<div class="area-card"><div class="row between"><span class="pill" style="background:'+esc(/^#[0-9a-f]{6}$/i.test(x.color)?x.color:'#8cddcf')+';color:#131a1d;border-color:transparent">●</span>'+
+        '<button class="btn small danger no-print" data-act="delete-look" data-id="'+esc(x.id)+'">Remove</button></div><h3 style="margin-top:12px">'+esc(x.name)+'</h3>'+
+        '<p class="muted">'+esc(areaName(e,x.areaId))+' · '+esc(x.intensity)+'% · '+esc(x.effect)+'</p><p class="form-note">'+esc(x.notes||'')+'</p></div>'
+      ).join(''):'<div class="empty">No looks defined yet. Add a creative idea below.</div>')+'</div>'+
+      '<form id="look-form" class="form-grid"><label>Look name<input class="input" name="name" required maxlength="100" placeholder="e.g. Sunset wash"></label>'+
+      '<label>Stage / area<select name="areaId">'+areas(e).map(a=>'<option value="'+esc(a.id)+'">'+esc(a.name)+'</option>').join('')+'</select></label>'+
+      '<label>Colour<input class="input" type="color" name="color" value="#8cddcf"></label>'+
+      '<label>Intensity (%)<input class="input" type="number" min="0" max="100" step="1" name="intensity" value="75"></label>'+
+      '<label>Effect concept<select name="effect"><option>Static</option><option>Slow fade</option><option>Pulse</option><option>Chase</option><option>Audio-reactive (concept)</option><option>Other</option></select></label>'+
+      '<label>Notes<input class="input" name="notes" maxlength="220" placeholder="Fixture group / desired mood"></label>'+
+      '<div class="wide"><button class="btn primary" type="submit">+ Add draft look</button></div></form></section>';
   }
   function patchTable(e){
     const p=plan(e),t=db.technicalPlans?.[e.id]||{};
@@ -480,6 +498,13 @@
     if(action==='publish'){if(!plan(e).items?.length){notice('Add equipment in the 3D planner before publishing.');return;}publish(e.id,false);return;}
     if(action==='installed'){const t=p?.tasks.find(x=>x.id===id);if(!t)return;t.state=t.state==='pending'?'installed':'pending';t.installedAt=t.state==='installed'?now():null;t.verifiedAt=null;store();render();return;}
     if(action==='verify'){const t=p?.tasks.find(x=>x.id===id);if(!t||t.state!=='installed')return;t.state='verified';t.verifiedAt=now();store();notice('Task recorded as verified. This is not a safety certification.');return;}
+    if(action==='delete-look'){
+      const looks=org().looks[e.id]||[];
+      const look=looks.find(x=>x.id===id);
+      if(look&&confirm('Remove draft lighting look '+look.name+'? Existing cues will retain their descriptions but lose the look association.')){
+        org().looks[e.id]=looks.filter(x=>x.id!==id);store();render();
+      }return;
+    }
     if(action==='report'){
       const note=prompt('Describe the issue or discrepancy (no sensitive information):');if(!clean(note))return;
       org().issues.push({id:uid('issue'),eventId:e.id,taskId:id||null,note:clean(note).slice(0,900),status:'Open',at:now()});store();notice('Issue recorded for production review.');return;
@@ -503,13 +528,21 @@
   });
   document.addEventListener('submit',ev=>{
     const f=ev.target;if(!$.contains(f))return;
-    if(!['assign-form','cue-form','entity-form','entity-note-form','relation-form'].includes(f.id))return;
+    if(!['assign-form','cue-form','look-form','entity-form','entity-note-form','relation-form'].includes(f.id))return;
     ev.preventDefault();const d=new FormData(f),val=k=>clean(d.get(k)),e=current(),o=org();
     if(f.id==='assign-form'){
       if(!entity(val('entityId')))return;
       const previous=o.assignments.find(x=>x.eventId===e.id&&x.entityId===val('entityId')&&x.role===val('role')&&x.areaId===val('areaId'));
       if(previous){notice('This entity already has that role in the selected area.');return;}
       o.assignments.push({id:uid('assignment'),eventId:e.id,entityId:val('entityId'),role:val('role'),areaId:val('areaId'),responsibility:val('responsibility').slice(0,180)});
+    }
+    if(f.id==='look-form'){
+      if(!val('name'))return;
+      if(!o.looks[e.id])o.looks[e.id]=[];
+      o.looks[e.id].push({id:uid('look'),name:val('name').slice(0,100),areaId:val('areaId'),
+        color:/^#[0-9a-f]{6}$/i.test(val('color'))?val('color'):'#8cddcf',
+        intensity:Math.max(0,Math.min(100,num(val('intensity')))),
+        effect:val('effect').slice(0,80),notes:val('notes').slice(0,220)});
     }
     if(f.id==='cue-form'){
       if(!val('time')||!val('title'))return;
