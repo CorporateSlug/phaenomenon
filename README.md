@@ -85,3 +85,16 @@ This is a single-browser, local-first demo using `localStorage`. **Changes do no
 - Move data to an authenticated, access-controlled backend before real customer use.
 
 See [VISION.md](VISION.md) for a longer product and engineering roadmap.
+## Technical planning (linked event systems)
+
+The 3D Space Planner includes **3D Layout**, **Power + data map**, **DMX patch**, **Power**, **Cable runs**, and **Install pack** views. These are connected to the same placed equipment and physical cable runs. A change to placement recalculates estimated route lengths; a change to a fixture mode/address or circuit assignment updates the technical summaries and print pack.
+
+- **DMX:** Enter real fixture mode footprints, choose universes and assign starts. Automatic addressing only works on enabled devices with entered footprints. Locked addresses are preserved. Collisions and addresses exceeding 512 are flagged. DMX physical topology is defined by actual cable connections, not inferred from address order.
+- **Power:** Enter circuits with user-defined voltage, current limit and warning threshold; assign each device and optionally supply rated current. Values calculated from watts/voltage are rough estimates only and do not account for power factor, protection or installation rules.
+- **Cables:** Connect placed devices by system, set connector, physical allocated length, direct/piggyback designation and optional supplier. The geometry engine proposes length with slack; warnings flag allocated cables shorter than the estimated run and configured length limits. No unstated manufacturer or electrical limits are assumed.
+- **Power + data map:** Separate diagrams show *explicit* connection topology per DMX universe and circuit. Items without connections remain visible; they are not silently daisy-chained.
+- **Install pack:** Review the latest fixture patch, circuit loads and cable schedules. Print a crew-facing document or export a CSV. The checklist is locally stored with the event.
+
+**Privacy:** The public demo is populated with fictional data. Aaron's supplied supplier list, workbook and event plan are not published to this repository. Future import tools should explicitly ask the operator before saving private event or supplier information.
+
+**Safety:** All figures are planning aids. The application does not establish safe loading, electrical compliance, structural/rigger certification or photometric accuracy. Verify the physical equipment specifications, power distribution, cable routing and local regulations with competent personnel before installation.
