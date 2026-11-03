@@ -52,7 +52,7 @@ Phaenomenon uses a short always-visible event core with expandable menus. **Even
 | Event | Event overview; event booking details and selected Venue/Spaces |
 | Plan & design | 3D design; technical connections, including the retained Design → Connect → Review → Export sequence |
 | Deliver the event | Crew installation and production operations |
-| Library & people | Venue/Space library, entities and their event roles, equipment and fixture profiles |
+| Library & people | Venue/Space library, entities and their event roles, equipment and fixture library |
 | Studio management | Projects, opportunities, calendar, clients, invoices and settings |
 
 The classic Studio sidebar offers **Plan & design**, **Equipment library** and **Studio management** submenus; the Production sidebar offers **Plan & design**, **Deliver the event**, **Library & people** and **Studio management**. On mobile the sidebar is a deliberate expandable vertical menu. The role-based starting view is optional and lives inside **Options**; it does not determine user permissions.
