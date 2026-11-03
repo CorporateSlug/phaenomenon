@@ -94,7 +94,7 @@ test('Studio phone event chooser preserves the selected booking while keeping th
   assert.match(markup,/class="mobile-event-switch"/);
   assert.match(markup,/class="mobile-event-options"/);
   assert.match(markup,/class="panel event-side"/);
-  assert.match(markup,/class="event-work"/);
+  assert.match(markup,/class="panel event-work"/);
   assert.match(markup,/data-action="select-booking"/);
 });
 test('Production phone navigation has five primary tasks and retains full navigation',()=>{
