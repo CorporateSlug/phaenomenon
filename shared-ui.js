@@ -52,6 +52,20 @@ document.addEventListener('click',ev=>{
  if(box&&!box.contains(ev.target)&&!field?.contains(ev.target))dismiss();
 });
 document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&box){dismiss();ev.stopPropagation()}});
-const init=()=>{enhance(document);new MutationObserver(rs=>{rs.forEach(r=>r.addedNodes.forEach(n=>{if(n.nodeType===1)enhance(n)}));if(box&&!document.body.contains(field))dismiss()}).observe(document.body,{childList:true,subtree:true})};
+
+function enhanceScrollRegions(root){
+ const selector='.table-scroll,.table-wrap,.tech-table-wrap,.ph-table-region,.ph-bounded-list,.event-index-rows,.event-side';
+ const regions=[...(root.matches?.(selector)?[root]:[]),...(root.querySelectorAll?.(selector)||[])];
+ regions.forEach(region=>{
+  if(region.classList.contains('event-index-rows')&&region.children.length<7)return;
+  if(!region.hasAttribute('tabindex'))region.tabIndex=0;
+  if(!region.hasAttribute('role'))region.setAttribute('role','region');
+  if(!region.hasAttribute('aria-label')){
+   const title=region.closest('section,aside,article')?.querySelector('h2,h3')?.textContent?.trim();
+   region.setAttribute('aria-label',(title||'Records')+' — '+(region.querySelector('table')?'scrollable table':'scrollable list'));
+  }
+ });
+}
+const init=()=>{enhance(document);enhanceScrollRegions(document);new MutationObserver(rs=>{rs.forEach(r=>{r.addedNodes.forEach(n=>{if(n.nodeType===1){enhance(n);enhanceScrollRegions(n)}});if(r.target?.nodeType===1)enhanceScrollRegions(r.target)});if(box&&!document.body.contains(field))dismiss()}).observe(document.body,{childList:true,subtree:true})};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
