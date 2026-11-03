@@ -414,13 +414,13 @@
       changeNotice(e)+changePanel(e)+
       '<div class="stats">'+stat('Team & suppliers',a.length,'Event-specific roles')+stat('Installation',done+'%','Reported installed')+stat('Technical checks',c.verified,'Marked verified')+stat('Open issues',c.issues,'Awaiting response')+'</div>'+
       '<div class="grid cols2 section"><section class="panel"><div class="section-head"><h2>Event team</h2>'+pill(a.length+' assignments')+'</div>'+
-      '<div class="stack">'+(a.length?a.map(x=>'<div class="linkrow"><div><strong><a href="#/entities/'+encodeURIComponent(x.entityId)+'" data-act="profile" data-id="'+esc(x.entityId)+'">'+esc(aname(x.entityId))+'</a></strong><div class="detail">'+esc(x.role)+' · '+esc(x.areaId==='all'?'Entire event':areaName(e,x.areaId))+(x.responsibility?' · '+esc(x.responsibility):'')+'</div></div><button class="btn small danger" data-act="remove-assignment" data-id="'+esc(x.id)+'">Remove</button></div>').join(''):'<div class="empty">No assignments yet.</div>')+'</div>'+
+      '<div class="stack">'+(a.length?a.map(x=>'<div class="linkrow"><div><strong><a href="#/entities/'+encodeURIComponent(x.entityId)+'" data-act="profile" data-id="'+esc(x.entityId)+'">'+esc(aname(x.entityId))+'</a></strong><div class="detail">'+esc(x.role)+' · '+esc(x.areaId==='all'?'Entire event':areaName(e,x.areaId))+(x.responsibility?' · '+esc(x.responsibility):'')+(x.equipmentId&&x.quantity?' · '+esc(x.quantity)+' × '+esc((db.equipment||[]).find(g=>g.id===x.equipmentId)?.name||'Unknown equipment'):'')+'</div></div><button class="btn small danger" data-act="remove-assignment" data-id="'+esc(x.id)+'">Remove</button></div>').join(''):'<div class="empty">No assignments yet.</div>')+'</div>'+
       '<div class="sep"></div><h3>Assign someone to this event</h3><form id="assign-form" class="form-grid">'+
       '<label>Person or organisation<select name="entityId" required>'+org().entities.filter(x=>['Person','Organisation'].includes(x.kind)).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
       '<label>Role<select name="role"><option>Production manager</option><option>Lighting designer</option><option>Lighting technician</option><option>Stagehand</option><option>DJ</option><option>Promoter</option><option>Event organiser</option><option>Audio technician</option><option>Video technician</option><option>Supplier</option><option>Other</option></select></label>'+
       '<label>Responsibility / notes<input class="input" name="responsibility" maxlength="180" placeholder="e.g. Patch outdoor stage"></label>'+
       '<label>Assigned area<select name="areaId"><option value="all">Entire event</option>'+areas(e).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
-      '<div class="wide"><button class="btn primary" type="submit">+ Add assignment</button></div></form></section>'+
+      '<label>Equipment supplied (optional)<select name="equipmentId"><option value="">No equipment linked</option>'+(db.equipment||[]).map(g=>'<option value="'+esc(g.id)+'">'+esc(g.name)+'</option>').join('')+'</select></label><label>Quantity supplied (optional)<input class="input" type="number" name="quantity" min="0" max="9999" step="1" value="0"></label>'+'<div class="wide"><button class="btn primary" type="submit">+ Add assignment</button></div></form></section>'+
       '<section class="panel"><div class="section-head"><h2>Installation readiness</h2>'+pill('Revision '+(p?.revision||'—'))+'</div>'+
       '<div class="row between"><span class="muted">Installed tasks</span><strong>'+c.installed+' / '+c.all+'</strong></div><div class="progress" style="margin:13px 0"><div style="width:'+done+'%"></div></div>'+
       '<div class="row between"><span class="muted">Independently verified</span><strong>'+c.verified+' / '+c.all+'</strong></div>'+
@@ -465,7 +465,7 @@
       '<div class="sep"></div><h3>Notes</h3><form id="entity-note-form"><input type="hidden" name="id" value="'+esc(ent.id)+'"><textarea name="notes" maxlength="4000">'+esc(ent.notes||'')+'</textarea><button class="btn small" type="submit">Save notes</button></form>'+
       (v?'<div class="sep"></div><h3>Spaces</h3><div class="chiprow">'+(v.spaces||[]).map(x=>{const sub=org().entities.find(y=>y.legacyType==='space'&&y.legacyVenueId===v.id&&y.legacySpaceId===x.id);return '<button class="btn small" data-act="profile" data-id="'+esc(sub?.id||'')+'">'+esc(x.name)+'</button>';}).join('')+'</div>':'')+
       '<div class="sep"></div><h3>Events</h3><div class="stack">'+(relatedEvents(ent).map(x=>'<button class="linkrow" data-act="select-event" data-id="'+esc(x.id)+'"><div><strong>'+esc(x.title)+'</strong><div class="detail">'+date(x.date)+'</div></div>→</button>').join('')||'<p class="muted">No linked events.</p>')+'</div>'+
-      '<div class="sep"></div><h3>Event roles</h3><div class="stack">'+(al.map(x=>'<div class="tag">'+esc(x.role)+' · '+esc(events().find(t=>t.id===x.eventId)?.title||'Unknown event')+'</div>').join('')||'<p class="muted">No event assignments.</p>')+'</div>'+
+      '<div class="sep"></div><h3>Event roles</h3><div class="stack">'+(al.map(x=>'<div class="tag">'+esc(x.role)+' · '+esc(events().find(t=>t.id===x.eventId)?.title||'Unknown event')+(x.equipmentId&&x.quantity?' · '+esc(x.quantity)+' × '+esc((db.equipment||[]).find(g=>g.id===x.equipmentId)?.name||'Unknown equipment'):'')+'</div>').join('')||'<p class="muted">No event assignments.</p>')+'</div>'+
       '<div class="sep"></div><h3>Relationships</h3><div class="stack">'+(r.map(x=>'<button class="linkrow" data-act="profile" data-id="'+esc(x.from===ent.id?x.to:x.from)+'"><div><strong>'+esc(aname(x.from===ent.id?x.to:x.from))+'</strong><div class="detail">'+esc(x.type)+(x.notes?' · '+esc(x.notes):'')+'</div></div>→</button>').join('')||'<p class="muted">No relationships recorded.</p>')+'</div>'+
       '<div class="sep"></div><h3>Add relationship</h3><form id="relation-form" class="stack"><input type="hidden" name="from" value="'+esc(ent.id)+'">'+
       '<label>Related person, organisation or venue<select name="to" required>'+org().entities.filter(x=>x.id!==ent.id).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
@@ -548,7 +548,10 @@
       if(!entity(val('entityId')))return;
       const previous=o.assignments.find(x=>x.eventId===e.id&&x.entityId===val('entityId')&&x.role===val('role')&&x.areaId===val('areaId'));
       if(previous){notice('This entity already has that role in the selected area.');return;}
-      o.assignments.push({id:uid('assignment'),eventId:e.id,entityId:val('entityId'),role:val('role'),areaId:val('areaId'),responsibility:val('responsibility').slice(0,180)});
+      const eqId=(db.equipment||[]).some(g=>g.id===val('equipmentId'))?val('equipmentId'):null;
+      const qty=Math.max(0,Math.min(9999,Math.floor(num(val('quantity')))));
+      if(qty&&!eqId){notice('Choose an equipment type for a supplied quantity.');return;}
+      o.assignments.push({id:uid('assignment'),eventId:e.id,entityId:val('entityId'),role:val('role'),areaId:val('areaId'),responsibility:val('responsibility').slice(0,180),equipmentId:eqId,quantity:eqId?qty:0});
     }
     if(f.id==='look-form'){
       if(!val('name'))return;
