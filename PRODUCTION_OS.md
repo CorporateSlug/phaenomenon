@@ -43,6 +43,34 @@ Tests: [tests/venue-workflow.test.mjs](tests/venue-workflow.test.mjs) and [tests
 
 ---
 
+## Guided Event Builder and the current workflow
+
+The **Event Builder** at [production.html#/builder](production.html#/builder) is now the recommended starting point for a new production. It creates draft events in Production, including the option to add a new client. Existing event/client records remain reusable, and existing event links carry the selected event between Studio and Production.
+
+The builder reports seven independently computed planning steps: Event details, Venue & spaces, 3D design, Equipment kit, Technical connections, People & responsibilities, and Review & publish. Steps are not a mandatory checklist and do not certify technical or site safety. A suggested next action is shown, but users can move out of order and return to incomplete work. Selected steps expose forms inline (event brief, reusable Venue/Space configuration, kit allocation/logistics and publication review), while the detailed 3D and technical editors remain specialised workspaces.
+
+The link between physical placement and the catalogue is **explicit rather than automatic**:
+
+- A placed object's equipment ID links it to one reusable catalogue type, but is not an individual serial-numbered stock asset.
+- The Event Builder finds linked quantities that exceed the current event kit; **Bring kit up to placed quantities** adds only missing quantities and preserves unrelated kit entries.
+- Unlinked objects can be associated with an existing catalogue type, converted into zero-stock/zero-hire-rate catalogue placeholders, or marked intentionally outside the hire kit (for example, a fixed site feature).
+- Neither a catalogue link nor a rated-watts field proves real stock availability, safe electrical loading, cabling compatibility, fixture identity or physical support capability.
+- Editing the layout after publishing creates a pending revision, subject to the existing publish-review process.
+
+## Save, JSON restore and browser recovery
+
+The shared [workspace-safety.js](workspace-safety.js) helper provides strict basic JSON-shape validation, duplicate-ID checks, missing-reference warnings and small, best-effort recovery points in a separate browser localStorage key. The two workspaces create recovery points before eligible edits. A recovery point is limited by size, throttled and retained for only a few revisions; it can disappear if storage is full or cleared.
+
+The Production header's **Options** menu now includes Export JSON backup, Import JSON backup and local recovery points. Import requires an explicit confirmation with a summary of contained records. Restoring a local checkpoint also requires confirmation. Both are browser-local operations and are not substitutes for copying a JSON backup off the machine. A visible status indicates that changes were saved **in this browser**, never in a cloud service.
+
+The existing cross-tab stale-write guard remains. Multi-device synchronisation, durable off-device backups, authenticated accounts and per-user change history are **not implemented**.
+
+## Future authenticated collaboration
+
+The proposed database schema and access-control notes live under [supabase/](supabase/README.md). It contains a draft multi-workspace PostgreSQL migration with explicit grants, RLS and a private helper for membership checking, plus a static guardrail test. The schema is not deployed, no browser is connected to it, and **real RLS tests in an isolated database remain mandatory** before using actual accounts or shared customer data.
+
+---
+
 ## Navigation and screen complexity
 
 Phaenomenon uses a short always-visible event core with expandable menus. **Events** are selected once and carried across Studio → Production deep links; workspaces represent tasks, not separate copies of the event. The user-facing structure is:
