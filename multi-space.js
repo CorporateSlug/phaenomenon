@@ -63,8 +63,8 @@ function seed(db){
     {id:'ab-i-power1',cableId:'PWR-I-01',type:'power',from:'ab-i-distro',to:'ab-i-wash1',cableLength:15,slack:15,linkType:'Direct'},
     {id:'ab-i-power2',cableId:'PWR-I-02',type:'power',from:'ab-i-distro',to:'ab-i-wash2',cableLength:20,slack:15,linkType:'Direct'},
     {id:'ab-o-power1',cableId:'PWR-O-01',type:'power',from:'ab-o-distro',to:'ab-o-wash1',cableLength:15,slack:15,linkType:'Direct'},
-    {id:'ab-o-power2',cableId:'PWR-O-02',type:'power',from:'ab-o-distro',to:'ab-o-wash2',cableLength:15,slack:15,linkType:'Direct'},
-    {id:'ab-o-power3',cableId:'PWR-O-03',type:'power',from:'ab-o-distro',to:'ab-o-wash3',cableLength:20,slack:15,linkType:'Direct'}
+    {id:'ab-o-power2',cableId:'PWR-O-02',type:'power',from:'ab-o-distro',to:'ab-o-wash2',cableLength:20,slack:15,linkType:'Direct'},
+    {id:'ab-o-power3',cableId:'PWR-O-03',type:'power',from:'ab-o-distro',to:'ab-o-wash3',cableLength:25,slack:15,linkType:'Direct'}
    ]};
  }
  if(!db.technicalPlans||typeof db.technicalPlans!=='object')db.technicalPlans={};
