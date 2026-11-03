@@ -955,6 +955,28 @@
   }
   function productionPane(key){return '<section id="production-'+key+'" role="tabpanel" aria-label="'+esc(PRODUCTION_TABS.find(x=>x[0]===key)[1])+'" class="production-pane '+(ui.productionTab===key?'active':'')+'">';}
 
+
+  let cueEditorOpen=false;
+  function closeCueEditor(){document.querySelector('[data-cue-editor-overlay]')?.remove();cueEditorOpen=false;}
+  function openCueEditor(e,cue){
+    closeCueEditor();
+    const spots=areas(e),looks=org().looks[e.id]||[];
+    const markup='<div class="venue-quick-backdrop" data-cue-editor-overlay><section class="venue-quick-dialog" role="dialog" aria-modal="true" aria-label="Edit show cue">'+
+      '<header class="venue-picker-top"><div><h2>Edit show cue</h2><p class="venue-hint">This only changes the planning schedule. It does not control live equipment.</p></div>'+
+      '<button type="button" class="btn" data-act="cue-editor-close" aria-label="Close">×</button></header>'+
+      '<form id="cue-editor-form" class="venue-quick-form"><input type="hidden" name="id" value="'+esc(cue.id)+'">'+
+      '<div class="form-grid"><label>Time<input class="input" name="time" type="time" required value="'+esc(cue.time)+'"></label>'+
+      '<label>Space<select name="areaId">'+spots.map(x=>'<option value="'+esc(x.id)+'" '+(cue.areaId===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label></div>'+
+      '<label>Cue or activity<input class="input" name="title" required maxlength="160" value="'+esc(cue.title)+'"></label>'+
+      '<label>Draft lighting look<select name="lookId"><option value="">No linked look</option>'+
+      looks.map(x=>'<option value="'+esc(x.id)+'" '+(cue.lookId===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label>'+
+      '<p class="venue-hint">Editing a completed cue resets its status to Planned, so its updated details can be checked again.</p>'+
+      '<div class="venue-quick-actions"><button class="btn" type="button" data-act="cue-editor-close">Cancel</button>'+
+      '<button class="btn primary" type="submit">Save cue</button></div></form></section></div>';
+    document.body.insertAdjacentHTML('beforeend',markup);cueEditorOpen=true;
+    document.querySelector('#cue-editor-form input[name="title"]')?.focus();
+  }
+
   function production(e,c){
     const p=published(e),a=org().assignments.filter(x=>x.eventId===e.id);
     const done=c.all?Math.round(c.installed/c.all*100):0;
@@ -981,7 +1003,7 @@
       '<section class="panel section"><div class="section-head"><h2>Run of show</h2>'+pill((org().show[e.id]||[]).length+' cues')+'</div>'+
       '<p class="muted">A lightweight production cue list. This does not drive live lighting consoles or control show-critical systems.</p>'+
       '<div class="table-scroll"><table><thead><tr><th>Time</th><th>Cue / activity</th><th>Area</th><th>Draft look</th><th>Status</th><th></th></tr></thead><tbody>'+
-      (org().show[e.id]||[]).slice().sort((a,b)=>a.time.localeCompare(b.time)).map(x=>'<tr><td>'+esc(x.time)+'</td><td>'+esc(x.title)+'</td><td>'+esc(areaName(e,x.areaId))+'</td><td>'+esc((org().looks[e.id]||[]).find(l=>l.id===x.lookId)?.name||'—')+'</td><td>'+pill(x.done?'Done':'Planned',x.done?'good':'')+'</td><td><button class="btn small" data-act="toggle-cue" data-id="'+esc(x.id)+'">'+(x.done?'Reopen':'Mark done')+'</button></td></tr>').join('')+'</tbody></table></div>'+
+      (org().show[e.id]||[]).slice().sort((a,b)=>a.time.localeCompare(b.time)).map(x=>'<tr><td>'+esc(x.time)+'</td><td>'+esc(x.title)+'</td><td>'+esc(areaName(e,x.areaId))+'</td><td>'+esc((org().looks[e.id]||[]).find(l=>l.id===x.lookId)?.name||'—')+'</td><td>'+pill(x.done?'Done':'Planned',x.done?'good':'')+'</td><td><div class="row"><button class="btn small" data-act="toggle-cue" data-id="'+esc(x.id)+'">'+(x.done?'Reopen':'Mark done')+'</button><button class="btn small" data-act="edit-cue" data-id="'+esc(x.id)+'">Edit</button><button class="btn small danger" data-act="delete-cue" data-id="'+esc(x.id)+'">Remove</button></div></td></tr>').join('')+'</tbody></table></div>'+
       '<details class="workspace-disclosure"><summary>+ Add show cue</summary><div class="disclosure-body"><form id="cue-form" class="form-grid"><label>Time<input class="input" type="time" name="time" required value="19:00"></label><label>Area<select name="areaId">'+areas(e).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
       '<label class="wide">Cue or activity<input class="input" name="title" required maxlength="160" placeholder="e.g. Outdoor stage changeover"></label><label class="wide">Optional draft lighting look<select name="lookId"><option value="">No linked look</option>'+(org().looks[e.id]||[]).map(l=>'<option value="'+esc(l.id)+'">'+esc(l.name)+'</option>').join('')+'</select></label><div class="wide"><button class="btn primary" type="submit">Add cue</button></div></form></div></details></section>'+
       '<section class="panel"><h2>Published revisions</h2>'+([...(p?.history||[]),...(p?[{revision:p.revision,at:p.at,tasks:p.tasks}]:[])].reverse().map(x=>'<div class="linkrow"><div><strong>Revision '+x.revision+'</strong><div class="detail">'+new Date(x.at).toLocaleString('en-AU')+' · '+(x.tasks?.length||0)+' tasks</div></div>'+pill(x.revision===p.revision?'Current':'Archived')+'</div>').join('')||'<div class="empty">No revisions yet.</div>')+'</section></section>';
@@ -1057,9 +1079,18 @@
     render();
   }
   document.addEventListener('click',ev=>{
-    const el=ev.target.closest('[data-act]');if(!el||(!$.contains(el)&&!el.closest('[data-venue-quick-overlay]')&&!el.closest('[data-builder-event-overlay]')))return;
+    const el=ev.target.closest('[data-act]');if(!el||(!$.contains(el)&&!el.closest('[data-venue-quick-overlay]')&&!el.closest('[data-builder-event-overlay]')&&!el.closest('[data-cue-editor-overlay]')))return;
     const action=el.dataset.act,id=el.dataset.id,e=current(),p=published(e);
     ev.preventDefault();
+    if(action==='cue-editor-close'){closeCueEditor();return;}
+    if(action==='edit-cue'){const cue=(org().show[e.id]||[]).find(x=>x.id===id);if(cue)openCueEditor(e,cue);return;}
+    if(action==='delete-cue'){
+      const cue=(org().show[e.id]||[]).find(x=>x.id===id);
+      if(cue&&confirm('Remove show cue "'+cue.title+'"? This does not delete any draft lighting looks.')){
+        org().show[e.id]=(org().show[e.id]||[]).filter(x=>x.id!==id);
+        if(store())notice('Show cue removed from the planning schedule.');
+      }return;
+    }
     if(action==='builder-new-close'){closeBuilderEvent();return;}
     if(action==='builder-new'){openBuilderEvent();return;}
     if(action==='builder-reconcile-kit'){
@@ -1262,6 +1293,19 @@
   });
   document.addEventListener('submit',ev=>{
     const f=ev.target;
+    if(f.id==='cue-editor-form'){
+      ev.preventDefault();
+      const data=new FormData(f),val=k=>clean(data.get(k)),e=current();
+      const cue=(org().show[e.id]||[]).find(x=>x.id===val('id'));
+      if(!cue){closeCueEditor();notice('This cue no longer exists.');return;}
+      const t=val('time'),title=val('title').slice(0,160),space=areas(e).find(x=>x.id===val('areaId'));
+      if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(t)||!title||!space){alert('Enter a valid time, cue title and Space.');return;}
+      cue.time=t;cue.title=title;cue.areaId=space.id;
+      cue.lookId=(org().looks[e.id]||[]).some(x=>x.id===val('lookId'))?val('lookId'):null;
+      cue.done=false;
+      if(store()){closeCueEditor();notice('Show cue updated. Completion reset to Planned.');}
+      return;
+    }
     if(f.id==='builder-new-event-form'){
       ev.preventDefault();
       const data=new FormData(f),fields={title:clean(data.get('title')),date:clean(data.get('date')),
@@ -1389,7 +1433,7 @@
   window.addEventListener('storage',event=>{if(event.key===KEY)refreshFromStorage();});
   window.addEventListener('focus',refreshFromStorage);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshFromStorage();});
-  document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){if(builderEventOpen)closeBuilderEvent();else if(quickVenueOpen)productionQuickClose();}});
+  document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){if(cueEditorOpen)closeCueEditor();else if(builderEventOpen)closeBuilderEvent();else if(quickVenueOpen)productionQuickClose();}});
   document.addEventListener('toggle',ev=>{
     if(ev.target?.id==='event-venue-settings')ui.homeVenueOpen=ev.target.open;
   },true);
