@@ -316,20 +316,56 @@
     return {all:t.length,installed:t.filter(x=>x.state!=='pending').length,verified:t.filter(x=>x.state==='verified').length,issues:org().issues.filter(x=>x.eventId===e?.id&&x.status!=='Resolved').length};
   }
   function notice(message){if(saveConflict){message='Another tab updated the event. Your latest edit was not saved. Please retry it.';saveConflict=false;}ui.notice=message;render();setTimeout(()=>{if(ui.notice===message){ui.notice='';document.querySelector('#message')?.remove();}},4200);}
-  function viewName(){return ({home:'Event home',design:'Design',technical:'Technical',crew:'Crew',production:'Production',entities:'Entities'}[ui.view]||'Event home');}
+  function viewName(){return ({home:'Event overview',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'People & organisations'}[ui.view]||'Event overview');}
   function render(){
     const e=current(),c=counts(e);
-    const nav=[['home','◉','Event home'],['design','⌑','Design'],['technical','⚡','Technical'],['crew','✓','Crew'],['production','▤','Production'],['entities','◇','Entities']];
-    const html='<div class="shell"><aside class="rail">'+
-      '<a class="brand" href="index.html#/overview">phaenomenon<span>.</span></a>'+
-      '<small>CONNECTED EVENT WORKSPACE</small><nav>'+
-      nav.map(n=>'<a href="#/'+n[0]+'" class="nav '+(ui.view===n[0]?'active':'')+'"><span aria-hidden="true">'+n[1]+'</span> '+n[2]+'</a>').join('')+
-      '</nav><div class="rail-bottom">ONE EVENT. ONE MODEL.<br>Multiple task-focused views.<br><br>'+
-      '<a href="index.html#/overview">← Classic studio workspace</a><p>Local demo only. No shared accounts, real-time sync or enforced permissions.</p></div></aside>'+
-      '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / Production</div><div class="header-title">'+viewName()+'</div></div>'+
-      '<div class="header-tools"><label style="min-width:160px">STARTING WORKSPACE<select id="role-picker">'+[['lead','Designer / lead'],['tech','Lighting technician'],['crew','Installation crew'],['manager','Production manager']].map(x=>'<option value="'+x[0]+'" '+(ui.role===x[0]?'selected':'')+'>'+x[1]+'</option>').join('')+'</select></label><label style="min-width:190px" aria-label="Active event"><span style="font-size:10px">ACTIVE EVENT</span><select id="event-picker">'+
+    const navItem=(href,label,glyph,active)=>'<a href="'+href+'" class="nav'+(active?' active':'')+'"'+(active?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+glyph+'</span><span>'+label+'</span></a>';
+    const navGroup=(key,label,glyph,rows,isOpen)=>
+      '<details class="rail-group" '+(isOpen?'open':'')+'><summary class="rail-group-title"><span class="nav-symbol" aria-hidden="true">'+glyph+'</span><span>'+label+'</span><span class="rail-chevron" aria-hidden="true">⌄</span></summary>'+
+      '<div class="rail-subnav">'+rows.join('')+'</div></details>';
+    const eventId=e?.id?encodeURIComponent(e.id):'';
+    const navigation=
+      '<div class="rail-label">EVENT</div>'+
+      navItem('#/home','Event overview','⌂',ui.view==='home'&&!ui.homeVenueOpen)+
+      navItem('index.html#/bookings/'+eventId,'Event details','▤',false)+
+      '<div class="rail-label">WORKSPACES</div>'+
+      navGroup('plan','Plan & design','⌑',[
+        navItem('#/design','3D design','◫',ui.view==='design'),
+        navItem('#/technical','Technical connections','⚡',ui.view==='technical')
+      ],['design','technical'].includes(ui.view))+
+      navGroup('deliver','Deliver the event','✓',[
+        navItem('#/crew','Crew installation','☑',ui.view==='crew'),
+        navItem('#/production','Production','▦',ui.view==='production')
+      ],['crew','production'].includes(ui.view))+
+      navGroup('library','Library & people','◇',[
+        navItem('#/home/venue/'+eventId,'Venues & spaces','⌘',ui.view==='home'&&ui.homeVenueOpen),
+        navItem('#/entities','People & organisations','♧',ui.view==='entities'),
+        navItem('index.html#/equipment','Equipment','◫',false),
+        navItem('index.html#/fixtures','Fixture profiles','◉',false)
+      ],ui.view==='entities'||(ui.view==='home'&&ui.homeVenueOpen))+
+      navGroup('studio','Studio management','▤',[
+        navItem('index.html#/overview','Studio home','⌂',false),
+        navItem('index.html#/projects','Projects','◇',false),
+        navItem('index.html#/pipeline','Opportunities','▥',false),
+        navItem('index.html#/schedule','Calendar','▦',false),
+        navItem('index.html#/clients','Clients','♧',false),
+        navItem('index.html#/invoices','Invoices','▤',false),
+        navItem('index.html#/settings','Settings','⚙',false)
+      ],false);
+    const html='<div class="shell"><aside class="rail" id="production-rail">'+
+      '<div class="rail-top"><a class="brand" href="#/home">phaenomenon<span>.</span></a>'+
+      '<button type="button" class="rail-mobile-toggle" data-act="toggle-rail" aria-expanded="false" aria-controls="production-navigation">☰ <span>Menu</span></button></div>'+
+      '<nav id="production-navigation" aria-label="Production navigation">'+navigation+'</nav>'+
+      '<div class="rail-bottom"><strong>ONE EVENT · CONNECTED WORK</strong><p>Switch between tasks without switching your event.</p>'+
+      '<p>Local prototype · Role views are not security permissions.</p></div></aside>'+
+      '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / Event</div><div class="header-title">'+viewName()+'</div></div>'+
+      '<div class="header-tools"><label class="event-header-select">ACTIVE EVENT<select id="event-picker">'+
       events().map(x=>'<option value="'+esc(x.id)+'" '+(x.id===e?.id?'selected':'')+'>'+esc(x.title)+'</option>').join('')+
-      '</select></label><button type="button" class="btn" data-act="export-backup">Export backup</button><a class="btn" href="index.html#/bookings/'+encodeURIComponent(e?.id||'')+'">Open booking ↗</a></div></header>'+
+      '</select></label><details class="header-more"><summary class="btn" aria-label="More workspace options">Options ▾</summary>'+
+      '<div class="header-more-menu"><label>Default starting view<select id="role-picker">'+
+      [['lead','Designer / lead'],['tech','Lighting technician'],['crew','Installation crew'],['manager','Production manager']].map(x=>'<option value="'+x[0]+'" '+(ui.role===x[0]?'selected':'')+'>'+x[1]+'</option>').join('')+
+      '</select></label><button type="button" class="btn" data-act="export-backup">Export JSON backup</button>'+
+      '<a class="btn" href="index.html#/bookings/'+eventId+'">Edit event booking ↗</a></div></details></div></header>'+
       '<div class="content">'+(ui.notice?'<div id="message" class="notice good section" role="status">'+esc(ui.notice)+'</div>':'')+
       (ui.view==='home'?home(e,c):ui.view==='design'?design(e,c):ui.view==='technical'?technical(e,c):ui.view==='crew'?crew(e,c):ui.view==='production'?production(e,c):entities(e))+
       '<p class="footnote">Phaenomenon prototype · Single-browser storage only · Data and technical calculations are provisional · Role views are not security permissions.</p></div></main></div>';
@@ -884,6 +920,12 @@
       }
       p.needsVenueReview=false;
       if(store())notice('Venue placement review marked complete. Engineering and technical safety verification remain separate.');
+      return;
+    }
+    if(action==='toggle-rail'){
+      const rail=document.getElementById('production-rail');
+      const open=rail?.classList.toggle('is-expanded');
+      rail?.querySelector('.rail-mobile-toggle')?.setAttribute('aria-expanded',open?'true':'false');
       return;
     }
     if(action==='print'){window.print();return;}
