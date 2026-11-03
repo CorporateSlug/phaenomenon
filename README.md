@@ -17,6 +17,12 @@ The guided flow has seven independent steps:
 6. **People & responsibilities** — assign event roles, reporting lines and installation tasks.
 7. **Review & publish** — review changes and issue revisioned crew packs without conflating planning completion with technical approval.
 
+**Recent workflow improvements:** The 3D planner now uses the same **non-destructive kit reconciliation** as the Event Builder: matching placed equipment raises insufficient allocations but never deletes other kit items or reduces larger manually planned quantities. Its inspector can mark permanent scenery and other venue-only objects as **not part of the kit**. In the Builder, optional **Planning assumptions & estimated costs** keeps event environment, complexity, guests, lighting zones and rough crew hours/rates editable without crowding the main form. A direct **Event Builder** link returns from the 3D planner to the relevant event.
+
+**Crew-pack propagation:** Published snapshots now capture the event kit and relevant linked equipment specifications. Changing an equipment model or catalogue power assumption produces an explicit revision warning and resets affected previously completed installation tasks on publication, while preserving genuinely unchanged tasks. Kit quantity changes still require revision review but do not unnecessarily reset unchanged physical placement checks.
+
+**Show schedule:** Existing show cues can now be edited or removed. Editing a completed cue sets its status back to **Planned**, and removing a cue leaves other cues and draft lighting looks intact. This schedule is descriptive only; it is not a control surface for live equipment.
+
 The steps are **non-blocking**: jump to any stage, change a draft, return later and use the suggested next step. Event details, venue setup, equipment logistics and publish review can open inside the Builder. Specialist 3D and technical editors remain separate but connected.
 
 **Browser persistence and recovery:** Both workspaces save to the same browser-local data model. The app now offers a visible local save indicator, limited best-effort browser recovery points, JSON export and validated JSON restore. These recovery points are subject to browser storage quotas and can disappear if browser data is cleared. They are **not central backups and do not synchronise Aaron’s computer with yours**. Export important work as JSON.
