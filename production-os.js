@@ -24,7 +24,8 @@
     try{const raw=localStorage.getItem(KEY);const obj=raw?JSON.parse(raw):starter();return obj&&typeof obj==='object'&&!Array.isArray(obj)?obj:starter();}
     catch(e){return starter();}
   }
-  let db=load(),storageBaseline=localStorage.getItem(KEY),saveConflict=false, ui={view:'home',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
+  const storedRaw=()=>{try{return localStorage.getItem(KEY);}catch(e){return null;}};
+  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'home',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
   try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.crewPerson=saved.crewPerson||'all';ui.role=saved.role||'lead';ui.productionTab=saved.productionTab||'team';}catch(e){}
   function store(){
     try{
@@ -43,7 +44,7 @@
     }catch(e){alert('Browser storage is full or unavailable. Export a JSON backup of your event information from the original app.');return false;}
   }
   function refreshFromStorage(){
-    const latest=localStorage.getItem(KEY);
+    const latest=storedRaw();
     if(!latest||latest===storageBaseline)return false;
     let value;try{value=JSON.parse(latest);}catch(e){return false;}
     if(!value||!Array.isArray(value.eventJobs)||!Array.isArray(value.clients))return false;
