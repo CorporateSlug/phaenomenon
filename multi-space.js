@@ -12,7 +12,7 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const uid=prefix=>prefix+'-'+Math.random().toString(36).slice(2,10);
 const DEMO_ID='ev-abbotsford-two-stage-demo',VENUE_ID='ven-abbotsford-two-stage-demo';
 function area({id,name,x,y,width,length,height=5,kind='indoor',roof='flat',shape='rectangle'}){
- const v={id,name,x,y,width,length,height,geometry:{kind,footprint:G.template(shape,width,length),roof:{type:roof,eave:height,peak:height+1.5,axis:'x',heights:{}}}};
+ const v={id,name,x,y,width,length,height,geometry:{kind,footprint:G.template(shape==='l'?'L':shape==='u'?'U':shape,width,length),roof:{type:roof,eave:height,peak:height+1.5,axis:'x',heights:{}}}};
  G.normalize(v);return v;
 }
 function seed(db){
@@ -55,13 +55,13 @@ function seed(db){
    ],
    runs:[
     {id:'ab-net-between',cableId:'NET-01',type:'network',from:'ab-i-node',to:'ab-o-node',cableLength:30,slack:15,connector:'RJ45 / Cat6',linkType:'Direct'},
-    {id:'ab-i-dmx1',cableId:'DMX-I-01',type:'dmx',from:'ab-i-node',to:'ab-i-wash1',cableLength:15,slack:15,connector:'5-pin XLR'},
-    {id:'ab-i-dmx2',cableId:'DMX-I-02',type:'dmx',from:'ab-i-wash1',to:'ab-i-wash2',cableLength:15,slack:15,connector:'5-pin XLR'},
+    {id:'ab-i-dmx1',cableId:'DMX-I-01',type:'dmx',from:'ab-i-node',to:'ab-i-wash1',cableLength:20,slack:15,connector:'5-pin XLR'},
+    {id:'ab-i-dmx2',cableId:'DMX-I-02',type:'dmx',from:'ab-i-wash1',to:'ab-i-wash2',cableLength:20,slack:15,connector:'5-pin XLR'},
     {id:'ab-o-dmx1',cableId:'DMX-O-01',type:'dmx',from:'ab-o-node',to:'ab-o-wash1',cableLength:15,slack:15,connector:'5-pin XLR'},
-    {id:'ab-o-dmx2',cableId:'DMX-O-02',type:'dmx',from:'ab-o-wash1',to:'ab-o-wash2',cableLength:10,slack:15,connector:'5-pin XLR'},
-    {id:'ab-o-dmx3',cableId:'DMX-O-03',type:'dmx',from:'ab-o-wash2',to:'ab-o-wash3',cableLength:10,slack:15,connector:'5-pin XLR'},
+    {id:'ab-o-dmx2',cableId:'DMX-O-02',type:'dmx',from:'ab-o-wash1',to:'ab-o-wash2',cableLength:15,slack:15,connector:'5-pin XLR'},
+    {id:'ab-o-dmx3',cableId:'DMX-O-03',type:'dmx',from:'ab-o-wash2',to:'ab-o-wash3',cableLength:15,slack:15,connector:'5-pin XLR'},
     {id:'ab-i-power1',cableId:'PWR-I-01',type:'power',from:'ab-i-distro',to:'ab-i-wash1',cableLength:15,slack:15,linkType:'Direct'},
-    {id:'ab-i-power2',cableId:'PWR-I-02',type:'power',from:'ab-i-distro',to:'ab-i-wash2',cableLength:15,slack:15,linkType:'Direct'},
+    {id:'ab-i-power2',cableId:'PWR-I-02',type:'power',from:'ab-i-distro',to:'ab-i-wash2',cableLength:20,slack:15,linkType:'Direct'},
     {id:'ab-o-power1',cableId:'PWR-O-01',type:'power',from:'ab-o-distro',to:'ab-o-wash1',cableLength:15,slack:15,linkType:'Direct'},
     {id:'ab-o-power2',cableId:'PWR-O-02',type:'power',from:'ab-o-distro',to:'ab-o-wash2',cableLength:15,slack:15,linkType:'Direct'},
     {id:'ab-o-power3',cableId:'PWR-O-03',type:'power',from:'ab-o-distro',to:'ab-o-wash3',cableLength:20,slack:15,linkType:'Direct'}
@@ -242,7 +242,7 @@ function attach(p){
    const a=p.venue.spaces.find(x=>x.id===spaceId);if(!a)return;
    if(field==='kind'){a.geometry.kind=el.value;a.geometry.roof.type=el.value==='outdoor'?'none':'flat'}
    else if(field==='roof'){a.geometry.roof.type=el.value;}
-   else if(field==='shape'){const ok=window.confirm('Replace this area’s outline with a '+el.value+' template? Equipment will remain in the nearest valid position.');if(!ok)return;a.geometry.footprint=G.template(el.value,a.width,a.length);}
+   else if(field==='shape'){const ok=window.confirm('Replace this area’s outline with a '+el.value+' template? Equipment will remain in the nearest valid position.');if(!ok)return;a.geometry.footprint=G.template(el.value==='l'?'L':el.value==='u'?'U':el.value,a.width,a.length);}
    else if(field==='name'){a.name=String(el.value).slice(0,75).trim()||a.name;}
    else{
     const previous={width:a.width,length:a.length};
