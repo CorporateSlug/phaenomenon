@@ -364,9 +364,12 @@
       areas(e,published(e)?.snapshot).map(a=>'<option value="'+esc(a.id)+'" '+(ui.area===a.id?'selected':'')+'>'+esc(a.name)+'</option>').join('')+'</select></label>';
   }
   function diagram(e){
+    const snap=published(e)?.snapshot;if(!snap)return '';
+    return areas(e,snap).filter(a=>ui.area==='all'||ui.area===a.id).map(a=>diagramForArea(e,a)).join('');
+  }
+  function diagramForArea(e,area){
     const p=published(e)?.snapshot?.plan;
     if(!p)return '';
-    const area=areas(e,published(e)?.snapshot).find(a=>a.id===ui.area)||areas(e,published(e)?.snapshot)[0];
     if(!area)return '';
     const box={x:num(area.x),y:num(area.y),w:Math.max(1,num(area.width,15)),h:Math.max(1,num(area.length,12))};
     const point=i=>({x:25+260*(num(i.x)-box.x)/box.w,y:30+175*(num(i.y)-box.y)/box.h});
@@ -377,7 +380,7 @@
       links.map(r=>{const f=point(items.find(i=>i.id===r.from)),t=point(items.find(i=>i.id===r.to));return '<path d="M'+f.x+','+f.y+' L'+t.x+','+t.y+'" stroke="'+(r.type==='dmx'?'#f2c18a':'#8cddcf')+'" stroke-width="1.5" opacity=".75"/>';}).join('')+
       items.map((i,n)=>{const p=point(i);return '<g><circle cx="'+p.x+'" cy="'+p.y+'" r="8" fill="'+(i.kind==='light'?'#f2c18a':'#8cddcf')+'" stroke="#101820"/><text x="'+p.x+'" y="'+(p.y+3)+'" font-size="9" text-anchor="middle" fill="#18232a" font-weight="bold">'+(n+1)+'</text></g>';}).join('')+
       '<text x="25" y="19" font-size="10" fill="#b5c4ce">Schematic · positions need site verification</text></svg>';
-    return '<div>'+svg+'<div class="chiprow">'+items.map((i,n)=>'<span class="tag">'+(n+1)+'. '+esc(i.name)+'</span>').join('')+'</div></div>';
+    return '<div class="section"><h3>'+esc(area.name)+'</h3>'+svg+'<div class="chiprow">'+items.map((i,n)=>'<span class="tag">'+(n+1)+'. '+esc(i.name)+'</span>').join('')+'</div></div>';
   }
   function crew(e,c){
     const pub=published(e),total=(pub?.tasks||[]).filter(t=>ui.area==='all'||t.areaId===ui.area),done=total.filter(t=>t.state!=='pending').length;
@@ -385,7 +388,7 @@
       areaPicker(e))+
       changeNotice(e)+
       (!pub?'<div class="empty">Publish a crew pack from Design to begin.</div>':
-      '<div class="notice info section">Crew pack revision <strong>'+pub.revision+'</strong> · issued '+new Date(pub.at).toLocaleString('en-AU')+'. <button class="btn small no-print" data-act="print-crew">Print crew pack</button> '+
+      '<div class="row between section no-print"><button class="btn" data-act="print">Print area crew pack / Save as PDF</button><span class="form-note">Select one area for a concise handout.</span></div><div class="notice info section">Crew pack revision <strong>'+pub.revision+'</strong> · issued '+new Date(pub.at).toLocaleString('en-AU')+'. <button class="btn small no-print" data-act="print-crew">Print crew pack</button> '+
       (isChanged(e)?' A newer design has not been published. Do not use unreviewed new instructions.':' Instructions reflect the currently published plan.')+'</div>'+
       '<div class="stats" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+stat('Assigned tasks',total.length,'In chosen area')+stat('Installed',done,'Marked by crew')+stat('Verified',total.filter(x=>x.state==='verified').length,'Technical sign-off status')+'</div>'+
       '<div class="grid cols2"><section class="panel"><h2>Installation instructions</h2><div class="row between section"><span class="muted">'+done+' of '+total.length+' installed</span>'+pill((total.length?Math.round(done/total.length*100):0)+'%')+'</div>'+
@@ -416,10 +419,10 @@
       '<div class="sep"></div><button class="btn" data-act="report" data-id="">+ Report general issue</button></section></div>'+
       '<section class="panel section"><div class="section-head"><h2>Run of show</h2>'+pill((org().show[e.id]||[]).length+' cues')+'</div>'+
       '<p class="muted">A lightweight production cue list. This does not drive live lighting consoles or control show-critical systems.</p>'+
-      '<div class="table-scroll"><table><thead><tr><th>Time</th><th>Cue / activity</th><th>Area</th><th>Status</th><th></th></tr></thead><tbody>'+
-      (org().show[e.id]||[]).slice().sort((a,b)=>a.time.localeCompare(b.time)).map(x=>'<tr><td>'+esc(x.time)+'</td><td>'+esc(x.title)+'</td><td>'+esc(areaName(e,x.areaId))+'</td><td>'+pill(x.done?'Done':'Planned',x.done?'good':'')+'</td><td><button class="btn small" data-act="toggle-cue" data-id="'+esc(x.id)+'">'+(x.done?'Reopen':'Mark done')+'</button></td></tr>').join('')+'</tbody></table></div>'+
+      '<div class="table-scroll"><table><thead><tr><th>Time</th><th>Cue / activity</th><th>Area</th><th>Draft look</th><th>Status</th><th></th></tr></thead><tbody>'+
+      (org().show[e.id]||[]).slice().sort((a,b)=>a.time.localeCompare(b.time)).map(x=>'<tr><td>'+esc(x.time)+'</td><td>'+esc(x.title)+'</td><td>'+esc(areaName(e,x.areaId))+'</td><td>'+esc((org().looks[e.id]||[]).find(l=>l.id===x.lookId)?.name||'—')+'</td><td>'+pill(x.done?'Done':'Planned',x.done?'good':'')+'</td><td><button class="btn small" data-act="toggle-cue" data-id="'+esc(x.id)+'">'+(x.done?'Reopen':'Mark done')+'</button></td></tr>').join('')+'</tbody></table></div>'+
       '<form id="cue-form" class="form-grid" style="margin-top:15px"><label>Time<input class="input" type="time" name="time" required value="19:00"></label><label>Area<select name="areaId">'+areas(e).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
-      '<label class="wide">Cue or activity<input class="input" name="title" required maxlength="160" placeholder="e.g. Outdoor stage changeover"></label><div class="wide"><button class="btn primary" type="submit">+ Add cue</button></div></form></section>'+
+      '<label class="wide">Cue or activity<input class="input" name="title" required maxlength="160" placeholder="e.g. Outdoor stage changeover"></label><label class="wide">Optional draft lighting look<select name="lookId"><option value="">No linked look</option>'+(org().looks[e.id]||[]).map(l=>'<option value="'+esc(l.id)+'">'+esc(l.name)+'</option>').join('')+'</select></label><div class="wide"><button class="btn primary" type="submit">+ Add cue</button></div></form></section>'+
       '<section class="panel"><h2>Published revisions</h2>'+([...(p?.history||[]),...(p?[{revision:p.revision,at:p.at,tasks:p.tasks}]:[])].reverse().map(x=>'<div class="linkrow"><div><strong>Revision '+x.revision+'</strong><div class="detail">'+new Date(x.at).toLocaleString('en-AU')+' · '+(x.tasks?.length||0)+' tasks</div></div>'+pill(x.revision===p.revision?'Current':'Archived')+'</div>').join('')||'<div class="empty">No revisions yet.</div>')+'</section>';
   }
   function navigateProfile(id,backOrForward){
@@ -488,6 +491,7 @@
     const el=ev.target.closest('[data-act]');if(!el||!$.contains(el))return;
     const action=el.dataset.act,id=el.dataset.id,e=current(),p=published(e);
     ev.preventDefault();
+    if(action==='print'){window.print();return;}
     if(action==='profile'){navigateProfile(id);return;}
     if(action==='entity-back'||action==='entity-forward'){
       const next=ui.histIndex+(action==='entity-back'?-1:1);
@@ -547,7 +551,7 @@
     if(f.id==='cue-form'){
       if(!val('time')||!val('title'))return;
       if(!o.show[e.id])o.show[e.id]=[];
-      o.show[e.id].push({id:uid('cue'),time:val('time'),title:val('title').slice(0,160),areaId:val('areaId'),done:false});
+      o.show[e.id].push({id:uid('cue'),time:val('time'),title:val('title').slice(0,160),areaId:val('areaId'),lookId:(o.looks[e.id]||[]).some(x=>x.id===val('lookId'))?val('lookId'):null,done:false});
     }
     if(f.id==='entity-form'){
       if(!val('name'))return;
