@@ -99,10 +99,10 @@
   assureEventData(db);
   window.PhaenomenonSpacePlanner?.ensure(db);
   let ui={view:'overview',projectId:null,eventId:null,invoiceId:null,printInvoiceId:null,tab:'overview',filter:'All',search:'',fixtureSearch:'',calendar:new Date(new Date().getFullYear(),new Date().getMonth(),1),selectedDate:null,modal:null,toast:null};
-  function save(){
+  function save(force=false){
     try {
       const latest=localStorage.getItem(STORE_KEY);
-      if(latest!==storageBaseline){
+      if(!force&&latest!==storageBaseline){
         alert('Another Phaenomenon tab saved newer data. This edit was not written over it. The current page will reload the newer data. Please retry your change.');
         refreshFromStorage();
         return false;
@@ -135,7 +135,7 @@
   function quoteTotal(p){return sum(quoteParts(p).map(x=>x.value));}
   function stageStatus(stage){return `<span class="status ${cls(stage)}">${safe(stage)}</span>`;}
   function flash(message){ui.toast=message;render();setTimeout(()=>{if(ui.toast===message){ui.toast=null;document.querySelector('.toast')?.remove();}},3500);}
-  function mutate(cb,message){cb();save();render();if(message)flash(message);}
+  function mutate(cb,message){cb();if(!save())return;render();if(message)flash(message);}
   function nav(view){ui.filter='All';ui.search='';ui.fixtureSearch='';ui.modal=null;location.hash='#/'+view;if(location.hash==='#/'+view)renderRoute();}
   function openProject(projectId){ui.projectId=projectId;ui.tab='overview';ui.modal=null;location.hash='#/projects/'+encodeURIComponent(projectId);renderRoute();}
   function closeProject(){ui.projectId=null;location.hash='#/projects';renderRoute();}
@@ -336,7 +336,7 @@
   });
   window.addEventListener('afterprint',()=>{if(ui.printInvoiceId){ui.printInvoiceId=null;render();}});
   function exportData(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`phaenomenon-demo-${iso(new Date())}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);flash('Workspace exported as JSON');}
-  $import.addEventListener('change',async()=>{const f=$import.files?.[0];if(!f)return;try{if(f.size>5_000_000)throw Error('File is too large.');const x=JSON.parse(await f.text());if(!valid(x))throw Error('This is not a compatible Phaenomenon export.');if(!confirm('Import this file and replace the workspace data stored in this browser?'))return;db=x;assureEventData(db);window.PhaenomenonSpacePlanner?.ensure(db);save();ui.modal=null;ui.projectId=null;ui.search='';ui.fixtureSearch='';location.hash='#/overview';renderRoute();flash('Workspace imported');}catch(err){alert('Import failed: '+err.message);}finally{$import.value='';}});
+  $import.addEventListener('change',async()=>{const f=$import.files?.[0];if(!f)return;try{if(f.size>5_000_000)throw Error('File is too large.');const x=JSON.parse(await f.text());if(!valid(x))throw Error('This is not a compatible Phaenomenon export.');if(!confirm('Import this file and replace the workspace data stored in this browser?'))return;db=x;assureEventData(db);window.PhaenomenonSpacePlanner?.ensure(db);save(true);ui.modal=null;ui.projectId=null;ui.search='';ui.fixtureSearch='';location.hash='#/overview';renderRoute();flash('Workspace imported');}catch(err){alert('Import failed: '+err.message);}finally{$import.value='';}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(ui.modal){ui.modal=null;render();}else if(ui.projectId)closeProject();}});
   // Other tabs and the Production workspace share this browser's data, not a backend.
   // Refresh on storage/focus so a stale tab does not overwrite a newer event model.
