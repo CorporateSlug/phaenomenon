@@ -143,8 +143,54 @@
   function openProject(projectId){ui.projectId=projectId;ui.tab='overview';ui.modal=null;location.hash='#/projects/'+encodeURIComponent(projectId);renderRoute();}
   function closeProject(){ui.projectId=null;location.hash='#/projects';renderRoute();}
   function renderRoute(){const tokens=location.hash.replace(/^#\/?/,'').split('/').filter(Boolean);const allowed=['overview','bookings','spaces','invoices','equipment','projects','pipeline','schedule','fixtures','clients','settings','search'];ui.view=allowed.includes(tokens[0])?tokens[0]:'overview';ui.projectId=ui.view==='projects' && db.projects.some(p=>p.id===tokens[1])?tokens[1]:null; if(ui.view==='bookings'&&db.eventJobs.some(e=>e.id===tokens[1]))ui.eventId=tokens[1]; if(ui.view==='spaces'&&db.eventJobs.some(e=>e.id===tokens[1]))ui.eventId=tokens[1]; if(ui.view==='invoices'&&db.invoices.some(e=>e.id===tokens[1]))ui.invoiceId=tokens[1]; render();}
-  const navLinks=[['overview','Overview','grid'],['bookings','Events','calendar'],['spaces','3D space planner','layers'],['equipment','Equipment','layers'],['invoices','Invoices','file'],['clients','Clients','users'],['projects','Design projects','briefcase'],['pipeline','Pipeline','chart'],['schedule','Schedule','calendar'],['fixtures','Fixture library','bulb'],['settings','Settings','settings']];
-  function sidebar(){return `<aside class="sidebar"><a class="logo" href="#/overview" data-action="nav" data-view="overview" aria-label="Phaenomenon home"><span class="logo-mark">${icon('lamp',21)}</span><span><span class="logo-name">phaenomenon<span style="color:#d9b58c">.</span></span><span class="logo-tag">Studio / classic tools</span></span></a><div class="nav-label">WORKSPACE</div><nav class="nav-items" aria-label="Main navigation"><a class="nav-link" href="production.html#/home" style="background:#27413e;color:#a8eadf;border:1px solid #3c635e;font-weight:700">⟡ &nbsp; Event production</a>${navLinks.filter(x=>['overview','bookings','spaces','equipment'].includes(x[0])).map(([key,label,glyph])=>`<a href="#/${key}" data-action="nav" data-view="${key}" class="nav-link ${ui.view===key?'active':''}" title="${label}" ${ui.view===key?'aria-current="page"':''}>${icon(glyph,17)}<span>${label}</span>${key==='pipeline'?`<b class="nav-count">${db.leads.length}</b>`:''}</a>`).join('')}<details class="classic-tools" ><summary class="nav-link" style="cursor:pointer;display:block">More studio tools ▾</summary><div style="display:grid;gap:4px;margin-top:6px">${navLinks.filter(x=>!['overview','bookings','spaces','equipment'].includes(x[0])).map(([key,label,glyph])=>`<a href="#/${key}" data-action="nav" data-view="${key}" class="nav-link ${ui.view===key?'active':''}" title="${label}" ${ui.view===key?'aria-current="page"':''}>${icon(glyph,17)}<span>${label}</span>${key==='pipeline'?`<b class="nav-count">${db.leads.length}</b>`:''}</a>`).join('')}</div></details></nav><div class="sidebar-bottom"><div class="sidebar-card"><div class="eyebrow">Explore the demo</div><strong>Full event production workspace.</strong><p>Use Event production for connected team, design and installation workflows.</p><button data-action="view-guide">${icon('arrow',12)} &nbsp; How it works</button></div><div class="profile"><span class="avatar">PH</span><div><strong>Phaenomenon Demo</strong><small>Fictional design studio</small></div></div></div></aside>`;}
+
+  const navLinks=[
+    ['overview','Studio home','grid'],
+    ['bookings','Events','calendar'],
+    ['spaces','3D planner','layers'],
+    ['equipment','Equipment','layers'],
+    ['invoices','Invoices','file'],
+    ['clients','Clients','users'],
+    ['projects','Projects','briefcase'],
+    ['pipeline','Opportunities','chart'],
+    ['schedule','Calendar','calendar'],
+    ['fixtures','Fixture profiles','bulb'],
+    ['settings','Settings','settings']
+  ];
+  const navItem=(key)=>{
+    const item=navLinks.find(x=>x[0]===key);if(!item)return '';
+    const [,label,glyph]=item;
+    const selected=ui.view===key;
+    return '<a href="#/'+key+'" data-action="nav" data-view="'+key+'" class="nav-link'+(selected?' active':'')+'" title="'+label+'" '+(selected?'aria-current="page"':'')+'>'+
+      icon(glyph,17)+'<span>'+label+'</span>'+(key==='pipeline'&&db.leads.length?'<b class="nav-count">'+db.leads.length+'</b>':'')+'</a>';
+  };
+  function sidebar(){
+    const group=(key,label,glyph,links)=>{
+      const active=links.includes(ui.view);
+      return '<details class="nav-group" data-group="'+key+'" '+(active?'open':'')+'><summary class="nav-group-heading" aria-label="'+label+'">'+
+        icon(glyph,17)+'<span>'+label+'</span><span class="nav-chevron" aria-hidden="true">⌄</span></summary>'+
+        '<div class="nav-subitems">'+links.map(navItem).join('')+'</div></details>';
+    };
+    const activeEvent=ui.eventId&&db.eventJobs.some(x=>x.id===ui.eventId)?encodeURIComponent(ui.eventId):'';
+    return '<aside class="sidebar" id="studio-sidebar">'+
+      '<div class="sidebar-heading"><a class="logo" href="#/overview" data-action="nav" data-view="overview" aria-label="Phaenomenon Studio home">'+
+        '<span class="logo-mark">'+icon('lamp',21)+'</span><span><span class="logo-name">phaenomenon<span style="color:#d9b58c">.</span></span><span class="logo-tag">Event production studio</span></span></a>'+
+        '<button type="button" class="nav-mobile-toggle" data-action="toggle-sidebar" aria-expanded="false" aria-controls="studio-navigation">'+icon('menu',18)+'<span>Menu</span></button></div>'+
+      '<nav class="nav-items" id="studio-navigation" aria-label="Studio navigation">'+
+        '<div class="nav-label">EVENT WORKSPACE</div>'+
+        '<a class="nav-link nav-feature" href="production.html#/home/'+activeEvent+'" title="Open the selected event workspace">'+icon('layers',17)+'<span>Event workspace</span></a>'+
+        navItem('bookings')+navItem('overview')+
+        '<div class="nav-label">TOOLS &amp; RECORDS</div>'+
+        group('planning','Plan &amp; design','layers',['spaces'])+
+        group('library','Equipment library','bulb',['equipment','fixtures'])+
+        group('studio','Studio management','briefcase',['projects','pipeline','schedule','clients','invoices'])+
+        navItem('settings')+
+      '</nav>'+
+      '<div class="sidebar-bottom"><button class="nav-help" data-action="view-guide">'+icon('info',15)+'<span>Help &amp; guide</span></button>'+
+        '<p class="nav-disclaimer">Prototype · Browser-local data</p></div>'+
+      '</aside>';
+  }
+
   function topbar(){const page=ui.view==='search'?'Search':navLinks.find(x=>x[0]===ui.view)?.[1]||'Overview';return `<header class="topbar"><div class="breadcrumbs">Workspace <span style="color:#b2bcc1">/</span> <span>${page}</span></div><div class="top-actions"><label class="top-search">${icon('search',14)}<input id="global-search" aria-label="Search projects and leads" placeholder="Search workspace" value="${attr(ui.search)}" /></label><button class="button primary" data-action="open-modal" data-type="booking">${icon('plus',15)} New event</button></div></header>`;}
   function layout(content){return `<div class="app-shell">${sidebar()}<main class="main">${topbar()}<div class="content">${content}</div></main></div>${ui.projectId?drawer():''}${ui.modal?modal():''}${ui.toast?`<div class="toast" role="status">${icon('check',15)} ${safe(ui.toast)}</div>`:''}${ui.projectId?printSheet():''}${ui.printInvoiceId?invoicePrintPage():''}`;}
   function heading(eyebrow,title,description,right=''){return `<div class="section-intro"><div><div class="eyebrow">${eyebrow}</div><h1>${title}</h1><p>${description}</p></div>${right}</div>`;}
@@ -352,6 +398,14 @@
     if(action==='venue-quick-close'){e.preventDefault();closeVenueQuick();return;}
     if(action==='venue-create'||action==='space-create'){
       e.preventDefault();openVenueQuick(action==='venue-create'?'venue':'space',el.closest('[data-venue-picker]'));return;
+    }
+    if(action==='toggle-sidebar'){
+      e.preventDefault();
+      const sidebar=document.getElementById('studio-sidebar');
+      const next=sidebar?.classList.toggle('is-expanded');
+      const control=sidebar?.querySelector('.nav-mobile-toggle');
+      if(control)control.setAttribute('aria-expanded',next?'true':'false');
+      return;
     }
     if(action==='open-space'){e.preventDefault();ui.eventId=el.dataset.id;location.hash='#/spaces';renderRoute();return;}
     if(action==='select-booking'){ui.eventId=el.dataset.id;location.hash='#/bookings/'+encodeURIComponent(ui.eventId);renderRoute();}
