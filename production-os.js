@@ -24,8 +24,8 @@
     try{const raw=localStorage.getItem(KEY);const obj=raw?JSON.parse(raw):starter();return obj&&typeof obj==='object'&&!Array.isArray(obj)?obj:starter();}
     catch(e){return starter();}
   }
-  let db=load(),storageBaseline=localStorage.getItem(KEY),saveConflict=false, ui={view:'home',eventId:'',area:'all',crewPerson:'all',role:'lead',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
-  try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.crewPerson=saved.crewPerson||'all';ui.role=saved.role||'lead';}catch(e){}
+  let db=load(),storageBaseline=localStorage.getItem(KEY),saveConflict=false, ui={view:'home',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
+  try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.crewPerson=saved.crewPerson||'all';ui.role=saved.role||'lead';ui.productionTab=saved.productionTab||'team';}catch(e){}
   function store(){
     try{
       const remote=localStorage.getItem(KEY);
@@ -38,7 +38,7 @@
       const next=JSON.stringify(db);
       localStorage.setItem(KEY,next);
       storageBaseline=next;
-      localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,crewPerson:ui.crewPerson,role:ui.role}));
+      localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,crewPerson:ui.crewPerson,role:ui.role,productionTab:ui.productionTab}));
       return true;
     }catch(e){alert('Browser storage is full or unavailable. Export a JSON backup of your event information from the original app.');return false;}
   }
@@ -668,6 +668,15 @@
       '<a class="btn" href="index.html#/equipment">Manage equipment catalogue ↗</a></div></section>';
   }
 
+
+  const PRODUCTION_TABS=[['team','People & team'],['logistics','Equipment'],['installation','Installation'],['show','Show & cues']];
+  function productionTabs(){
+    return '<nav class="tabs production-tabs section no-print" role="tablist" aria-label="Production work areas">'+
+      PRODUCTION_TABS.map(([key,label])=>
+        '<button type="button" class="tab '+(ui.productionTab===key?'active':'')+'" role="tab" aria-selected="'+(ui.productionTab===key)+'" aria-controls="production-'+key+'" data-act="production-tab" data-id="'+key+'">'+label+'</button>').join('')+'</nav>';
+  }
+  function productionPane(key){return '<section id="production-'+key+'" role="tabpanel" aria-label="'+PRODUCTION_TABS.find(x=>x[0]===key)[1]+'" class="production-pane '+(ui.productionTab===key?'active':'')+'">';}
+
   function production(e,c){
     const p=published(e),a=org().assignments.filter(x=>x.eventId===e.id);
     const done=c.all?Math.round(c.installed/c.all*100):0;
@@ -675,7 +684,7 @@
       '<button class="btn primary" data-act="publish">Publish current crew revision</button>')+
       changeNotice(e)+changePanel(e)+
       '<div class="stats">'+stat('Team & suppliers',a.length,'Event-specific roles')+stat('Installation',done+'%','Reported installed')+stat('Technical checks',c.verified,'Marked verified')+stat('Open issues',c.issues,'Awaiting response')+'</div>'+
-      teamStructure(e)+
+      productionTabs()+productionPane('team')+teamStructure(e)+
       '<div class="grid cols2 section"><section class="panel"><div class="section-head"><h2>Event team</h2>'+pill(a.length+' assignments')+'</div>'+
       '<div class="stack">'+(a.length?a.map(x=>'<div class="linkrow"><div><strong><a href="#/entities/'+encodeURIComponent(x.entityId)+'" data-act="profile" data-id="'+esc(x.entityId)+'">'+esc(aname(x.entityId))+'</a></strong><div class="detail">'+esc(x.role)+' · '+esc(x.areaId==='all'?'Entire event':areaName(e,x.areaId))+(x.responsibility?' · '+esc(x.responsibility):'')+(x.equipmentId&&x.quantity?' · '+esc(x.quantity)+' × '+esc((db.equipment||[]).find(g=>g.id===x.equipmentId)?.name||'Unknown equipment'):'')+'</div></div><button class="btn small danger" data-act="remove-assignment" data-id="'+esc(x.id)+'">Remove</button></div>').join(''):'<div class="empty">No assignments yet.</div>')+'</div>'+
       '<div class="sep"></div><h3>Assign someone to this event</h3><form id="assign-form" class="form-grid">'+
@@ -689,15 +698,15 @@
       '<div class="row between"><span class="muted">Independently verified</span><strong>'+c.verified+' / '+c.all+'</strong></div>'+
       '<div class="sep"></div><h3>Open issues</h3>'+
       (org().issues.filter(x=>x.eventId===e.id&&x.status!=='Resolved').map(x=>'<div class="linkrow"><div><strong>'+esc(x.note)+'</strong><div class="detail">'+esc(x.taskId||'General issue')+' · '+new Date(x.at).toLocaleString('en-AU')+'</div></div><button class="btn small" data-act="resolve-issue" data-id="'+esc(x.id)+'">Resolve</button></div>').join('')||'<p class="muted">No open issues.</p>')+
-      '<div class="sep"></div><button class="btn" data-act="report" data-id="">+ Report general issue</button></section></div>'+
-      logistics(e)+taskOwnership(e)+productionAcknowledgements(e)+
+      '<div class="sep"></div><button class="btn" data-act="report" data-id="">+ Report general issue</button></section></div></section>'+
+      productionPane('logistics')+logistics(e)+'</section>'+productionPane('installation')+taskOwnership(e)+productionAcknowledgements(e)+'</section>'+productionPane('show')+
       '<section class="panel section"><div class="section-head"><h2>Run of show</h2>'+pill((org().show[e.id]||[]).length+' cues')+'</div>'+
       '<p class="muted">A lightweight production cue list. This does not drive live lighting consoles or control show-critical systems.</p>'+
       '<div class="table-scroll"><table><thead><tr><th>Time</th><th>Cue / activity</th><th>Area</th><th>Draft look</th><th>Status</th><th></th></tr></thead><tbody>'+
       (org().show[e.id]||[]).slice().sort((a,b)=>a.time.localeCompare(b.time)).map(x=>'<tr><td>'+esc(x.time)+'</td><td>'+esc(x.title)+'</td><td>'+esc(areaName(e,x.areaId))+'</td><td>'+esc((org().looks[e.id]||[]).find(l=>l.id===x.lookId)?.name||'—')+'</td><td>'+pill(x.done?'Done':'Planned',x.done?'good':'')+'</td><td><button class="btn small" data-act="toggle-cue" data-id="'+esc(x.id)+'">'+(x.done?'Reopen':'Mark done')+'</button></td></tr>').join('')+'</tbody></table></div>'+
       '<form id="cue-form" class="form-grid" style="margin-top:15px"><label>Time<input class="input" type="time" name="time" required value="19:00"></label><label>Area<select name="areaId">'+areas(e).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
       '<label class="wide">Cue or activity<input class="input" name="title" required maxlength="160" placeholder="e.g. Outdoor stage changeover"></label><label class="wide">Optional draft lighting look<select name="lookId"><option value="">No linked look</option>'+(org().looks[e.id]||[]).map(l=>'<option value="'+esc(l.id)+'">'+esc(l.name)+'</option>').join('')+'</select></label><div class="wide"><button class="btn primary" type="submit">+ Add cue</button></div></form></section>'+
-      '<section class="panel"><h2>Published revisions</h2>'+([...(p?.history||[]),...(p?[{revision:p.revision,at:p.at,tasks:p.tasks}]:[])].reverse().map(x=>'<div class="linkrow"><div><strong>Revision '+x.revision+'</strong><div class="detail">'+new Date(x.at).toLocaleString('en-AU')+' · '+(x.tasks?.length||0)+' tasks</div></div>'+pill(x.revision===p.revision?'Current':'Archived')+'</div>').join('')||'<div class="empty">No revisions yet.</div>')+'</section>';
+      '<section class="panel"><h2>Published revisions</h2>'+([...(p?.history||[]),...(p?[{revision:p.revision,at:p.at,tasks:p.tasks}]:[])].reverse().map(x=>'<div class="linkrow"><div><strong>Revision '+x.revision+'</strong><div class="detail">'+new Date(x.at).toLocaleString('en-AU')+' · '+(x.tasks?.length||0)+' tasks</div></div>'+pill(x.revision===p.revision?'Current':'Archived')+'</div>').join('')||'<div class="empty">No revisions yet.</div>')+'</section></section>';
   }
   function navigateProfile(id,backOrForward){
     if(!entity(id))return;
@@ -798,6 +807,7 @@
     }
     if(action==='resolve-issue'){const x=org().issues.find(x=>x.id===id&&x.eventId===e.id);if(x){x.status='Resolved';x.resolvedAt=now();store();notice('Issue marked resolved.');}return;}
     if(action==='toggle-cue'){const x=(org().show[e.id]||[]).find(x=>x.id===id);if(x){x.done=!x.done;store();render();}return;}
+    if(action==='production-tab'){if(PRODUCTION_TABS.some(x=>x[0]===id)){ui.productionTab=id;store();render();}return;}
     if(action==='team-select'){ui.teamPerson=id;render();return;}
     if(action==='remove-assignment'){
       const x=org().assignments.find(x=>x.id===id&&x.eventId===e.id);
