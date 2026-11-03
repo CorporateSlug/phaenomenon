@@ -24,7 +24,7 @@
     try{const raw=localStorage.getItem(KEY);const obj=raw?JSON.parse(raw):starter();return obj&&typeof obj==='object'&&!Array.isArray(obj)?obj:starter();}
     catch(e){return starter();}
   }
-  let db=load(), ui={view:'home',eventId:'',area:'all',crewPerson:'all',role:'lead',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
+  let db=load(), ui={view:'home',eventId:'',area:'all',crewPerson:'all',role:'lead',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
   try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.crewPerson=saved.crewPerson||'all';ui.role=saved.role||'lead';}catch(e){}
   function store(){try{localStorage.setItem(KEY,JSON.stringify(db));localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,crewPerson:ui.crewPerson,role:ui.role}));}catch(e){alert('Browser storage is full or unavailable. Export your event information from the original app.');}}
   function org(){return db.productionOS;}
@@ -90,7 +90,7 @@
     if(!db.productionOS||typeof db.productionOS!=='object')db.productionOS={};
     const o=org();o.version=1;
     for(const [key] of [['entities'],['relationships'],['assignments'],['issues']])if(!Array.isArray(o[key]))o[key]=[];
-    for(const key of ['published','show','looks','taskAssignments'])if(!o[key]||typeof o[key]!=='object'||Array.isArray(o[key]))o[key]={};
+    for(const key of ['published','show','looks','taskAssignments','teamHierarchy'])if(!o[key]||typeof o[key]!=='object'||Array.isArray(o[key]))o[key]={};
     db.clients.forEach(x=>savedByKind('client','client',x.id,x.name,{demo:!!x.demo||x.name.toLowerCase().includes('demo')}));
     db.venues.forEach(x=>{
       const parent=savedByKind('venue','venue',x.id,x.name,{demo:!!x.demo});
@@ -133,6 +133,11 @@
         {id:'as-demo4',eventId:DEMO,entityId:'ent-demo-supplier',role:'Equipment supplier',areaId:'all',responsibility:'Illustrative hire supplier',demo:true}
       );
     }
+    if(!o.teamHierarchy[DEMO])o.teamHierarchy[DEMO]={
+      'ent-demo-manager':{position:'In charge',reportsTo:'',notes:'Fictional overall lead'},
+      'ent-demo-tech':{position:'Second in charge',reportsTo:'ent-demo-manager',notes:'Fictional technical deputy'},
+      'ent-demo-hand':{position:'Helper',reportsTo:'ent-demo-tech',notes:'Fictional installation crew'}
+    };
     if(!o.relationships.some(r=>r.id==='rel-demo1'))o.relationships.push({id:'rel-demo1',from:'ent-demo-tech',to:'ent-demo-supplier',type:'Freelances for',notes:'Illustrative relationship only',demo:true});
     if(!o.published[DEMO])publish(DEMO,true);
     if(!events().some(e=>e.id===ui.eventId))ui.eventId=events().some(e=>e.id===DEMO)?DEMO:(events()[0]?.id||DEMO);
@@ -420,6 +425,90 @@
       '<p class="form-note">Checking a box means the item was reported installed. It does not indicate a qualified safety sign-off.</p></section>'+
       '<section class="panel"><h2>Where things go</h2>'+diagram(e)+'<p class="form-note">Diagram is schematic, not a measured construction or rigging drawing. Use the approved site drawings and instructions.</p></section></div>');
   }
+
+  const TEAM_POSITIONS=['In charge','Second in charge','Team lead','Helper','Crew member','Other'];
+  function peopleInEvent(e){return crewMembers(e);}
+  function teamEntries(e){
+    const members=peopleInEvent(e),people=new Set(members.map(x=>x.id));
+    const stored=org().teamHierarchy[e.id]||{};
+    return members.map(person=>{
+      const entry=stored[person.id]||{},roles=org().assignments.filter(a=>a.eventId===e.id&&a.entityId===person.id);
+      const initial=roles.some(a=>a.role==='Production manager')?'In charge':roles.some(a=>a.role==='Stagehand')?'Helper':'Crew member';
+      return {person,position:TEAM_POSITIONS.includes(entry.position)?entry.position:initial,
+        reportsTo:people.has(entry.reportsTo)&&entry.reportsTo!==person.id?entry.reportsTo:'',
+        notes:entry.notes||'',roles};
+    });
+  }
+  function wouldCycle(e,personId,supervisorId){
+    if(!supervisorId)return false;
+    if(supervisorId===personId)return true;
+    const records=new Map(teamEntries(e).map(n=>[n.person.id,n]));
+    let current=supervisorId;const seen=new Set();
+    while(current){
+      if(current===personId||seen.has(current))return true;
+      seen.add(current);current=records.get(current)?.reportsTo||'';
+    }
+    return false;
+  }
+  function saveTeamLine(e,personId,supervisorId,position,notes){
+    const ids=new Set(peopleInEvent(e).map(p=>p.id));
+    if(!ids.has(personId))return 'This person is not on this event team.';
+    if(supervisorId&&!ids.has(supervisorId))return 'Choose a supervisor from this event team.';
+    if(wouldCycle(e,personId,supervisorId))return 'Cannot create a reporting loop or make someone report to themselves.';
+    if(!TEAM_POSITIONS.includes(position))return 'Choose a valid team position.';
+    if(!org().teamHierarchy[e.id])org().teamHierarchy[e.id]={};
+    org().teamHierarchy[e.id][personId]={position,reportsTo:supervisorId||'',notes:clean(notes).slice(0,320)};
+    return '';
+  }
+  function teamStructure(e){
+    const records=teamEntries(e);
+    if(!records.length)return '<section class="panel section"><h2>Team hierarchy</h2><div class="empty">Add a person to this event team to start building a hierarchy.</div></section>';
+    const byId=new Map(records.map(n=>[n.person.id,n]));
+    const nodeParent=n=>{
+      if(!n.reportsTo)return '';
+      return wouldCycle(e,n.person.id,n.reportsTo)?'':n.reportsTo;
+    };
+    const tree=parentId=>records.filter(n=>nodeParent(n)===parentId);
+    const selected=byId.get(ui.teamPerson)||records.find(n=>!nodeParent(n))||records[0];
+    const node=(n,visited)=>{
+      if(visited.has(n.person.id))return '';
+      const next=new Set(visited);next.add(n.person.id);
+      const children=tree(n.person.id).filter(x=>!next.has(x.person.id));
+      const jobs=n.roles.map(a=>a.role).filter((v,i,a)=>a.indexOf(v)===i).join(' · ');
+      const assigned=(published(e)?.tasks||[]).filter(t=>taskOwner(e,t.id)===n.person.id);
+      const completed=assigned.filter(t=>t.state!=='pending').length;
+      const areasAssigned=n.roles.map(a=>a.areaId==='all'?'Whole event':areaName(e,a.areaId)).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
+      return '<li><button type="button" data-act="team-select" data-id="'+esc(n.person.id)+'" class="team-person '+(selected.person.id===n.person.id?'selected':'')+'" aria-label="Edit '+esc(n.person.name)+' in the team hierarchy">'+
+        '<span class="team-avatar" aria-hidden="true">'+esc(n.person.name.trim().slice(0,1).toUpperCase())+'</span>'+
+        '<span class="team-person-info"><strong>'+esc(n.person.name)+'</strong><span>'+esc(n.position)+' · '+esc(jobs||'Event team')+'</span><small>'+esc(areasAssigned)+'</small></span>'+
+        '<span class="team-progress">'+completed+'/'+assigned.length+'<small>tasks</small></span></button>'+
+        (children.length?'<ul class="team-branch">'+children.map(c=>node(c,next)).join('')+'</ul>':'')+'</li>';
+    };
+    const roots=records.filter(n=>!nodeParent(n));
+    const supervisors=records.filter(n=>n.person.id!==selected.person.id);
+    const manager=selected.reportsTo;
+    const direct=records.filter(x=>nodeParent(x)===selected.person.id);
+    return '<section class="panel section" id="team-hierarchy"><div class="section-head"><div><h2>Team hierarchy</h2>'+
+      '<p class="muted">Build a chain of responsibility for this event, from the person in charge to deputies and helpers.</p></div>'+
+      pill(records.length+' people · '+roots.length+' reporting groups')+'</div>'+
+      '<div class="team-hierarchy-layout"><div class="team-structure">'+
+      '<div class="eyebrow" style="margin:0 0 10px">REPORTING TREE</div>'+
+      '<ul class="team-tree">'+roots.map(n=>node(n,new Set())).join('')+'</ul>'+
+      '<p class="form-note">Select a person in the tree to edit their position or who they report to. Different events can have different structures.</p></div>'+
+      '<form id="team-hierarchy-form" class="team-editor"><div class="eyebrow">SELECTED PERSON</div>'+
+      '<h3>'+esc(selected.person.name)+'</h3>'+
+      '<p class="muted">'+esc(selected.roles.map(a=>a.role).join(', '))+'</p>'+
+      '<input type="hidden" name="personId" value="'+esc(selected.person.id)+'">'+
+      '<label>Position in this team<select name="position">'+TEAM_POSITIONS.map(p=>'<option value="'+esc(p)+'" '+(selected.position===p?'selected':'')+'>'+esc(p)+'</option>').join('')+'</select></label>'+
+      '<label>Reports to<select name="reportsTo"><option value="">Nobody · top of reporting tree</option>'+
+      supervisors.map(n=>'<option value="'+esc(n.person.id)+'" '+(manager===n.person.id?'selected':'')+'>'+esc(n.person.name)+' · '+esc(n.position)+'</option>').join('')+'</select></label>'+
+      '<label>Responsibilities / notes<textarea name="notes" rows="3" maxlength="320" placeholder="Optional team responsibilities">'+esc(selected.notes)+'</textarea></label>'+
+      '<div class="team-report-summary"><strong>'+direct.length+' direct report'+(direct.length===1?'':'s')+'</strong><p>'+
+      (direct.map(x=>esc(x.person.name)).join(', ')||'No one currently reports directly to this person.')+'</p></div>'+
+      '<button class="btn primary" type="submit">Save reporting line</button>'+
+      '<p class="form-note">Reporting lines describe coordination, not application permissions or safety approvals.</p></form></div></section>';
+  }
+
   function taskOwnership(e){
     const tasks=published(e)?.tasks||[],members=crewMembers(e);
     return '<section class="panel section"><div class="section-head"><h2>Assign installation tasks</h2>'+pill(tasks.filter(t=>taskOwner(e,t.id)).length+' / '+tasks.length+' assigned')+'</div>'+
@@ -436,6 +525,7 @@
       '<button class="btn primary" data-act="publish">Publish current crew revision</button>')+
       changeNotice(e)+changePanel(e)+
       '<div class="stats">'+stat('Team & suppliers',a.length,'Event-specific roles')+stat('Installation',done+'%','Reported installed')+stat('Technical checks',c.verified,'Marked verified')+stat('Open issues',c.issues,'Awaiting response')+'</div>'+
+      teamStructure(e)+
       '<div class="grid cols2 section"><section class="panel"><div class="section-head"><h2>Event team</h2>'+pill(a.length+' assignments')+'</div>'+
       '<div class="stack">'+(a.length?a.map(x=>'<div class="linkrow"><div><strong><a href="#/entities/'+encodeURIComponent(x.entityId)+'" data-act="profile" data-id="'+esc(x.entityId)+'">'+esc(aname(x.entityId))+'</a></strong><div class="detail">'+esc(x.role)+' · '+esc(x.areaId==='all'?'Entire event':areaName(e,x.areaId))+(x.responsibility?' · '+esc(x.responsibility):'')+(x.equipmentId&&x.quantity?' · '+esc(x.quantity)+' × '+esc((db.equipment||[]).find(g=>g.id===x.equipmentId)?.name||'Unknown equipment'):'')+'</div></div><button class="btn small danger" data-act="remove-assignment" data-id="'+esc(x.id)+'">Remove</button></div>').join(''):'<div class="empty">No assignments yet.</div>')+'</div>'+
       '<div class="sep"></div><h3>Assign someone to this event</h3><form id="assign-form" class="form-grid">'+
@@ -550,7 +640,24 @@
     }
     if(action==='resolve-issue'){const x=org().issues.find(x=>x.id===id&&x.eventId===e.id);if(x){x.status='Resolved';x.resolvedAt=now();store();notice('Issue marked resolved.');}return;}
     if(action==='toggle-cue'){const x=(org().show[e.id]||[]).find(x=>x.id===id);if(x){x.done=!x.done;store();render();}return;}
-    if(action==='remove-assignment'){const x=org().assignments.find(x=>x.id===id&&x.eventId===e.id);if(x&&confirm('Remove this event-specific assignment? The entity record will remain.')){org().assignments=org().assignments.filter(y=>y.id!==id);store();render();}return;}
+    if(action==='team-select'){ui.teamPerson=id;render();return;}
+    if(action==='remove-assignment'){
+      const x=org().assignments.find(x=>x.id===id&&x.eventId===e.id);
+      if(x&&confirm('Remove this event role? The person and their other event roles remain.')){
+        org().assignments=org().assignments.filter(y=>y.id!==id);
+        if(!org().assignments.some(y=>y.eventId===e.id&&y.entityId===x.entityId)){
+          const hierarchy=org().teamHierarchy[e.id]||{},replacement=hierarchy[x.entityId]?.reportsTo||'';
+          Object.values(hierarchy).forEach(v=>{if(v.reportsTo===x.entityId)v.reportsTo=replacement;});
+          delete hierarchy[x.entityId];
+          const ta=org().taskAssignments[e.id]||{};
+          Object.keys(ta).forEach(taskId=>{if(ta[taskId]===x.entityId)delete ta[taskId];});
+          if(ui.teamPerson===x.entityId)ui.teamPerson='';
+          if(ui.crewPerson===x.entityId)ui.crewPerson='all';
+        }
+        store();render();
+      }
+      return;
+    }
     if(action==='alias'){const x=entity(id);if(!x)return;const raw=prompt('New alias for '+x.name+':');const v=clean(raw).slice(0,140);if(v&&!x.aliases.some(y=>y.toLowerCase()===v.toLowerCase())){x.aliases.push(v);store();render();}return;}
     if(action==='rename'){const x=entity(id);if(!x)return;const v=clean(prompt('Entity display name:',x.name)).slice(0,140);if(v){x.name=v;x.customName=true;store();render();}return;}
   });
@@ -578,8 +685,13 @@
   });
   document.addEventListener('submit',ev=>{
     const f=ev.target;if(!$.contains(f))return;
-    if(!['assign-form','cue-form','look-form','entity-form','entity-note-form','relation-form'].includes(f.id))return;
+    if(!['assign-form','cue-form','look-form','entity-form','entity-note-form','relation-form','team-hierarchy-form'].includes(f.id))return;
     ev.preventDefault();const d=new FormData(f),val=k=>clean(d.get(k)),e=current(),o=org();
+    if(f.id==='team-hierarchy-form'){
+      const error=saveTeamLine(e,val('personId'),val('reportsTo'),val('position'),val('notes'));
+      if(error){notice(error);return;}
+      ui.teamPerson=val('personId');store();notice('Reporting line updated for this event.');return;
+    }
     if(f.id==='assign-form'){
       if(!entity(val('entityId')))return;
       const eqId=(db.equipment||[]).some(g=>g.id===val('equipmentId'))?val('equipmentId'):null;
