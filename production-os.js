@@ -187,11 +187,10 @@
   function tasksFor(e,snap){
     const p=snap.plan||{},items=p.items||[],list=[],byId=Object.fromEntries(items.map(x=>[x.id,x]));
     items.forEach(x=>{
-      if(x.kind==='stage')return;
       const an=areaName(e,groupArea(e,x,snap),snap);
       const patch=snap.technical?.patch?.[x.id]||{},power=snap.technical?.power?.[x.id]||{};
       const dmx=x.kind==='light'?' DMX: '+(patch.start!=null?'U'+(patch.universe||1)+' / '+patch.start:'address not set')+(patch.modeName?' ('+patch.modeName+')':'')+'.':'';
-      const detail='Position at X '+num(x.x).toFixed(1)+' m, Y '+num(x.y).toFixed(1)+' m, height '+num(x.z).toFixed(1)+' m.'+dmx+' Confirm site reference, safe mounting and power assignment.';
+      const detail=(x.kind==='stage'?'Set out stage structure':'Position equipment')+' at X '+num(x.x).toFixed(1)+' m, Y '+num(x.y).toFixed(1)+' m, height '+num(x.z).toFixed(1)+' m.'+dmx+(x.kind==='stage'?' Confirm engineering, assembly and rigging approvals before use.':' Confirm site reference, safe mounting and power assignment.');
       list.push(specTask('place',x.id,'Position '+x.name,groupArea(e,x,snap),detail,[x.id,x.name,x.kind,x.areaId,x.x,x.y,x.z,x.fixtureType,x.rotation,areas(e,snap).find(a=>a.id===groupArea(e,x,snap)),snap.technical?.patch?.[x.id],power,snap.technical?.deviceSpecs?.[x.id]]));
     });
     (p.runs||[]).forEach(r=>{
@@ -202,7 +201,7 @@
       const detail=from.name+' → '+to.name+' · '+String(r.type||'Connection').toUpperCase()+
         (r.connector?' · '+r.connector:'')+(r.cableLength?' · nominal '+r.cableLength+' m cable':' · cable length unconfirmed')+
         '. Check route, connector, length and protection on site.';
-      list.push(specTask('connect',r.id,'Connect '+name,a,detail,[r.id,r.cableId,r.type,r.from,r.to,r.cableLength,r.connector,r.slack,r.linkType,r.waypoints,snap.venue?.links,snap.technical?.patch?.[r.from],snap.technical?.patch?.[r.to],from.x,from.y,from.z,from.areaId,to.x,to.y,to.z,to.areaId]));
+      list.push(specTask('connect',r.id,'Connect '+name,a,detail,[r.id,r.cableId,r.type,r.from,r.to,r.cableLength,r.connector,r.slack,r.linkType,r.waypoints,snap.venue?.links,snap.technical?.patch?.[r.from],snap.technical?.patch?.[r.to],from.x,from.y,from.z,from.areaId,to.x,to.y,to.z,to.areaId,areas(e,snap),snap.venue?.geometry]));
     });
     return list;
   }
@@ -284,9 +283,9 @@
   function design(e,c){
     const p=plan(e),v=venue(e);
     return hero('DESIGN WORKSPACE','Design the event','A guided entry point to the existing 3D space planner and its Design → Connect → Review → Export workflow.',
-      '<a class="btn primary" href="index.html#/bookings/'+encodeURIComponent(e.id)+'">Open event and 3D planner ↗</a>')+
+      '<a class="btn primary" href="index.html#/spaces/'+encodeURIComponent(e.id)+'">Open 3D planner ↗</a>')+
       changeNotice(e)+changePanel(e)+
-      '<div class="notice info section">The existing 3D editor is preserved in the classic workspace. Open this event booking, then select <strong>3D layout</strong>. Return here to review and publish installation instructions. This is the same browser data, reloaded between workspaces.</div>'+
+      '<div class="notice info section">The existing 3D editor is preserved in the classic workspace. Use Open 3D planner above to continue in the existing four-step Design → Connect → Review → Export workflow. Return here to review and publish installation instructions. This is the same browser data, reloaded between workspaces.</div>'+
       '<div class="grid cols2 section"><section class="panel"><h2>Physical venue model</h2>'+
       '<p class="muted">'+esc(v?.name||'Unassigned venue')+'</p>'+
       '<div class="stack">'+areas(e).map(a=>'<div class="linkrow"><div><strong>'+esc(a.name)+'</strong><div class="detail">'+esc(a.kind||'Area')+' · '+num(a.width)+' × '+num(a.length)+' m (illustrative until verified)</div></div>'+pill((p.items||[]).filter(i=>groupArea(e,i)===a.id).length+' items')+'</div>').join('')+'</div></section>'+
@@ -327,7 +326,7 @@
   function technical(e,c){
     const p=plan(e),t=db.technicalPlans?.[e.id]||{},patch=(t.patch||{});
     return hero('TECHNICAL WORKSPACE','Connect and verify','See fixture positions, current DMX patch, cable details and verification status.',
-      '<a class="btn primary" href="index.html#/bookings/'+encodeURIComponent(e.id)+'">Edit in technical planner ↗</a>')+
+      '<a class="btn primary" href="index.html#/spaces/'+encodeURIComponent(e.id)+'">Edit technical plan ↗</a>')+
       changeNotice(e)+
       '<div class="grid cols2 section"><section class="panel"><h2>DMX fixture patch</h2>'+patchTable(e)+
       '<p class="form-note">These are the live technical records, not a snapshot of the last published pack. Check modes and manufacturer specifications.</p></section>'+
