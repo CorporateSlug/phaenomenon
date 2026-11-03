@@ -24,9 +24,9 @@
     try{const raw=localStorage.getItem(KEY);const obj=raw?JSON.parse(raw):starter();return obj&&typeof obj==='object'&&!Array.isArray(obj)?obj:starter();}
     catch(e){return starter();}
   }
-  let db=load(), ui={view:'home',eventId:'',area:'all',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
-  try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';}catch(e){}
-  function store(){try{localStorage.setItem(KEY,JSON.stringify(db));localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area}));}catch(e){alert('Browser storage is full or unavailable. Export your event information from the original app.');}}
+  let db=load(), ui={view:'home',eventId:'',area:'all',role:'lead',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
+  try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.role=saved.role||'lead';}catch(e){}
+  function store(){try{localStorage.setItem(KEY,JSON.stringify(db));localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,role:ui.role}));}catch(e){alert('Browser storage is full or unavailable. Export your event information from the original app.');}}
   function org(){return db.productionOS;}
   function venues(){return db.venues||[];}
   function events(){return db.eventJobs||[];}
@@ -124,7 +124,7 @@
     }
     if(!o.relationships.some(r=>r.id==='rel-demo1'))o.relationships.push({id:'rel-demo1',from:'ent-demo-tech',to:'ent-demo-supplier',type:'Freelances for',notes:'Illustrative relationship only',demo:true});
     if(!o.published[DEMO])publish(DEMO,true);
-    if(!events().some(e=>e.id===ui.eventId))ui.eventId=events()[0]?.id||DEMO;
+    if(!events().some(e=>e.id===ui.eventId))ui.eventId=events().some(e=>e.id===DEMO)?DEMO:(events()[0]?.id||DEMO);
   }
   function snapshot(e){
     if(!e)return null;
@@ -149,8 +149,10 @@
     items.forEach(x=>{
       if(x.kind==='stage')return;
       const an=areaName(e,groupArea(e,x,snap),snap);
-      const detail='Position at X '+num(x.x).toFixed(1)+' m, Y '+num(x.y).toFixed(1)+' m, height '+num(x.z).toFixed(1)+' m. Confirm actual site reference and safe mounting.';
-      list.push(specTask('place',x.id,'Position '+x.name,groupArea(e,x,snap),detail,[x.id,x.name,x.kind,x.areaId,x.x,x.y,x.z,x.fixtureType,x.rotation,areas(e,snap).find(a=>a.id===groupArea(e,x,snap)),snap.technical?.patch?.[x.id]]));
+      const patch=snap.technical?.patch?.[x.id]||{},power=snap.technical?.power?.[x.id]||{};
+      const dmx=x.kind==='light'?' DMX: '+(patch.start!=null?'U'+(patch.universe||1)+' / '+patch.start:'address not set')+(patch.modeName?' ('+patch.modeName+')':'')+'.':'';
+      const detail='Position at X '+num(x.x).toFixed(1)+' m, Y '+num(x.y).toFixed(1)+' m, height '+num(x.z).toFixed(1)+' m.'+dmx+' Confirm site reference, safe mounting and power assignment.';
+      list.push(specTask('place',x.id,'Position '+x.name,groupArea(e,x,snap),detail,[x.id,x.name,x.kind,x.areaId,x.x,x.y,x.z,x.fixtureType,x.rotation,areas(e,snap).find(a=>a.id===groupArea(e,x,snap)),snap.technical?.patch?.[x.id],power,snap.technical?.deviceSpecs?.[x.id]]));
     });
     (p.runs||[]).forEach(r=>{
       const from=byId[r.from],to=byId[r.to];
@@ -160,9 +162,14 @@
       const detail=from.name+' → '+to.name+' · '+String(r.type||'Connection').toUpperCase()+
         (r.connector?' · '+r.connector:'')+(r.cableLength?' · nominal '+r.cableLength+' m cable':' · cable length unconfirmed')+
         '. Check route, connector, length and protection on site.';
-      list.push(specTask('connect',r.id,'Connect '+name,a,detail,[r.id,r.cableId,r.type,r.from,r.to,r.cableLength,r.connector,r.slack,r.linkType,r.waypoints,snap.venue?.links,snap.technical?.patch?.[r.from],snap.technical?.patch?.[r.to]]));
+      list.push(specTask('connect',r.id,'Connect '+name,a,detail,[r.id,r.cableId,r.type,r.from,r.to,r.cableLength,r.connector,r.slack,r.linkType,r.waypoints,snap.venue?.links,snap.technical?.patch?.[r.from],snap.technical?.patch?.[r.to],from.x,from.y,from.z,from.areaId,to.x,to.y,to.z,to.areaId]));
     });
     return list;
+  }
+  function revisionDiff(e){
+    const previous=published(e)?.tasks||[],proposed=tasksFor(e,snapshot(e));
+    const old=new Map(previous.map(x=>[x.id,x]));
+    return {added:proposed.filter(x=>!old.has(x.id)).length,changed:proposed.filter(x=>old.has(x.id)&&old.get(x.id).fingerprint!==x.fingerprint).length,removed:previous.filter(x=>!proposed.some(y=>y.id===x.id)).length};
   }
   function publish(eventId,quiet){
     const e=events().find(x=>x.id===eventId);if(!e)return;
@@ -194,7 +201,7 @@
       '</nav><div class="rail-bottom">ONE EVENT. ONE MODEL.<br>Multiple task-focused views.<br><br>'+
       '<a href="index.html#/overview">← Classic studio workspace</a><p>Local demo only. No shared accounts, real-time sync or enforced permissions.</p></div></aside>'+
       '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / Production</div><div class="header-title">'+viewName()+'</div></div>'+
-      '<div class="header-tools"><label style="min-width:190px" aria-label="Active event"><span style="font-size:10px">ACTIVE EVENT</span><select id="event-picker">'+
+      '<div class="header-tools"><label style="min-width:160px">STARTING WORKSPACE<select id="role-picker">'+[['lead','Designer / lead'],['tech','Lighting technician'],['crew','Installation crew'],['manager','Production manager']].map(x=>'<option value="'+x[0]+'" '+(ui.role===x[0]?'selected':'')+'>'+x[1]+'</option>').join('')+'</select></label><label style="min-width:190px" aria-label="Active event"><span style="font-size:10px">ACTIVE EVENT</span><select id="event-picker">'+
       events().map(x=>'<option value="'+esc(x.id)+'" '+(x.id===e?.id?'selected':'')+'>'+esc(x.title)+'</option>').join('')+
       '</select></label><a class="btn" href="index.html#/bookings/'+encodeURIComponent(e?.id||'')+'">Open booking ↗</a></div></header>'+
       '<div class="content">'+(ui.notice?'<div id="message" class="notice good section" role="status">'+esc(ui.notice)+'</div>':'')+
@@ -209,7 +216,7 @@
   function pill(text,type){return '<span class="pill '+(type||'')+'">'+esc(text)+'</span>';}
   function stat(label,value,sub){return '<div class="stat"><small>'+esc(label)+'</small><strong>'+esc(value)+'</strong><small>'+esc(sub)+'</small></div>';}
   function changeNotice(e){
-    if(isChanged(e))return '<div class="notice section"><strong>Unpublished design changes detected.</strong> The published crew pack remains on revision '+published(e).revision+'. Crews can continue using that published revision; review the pending changes before issuing updated instructions. <button class="btn small" data-act="publish">Review &amp; publish revision</button></div>';
+    if(isChanged(e)){const d=revisionDiff(e);return '<div class="notice section"><strong>Unpublished design changes detected.</strong> The existing crew pack remains on revision '+published(e).revision+'. Proposed impact: <strong>'+d.added+' new</strong>, <strong>'+d.changed+' changed</strong>, <strong>'+d.removed+' removed</strong> tasks. Review the pending changes before distributing updated instructions. <button class="btn small" data-act="publish">Review &amp; publish revision</button></div>';}
     if(!published(e))return '<div class="notice section">There is no published installation pack for this event. Design the event first, then publish instructions. <button class="btn small" data-act="publish">Publish first pack</button></div>';
     return '';
   }
@@ -320,7 +327,7 @@
       areaPicker(e))+
       changeNotice(e)+
       (!pub?'<div class="empty">Publish a crew pack from Design to begin.</div>':
-      '<div class="notice info section">Crew pack revision <strong>'+pub.revision+'</strong> · issued '+new Date(pub.at).toLocaleString('en-AU')+'.'+
+      '<div class="notice info section">Crew pack revision <strong>'+pub.revision+'</strong> · issued '+new Date(pub.at).toLocaleString('en-AU')+'. <button class="btn small no-print" data-act="print-crew">Print crew pack</button> '+
       (isChanged(e)?' A newer design has not been published. Do not use unreviewed new instructions.':' Instructions reflect the currently published plan.')+'</div>'+
       '<div class="stats" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+stat('Assigned tasks',total.length,'In chosen area')+stat('Installed',done,'Marked by crew')+stat('Verified',total.filter(x=>x.state==='verified').length,'Technical sign-off status')+'</div>'+
       '<div class="grid cols2"><section class="panel"><h2>Installation instructions</h2><div class="row between section"><span class="muted">'+done+' of '+total.length+' installed</span>'+pill((total.length?Math.round(done/total.length*100):0)+'%')+'</div>'+
@@ -427,6 +434,7 @@
       if(next>=0&&next<ui.history.length){ui.histIndex=next;navigateProfile(ui.history[next],true);}return;
     }
     if(action==='select-event'){ui.eventId=id;ui.area='all';store();location.hash='#/home';render();return;}
+    if(action==='print-crew'){window.print();return;}
     if(action==='publish'){if(!plan(e).items?.length){notice('Add equipment in the 3D planner before publishing.');return;}publish(e.id,false);return;}
     if(action==='installed'){const t=p?.tasks.find(x=>x.id===id);if(!t)return;t.state=t.state==='pending'?'installed':'pending';t.installedAt=t.state==='installed'?now():null;t.verifiedAt=null;store();render();return;}
     if(action==='verify'){const t=p?.tasks.find(x=>x.id===id);if(!t||t.state!=='installed')return;t.state='verified';t.verifiedAt=now();store();notice('Task recorded as verified. This is not a safety certification.');return;}
@@ -442,6 +450,7 @@
   });
   document.addEventListener('change',ev=>{
     const el=ev.target;if(!$.contains(el))return;
+    if(el.id==='role-picker'){ui.role=el.value;store();location.hash='#/'+({lead:'home',tech:'technical',crew:'crew',manager:'production'}[ui.role]||'home');route();}
     if(el.id==='event-picker'){ui.eventId=el.value;ui.area='all';store();render();}
     if(el.id==='area-picker'){ui.area=el.value;store();render();}
     if(el.id==='entity-filter'){ui.entityType=el.value;render();}
