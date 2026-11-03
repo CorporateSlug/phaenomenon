@@ -454,17 +454,32 @@
       if(['x','y','z','watts'].includes(key)){const max=key==='x'?v.width:key==='y'?v.length:key==='z'?Math.max(v.height,G.peakHeight(v)):100000;const min=0;item[key]=r1(clamp(n(e.target.value),min,max));if(key==='x'||key==='y'){const loc=G.insidePosition(v.geometry.footprint,{x:item.x,y:item.y});item.x=loc.x;item.y=loc.y;}this.constrainItem(item);}
       else if(key==='kind'){if(palette[e.target.value]){item.kind=e.target.value;if(item.kind==='light')window.PhaenomenonFixtures?.ensure(item);}}
       else if(key==='name')item.name=e.target.value.slice(0,100).trim()||'Equipment';
-      else if(key==='eqId'){const gear=this.db.equipment.find(g=>g.id===e.target.value);item.eqId=gear?.id||'';if(gear){item.name=gear.name;item.kind=this.kindForGear(gear);item.watts=n(gear.watts);if(item.kind==='light')window.PhaenomenonFixtures?.ensure(item);}}
+      else if(key==='eqId'){
+        if(e.target.value==='__skip__'){item.eqId='';item.kitTracked=false;}
+        else {
+          const gear=this.db.equipment.find(g=>g.id===e.target.value);
+          item.eqId=gear?.id||'';item.kitTracked=true;
+          if(gear){item.kind=this.kindForGear(gear);if(!item.watts)item.watts=n(gear.watts);if(item.kind==='light')window.PhaenomenonFixtures?.ensure(item);}
+        }
+      }
       this.persist();this.updateAll();
     }
     deleteSelected(){if(!this.selectedItem())return;this.plan.items=this.plan.items.filter(o=>o.id!==this.selected);this.plan.runs=this.plan.runs.filter(r=>r.from!==this.selected&&r.to!==this.selected);this.selected=null;this.persist();this.updateAll();}
     duplicateSelected(){const o=this.selectedItem();if(!o)return;const v=this.venue,p=G.insidePosition(v.geometry.footprint,{x:r1(clamp(o.x+1,0,v.width)),y:r1(clamp(o.y+1,0,v.length))}),clone={...o,id:uid('obj'),name:o.name+' copy',x:p.x,y:p.y};this.constrainItem(clone);this.plan.items.push(clone);this.selected=clone.id;this.persist();this.updateAll();}
     syncKit(){
-      const ev=this.event,items=this.plan.items.filter(o=>o.eqId&&this.db.equipment.some(g=>g.id===o.eqId));
-      if(!items.length){alert('Link at least one placed item to an equipment catalogue entry in the inspector first.');return;}
-      const counts={};items.forEach(o=>counts[o.eqId]=(counts[o.eqId]||0)+1);
-      if((ev.kit||[]).length&&!confirm('Replace the assigned event kit with the catalogue-linked items placed in this layout? Unplaced items in the kit will be removed.'))return;
-      ev.kit=Object.entries(counts).map(([id,qty])=>({id,qty}));this.save();this.notify('Placed equipment copied into the event kit. Review additional cables, stands and stock before invoicing.');
+      const E=window.PhaenomenonEventBuilder;
+      const result=E?.reconcileKit(this.db,this.eventId);
+      if(!result){
+        alert('The Event Builder equipment model could not be loaded. Please refresh the planner before syncing the kit.');
+        return;
+      }
+      if(result.error){alert(result.error);return;}
+      if(result.updated){
+        this.save();this.notify('Event kit now covers '+result.updated+' linked equipment type(s). Existing unplaced allocations were retained.');
+      }else this.notify('Your event kit already covers the catalogue-linked objects in this layout.');
+      if(result.unlinked.length||result.unknown.length){
+        this.notify('Review '+(result.unlinked.length+result.unknown.length)+' unlinked or unknown objects in the Event Builder before finalising the kit.');
+      }
     }
     updateAll(){this.updateInspector();this.updateRoutes();this.updateSummary();this.draw();this.technical?.refresh();}
     updateInspector(){
@@ -473,7 +488,11 @@
       if(!item){el.innerHTML='<div class="sp-empty"><span>◎</span><strong>Nothing selected</strong><p>Click a model object or choose one from the equipment list. Its coordinates and height will appear here.</p></div>';return;}
       const field=(label,key,value,max)=>`<label>${label}<input data-key="${key}" class="field" type="number" step="0.1" min="0" max="${max}" value="${r1(value)}"></label>`;
       el.innerHTML=`<label class="sp-inspect-full">Item name<input data-key="name" class="field" maxlength="100" value="${esc(item.name)}"></label><label class="sp-inspect-full">Equipment type<select data-key="kind" class="form-select">${TYPES.map(([k,label])=>`<option value="${k}" ${item.kind===k?'selected':''}>${label}</option>`).join('')}</select></label>
-      <label class="sp-inspect-full">Link to equipment inventory<select data-key="eqId" class="form-select"><option value="">Not linked (visual only)</option>${this.db.equipment.map(g=>`<option value="${esc(g.id)}" ${item.eqId===g.id?'selected':''}>${esc(g.name)}</option>`).join('')}</select></label>
+      <label class="sp-inspect-full">Event kit / equipment library<select data-key="eqId" class="form-select">
+        <option value="" ${!item.eqId&&item.kitTracked!==false?'selected':''}>Not linked yet</option>
+        ${this.db.equipment.map(g=>`<option value="${esc(g.id)}" ${item.eqId===g.id&&item.kitTracked!==false?'selected':''}>${esc(g.name)}</option>`).join('')}
+        <option value="__skip__" ${item.kitTracked===false?'selected':''}>Venue feature / not part of kit</option>
+      </select></label>
       <div class="sp-coordinates">${field('X · metres','x',item.x,this.venue.width)}${field('Y · metres','y',item.y,this.venue.length)}${field('Height · m','z',item.z,G.peakHeight(this.venue))}${field('Watts (estimate)','watts',item.watts,100000)}</div>
       <div class="sp-inspect-actions"><button type="button" class="button small" data-cmd="duplicate">Duplicate</button><button type="button" class="button small" data-cmd="remove">Remove</button></div>`;
       const F=window.PhaenomenonFixtures;
