@@ -165,15 +165,15 @@
       icon(glyph,17)+'<span>'+label+'</span>'+(key==='pipeline'&&db.leads.length?'<b class="nav-count">'+db.leads.length+'</b>':'')+'</a>';
   };
   function sidebar(){
-    const group=(key,label,glyph,links)=>{
+    const group=(key,label,glyph,links,extra='')=>{
       const active=links.includes(ui.view);
       return '<details class="nav-group" data-group="'+key+'" '+(active?'open':'')+'><summary class="nav-group-heading" aria-label="'+label+'">'+
         icon(glyph,17)+'<span>'+label+'</span><span class="nav-chevron" aria-hidden="true">⌄</span></summary>'+
-        '<div class="nav-subitems">'+links.map(navItem).join('')+'</div></details>';
+        '<div class="nav-subitems">'+links.map(navItem).join('')+extra+'</div></details>';
     };
     const activeEvent=ui.eventId&&db.eventJobs.some(x=>x.id===ui.eventId)?encodeURIComponent(ui.eventId):'';
     return '<aside class="sidebar" id="studio-sidebar">'+
-      '<div class="sidebar-heading"><a class="logo" href="#/overview" data-action="nav" data-view="overview" aria-label="Phaenomenon Studio home">'+
+      '<div class="sidebar-heading"><a class="logo" href="#/overview" data-action="nav" data-view="overview" aria-label="Phaenomenon Studio overview">'+
         '<span class="logo-mark">'+icon('lamp',21)+'</span><span><span class="logo-name">phaenomenon<span style="color:#d9b58c">.</span></span><span class="logo-tag">Event production studio</span></span></a>'+
         '<button type="button" class="nav-mobile-toggle" data-action="toggle-sidebar" aria-expanded="false" aria-controls="studio-navigation">'+icon('menu',18)+'<span>Menu</span></button></div>'+
       '<nav class="nav-items" id="studio-navigation" aria-label="Studio navigation">'+
@@ -181,7 +181,8 @@
         '<a class="nav-link nav-feature" href="production.html#/home/'+activeEvent+'" title="Open the selected event workspace">'+icon('layers',17)+'<span>Event workspace</span></a>'+
         navItem('bookings')+navItem('overview')+
         '<div class="nav-label">TOOLS &amp; RECORDS</div>'+
-        group('planning','Plan &amp; design','layers',['spaces'])+
+        group('planning','Plan &amp; design','layers',['spaces'],
+          '<a class="nav-link" href="production.html#/technical/'+activeEvent+'" title="Review current event technical connections">'+icon('layers',14)+'<span>Technical connections</span></a>')+
         group('library','Equipment library','bulb',['equipment','fixtures'])+
         group('studio','Studio management','briefcase',['projects','pipeline','schedule','clients','invoices'])+
         navItem('settings')+
@@ -191,7 +192,7 @@
       '</aside>';
   }
 
-  function topbar(){const page=ui.view==='search'?'Search':navLinks.find(x=>x[0]===ui.view)?.[1]||'Overview';return `<header class="topbar"><div class="breadcrumbs">Workspace <span style="color:#b2bcc1">/</span> <span>${page}</span></div><div class="top-actions"><label class="top-search">${icon('search',14)}<input id="global-search" aria-label="Search projects and leads" placeholder="Search workspace" value="${attr(ui.search)}" /></label><button class="button primary" data-action="open-modal" data-type="booking">${icon('plus',15)} New event</button></div></header>`;}
+  function topbar(){const page=ui.view==='search'?'Search':navLinks.find(x=>x[0]===ui.view)?.[1]||'Overview';return `<header class="topbar"><div class="breadcrumbs">Studio <span style="color:#b2bcc1">/</span> <span>${page}</span></div><div class="top-actions"><label class="top-search">${icon('search',14)}<input id="global-search" aria-label="Search projects and leads" placeholder="Search workspace" value="${attr(ui.search)}" /></label><button class="button primary" data-action="open-modal" data-type="booking">${icon('plus',15)} New event</button></div></header>`;}
   function layout(content){return `<div class="app-shell">${sidebar()}<main class="main">${topbar()}<div class="content">${content}</div></main></div>${ui.projectId?drawer():''}${ui.modal?modal():''}${ui.toast?`<div class="toast" role="status">${icon('check',15)} ${safe(ui.toast)}</div>`:''}${ui.projectId?printSheet():''}${ui.printInvoiceId?invoicePrintPage():''}`;}
   function heading(eyebrow,title,description,right=''){return `<div class="section-intro"><div><div class="eyebrow">${eyebrow}</div><h1>${title}</h1><p>${description}</p></div>${right}</div>`;}
   function metric(label,value,foot,glyph){return `<section class="metric-card"><div class="metric-top"><span class="metric-label">${label}</span><span class="metric-icon">${icon(glyph,15)}</span></div><div class="metric-value">${value}</div><div class="metric-foot">${foot}</div></section>`;}
