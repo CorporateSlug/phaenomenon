@@ -1,0 +1,34 @@
+name: Production OS checks
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'production-os.js'
+      - 'production.html'
+      - 'production.css'
+      - 'tests/production-os.test.mjs'
+      - '.github/workflows/production-os-checks.yml'
+  pull_request:
+    paths:
+      - 'production-os.js'
+      - 'production.html'
+      - 'production.css'
+      - 'tests/production-os.test.mjs'
+      - '.github/workflows/production-os-checks.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify JavaScript syntax
+        run: node --check production-os.js
+      - name: Run Production OS regression suite
+        run: node --test tests/production-os.test.mjs
