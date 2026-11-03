@@ -240,13 +240,17 @@
       v.spaces=v.spaces.filter(sp=>used.has(sp.id));
       if(Array.isArray(v.links))v.links=v.links.filter(link=>used.has(link.fromSpace)&&used.has(link.toSpace));
     }
-    return {plan:jsonClone(plan(e)),venue:v,spaceIds:jsonClone(e.spaceIds||[]),technical:jsonClone((db.technicalPlans||{})[e.id]||{})};
+    const p=plan(e),linked=new Set((p.items||[]).filter(x=>x.eqId&&x.kitTracked!==false).map(x=>x.eqId));
+    const equipment=(db.equipment||[]).filter(x=>linked.has(x.id)).map(g=>({id:g.id,name:g.name,category:g.category,watts:g.watts})).sort((a,b)=>a.id.localeCompare(b.id));
+    const kit=(e.kit||[]).map(x=>({id:x.id,qty:Math.max(0,Math.floor(num(x.qty)))})).sort((a,b)=>a.id.localeCompare(b.id));
+    return {plan:jsonClone(p),venue:v,spaceIds:jsonClone(e.spaceIds||[]),kit,equipment,technical:jsonClone((db.technicalPlans||{})[e.id]||{})};
   }
   function signature(s){
     if(!s)return '';
     const p=s.plan||{},v=s.venue||{},t=s.technical||{};
     return JSON.stringify({
       spaceIds:s.spaceIds||[],
+      kit:s.kit||[],equipment:s.equipment||[],
       plan:{venueId:p.venueId,items:p.items||[],runs:p.runs||[]},
       venue:{id:v.id,spaces:v.spaces,links:v.links,siteGeometry:(!v.spaces?.length?v.geometry:null)},
       technical:{patch:t.patch,power:t.power,deviceSpecs:t.deviceSpecs,circuits:t.circuits,universeCount:t.universeCount}
@@ -260,8 +264,8 @@
     next.forEach(x=>{
       const prior=oldBy.get(x.id);
       if(!prior)warnings.push('New equipment: '+x.name);
-      else if(JSON.stringify([prior.x,prior.y,prior.z,prior.areaId,prior.rotation,prior.fixtureType,prior.name])!==
-        JSON.stringify([x.x,x.y,x.z,x.areaId,x.rotation,x.fixtureType,x.name]))
+      else if(JSON.stringify([prior.x,prior.y,prior.z,prior.areaId,prior.rotation,prior.fixtureType,prior.name,prior.eqId,prior.kitTracked,prior.watts])!==
+        JSON.stringify([x.x,x.y,x.z,x.areaId,x.rotation,x.fixtureType,x.name,x.eqId,x.kitTracked,x.watts]))
         warnings.push('Equipment location or configuration changed: '+x.name);
     });
     items.filter(x=>!newBy.has(x.id)).forEach(x=>warnings.push('Removed equipment: '+x.name));
@@ -281,6 +285,10 @@
       warnings.push('Power distribution or circuit planning information changed');
     if(JSON.stringify(old.technical?.deviceSpecs)!==JSON.stringify(fresh.technical?.deviceSpecs))
       warnings.push('Equipment connector or technical specification changed');
+    if(JSON.stringify(old.equipment||[])!==JSON.stringify(fresh.equipment||[]))
+      warnings.push('Linked equipment specification changed: inspect type, power and connectors before installation');
+    if(JSON.stringify(old.kit||[])!==JSON.stringify(fresh.kit||[]))
+      warnings.push('Event equipment kit quantities or allocation changed: review the revised plan');
     if(!warnings.length&&isChanged(e))warnings.push('Other model metadata changed. Check live plan against the published snapshot.');
     return warnings;
   }
@@ -302,9 +310,12 @@
     items.forEach(x=>{
       const an=areaName(e,groupArea(e,x,snap),snap);
       const patch=snap.technical?.patch?.[x.id]||{},power=snap.technical?.power?.[x.id]||{};
+      const catalog=(snap.equipment||[]).find(g=>g.id===x.eqId);
+      const inventoryNote=x.kitTracked===false?' This object is excluded from the event hire kit.':catalog?
+        ' Equipment library: '+catalog.name+' ('+(catalog.category||'unclassified')+').':'';
       const dmx=x.kind==='light'?' DMX: '+(patch.start!=null?'U'+(patch.universe||1)+' / '+patch.start:'address not set')+(patch.modeName?' ('+patch.modeName+')':'')+'.':'';
-      const detail=(x.kind==='stage'?'Set out stage structure':'Position equipment')+' at X '+num(x.x).toFixed(1)+' m, Y '+num(x.y).toFixed(1)+' m, height '+num(x.z).toFixed(1)+' m.'+dmx+(x.kind==='stage'?' Confirm engineering, assembly and rigging approvals before use.':' Confirm site reference, safe mounting and power assignment.');
-      list.push(specTask('place',x.id,'Position '+x.name,groupArea(e,x,snap),detail,[x.id,x.name,x.kind,x.areaId,x.x,x.y,x.z,x.fixtureType,x.rotation,areas(e,snap).find(a=>a.id===groupArea(e,x,snap)),snap.technical?.patch?.[x.id],power,snap.technical?.deviceSpecs?.[x.id]]));
+      const detail=(x.kind==='stage'?'Set out stage structure':'Position equipment')+' at X '+num(x.x).toFixed(1)+' m, Y '+num(x.y).toFixed(1)+' m, height '+num(x.z).toFixed(1)+' m.'+inventoryNote+dmx+(x.kind==='stage'?' Confirm engineering, assembly and rigging approvals before use.':' Confirm site reference, safe mounting and power assignment.');
+      list.push(specTask('place',x.id,'Position '+x.name,groupArea(e,x,snap),detail,[x.id,x.name,x.kind,x.areaId,x.x,x.y,x.z,x.fixtureType,x.rotation,x.eqId,x.kitTracked,x.watts,catalog,areas(e,snap).find(a=>a.id===groupArea(e,x,snap)),snap.technical?.patch?.[x.id],power,snap.technical?.deviceSpecs?.[x.id]]));
     });
     (p.runs||[]).forEach(r=>{
       const from=byId[r.from],to=byId[r.to];
