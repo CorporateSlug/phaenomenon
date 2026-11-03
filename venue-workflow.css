@@ -22,3 +22,41 @@
 .venue-quick-dialog .button.primary,.venue-quick-dialog .btn.primary{background:#83d9ca;color:#102220;font-weight:700}
 .venue-quick-dialog .venue-picker-top button{width:auto}
 @media(max-width:640px){.venue-quick-dialog{padding:15px}.venue-quick-dialog .form-grid,.venue-space-grid{grid-template-columns:1fr}.venue-picker{padding:11px}}
+
+
+/* Phone dialogs behave like compact sheets, without covering navigation unpredictably. */
+@media(max-width:840px){
+  .venue-quick-backdrop{
+    display:flex;align-items:flex-end;justify-content:center;
+    padding:0;overscroll-behavior:contain;
+    background:rgba(1,8,12,.83);
+  }
+  .venue-quick-dialog{
+    width:100%;max-width:100%;max-height:calc(100dvh - 8px);
+    padding:17px 15px calc(18px + env(safe-area-inset-bottom,0px));
+    border-radius:20px 20px 0 0;
+    overflow-y:auto;overscroll-behavior:contain;
+    box-shadow:0 -15px 50px #0006;
+    -webkit-overflow-scrolling:touch;
+  }
+  .venue-quick-dialog h2{font-size:19px}
+  .venue-quick-form{gap:12px;margin-top:14px}
+  .venue-quick-form label{font-size:12px;line-height:1.4}
+  .venue-quick-form input,.venue-quick-form select,.venue-quick-form textarea{
+    width:100%;max-width:100%;font-size:16px;min-height:44px;
+  }
+  .venue-quick-dialog .form-grid,.venue-space-grid{grid-template-columns:1fr;gap:11px}
+  .venue-quick-actions{
+    display:grid;grid-template-columns:1fr 1fr;gap:9px;
+    padding-top:10px;border-top:1px solid #384d55;
+  }
+  .venue-quick-actions>.button,.venue-quick-actions>.btn{
+    width:100%;min-height:46px;font-size:13px;white-space:normal;padding:10px;
+  }
+  .venue-picker-top{gap:10px;align-items:flex-start}
+  .venue-picker-top button{min-width:42px;min-height:42px}
+  .venue-space-option{min-height:53px;padding:10px 12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .venue-quick-dialog{scroll-behavior:auto}
+}
