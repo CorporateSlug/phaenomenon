@@ -335,3 +335,36 @@ test('technical core supports typed video signal cables alongside audio and DMX'
   assert.ok(core.CONNECTORS.video.includes('HDMI'));
   assert.equal(core.title('video'),'Video / SDI / HDMI');
 });
+
+test('production tasks use focused panels with persistent selection',()=>{
+  const memory=new Map(),h=harness(memory);
+  h.navigate('#/production');
+  assert.match(h.ui.innerHTML,/id="production-team"[^>]*class="production-pane active"/);
+  h.click('production-tab','logistics');
+  assert.match(h.ui.innerHTML,/id="production-logistics"[^>]*class="production-pane active"/);
+  assert.doesNotMatch(h.ui.innerHTML,/id="production-team"[^>]*class="production-pane active"/);
+  assert.equal(JSON.parse(memory.get('phaenomenon-production-prefs-v1')).productionTab,'logistics');
+  const recovered=harness(memory);
+  recovered.navigate('#/production');
+  assert.match(recovered.ui.innerHTML,/id="production-logistics"[^>]*class="production-pane active"/);
+});
+
+test('schematic cross-stage video route is geometrically navigable but unverified',()=>{
+  const sandbox={window:{}};
+  const geometry=readFileSync(new URL('../venue-geometry.js',import.meta.url),'utf8');
+  const multi=readFileSync(new URL('../multi-space.js',import.meta.url),'utf8');
+  runInNewContext(geometry,sandbox,{filename:'venue-geometry.js'});
+  runInNewContext(multi,sandbox,{filename:'multi-space.js'});
+  const db=harness().read(),e=db.eventJobs.find(x=>x.id==='ev-abbotsford-two-stage-demo');
+  const venue=db.venues.find(x=>x.id===e.venueId),plan=db.venuePlans[e.id];
+  sandbox.window.PhaenomenonGeometry.normalize(venue);
+  sandbox.window.PhaenomenonMultiSpace.ensure(venue);
+  const p={db,eventId:e.id,venue,plan};
+  const video=plan.runs.find(x=>x.type==='video');
+  assert.ok(video);
+  const route=sandbox.window.PhaenomenonMultiSpace.route(p,video);
+  assert.ok(route);
+  assert.equal(route.betweenSpaces,true);
+  assert.equal(route.provisional,true);
+  assert.ok(route.length>0);
+});
