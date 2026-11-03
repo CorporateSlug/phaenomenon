@@ -21,40 +21,5 @@
   <script src="space-planner.js" defer></script>
   <script src="app.js" defer></script>
   <script type="module" src="space-3d.js"></script>
-  <script>
-  /* Accessible, additive entry point for the connected Event Production workspace.
-     Existing links remain available under More classic tools. */
-  (function () {
-    function integrate() {
-      const nav=document.querySelector('.nav-items');
-      if(!nav||nav.querySelector('[data-production-entry]'))return;
-      const entry=document.createElement('a');
-      entry.href='production.html#/home';
-      entry.className='nav-link';
-      entry.dataset.productionEntry='true';
-      entry.style.cssText='border:1px solid #527a75;background:#203533;color:#baf2e3;font-weight:700;margin-bottom:10px';
-      const symbol=document.createElement('span');
-      symbol.textContent='✦';symbol.setAttribute('aria-hidden','true');
-      const name=document.createElement('span');name.textContent='Event production';
-      entry.append(symbol,name);
-      nav.prepend(entry);
-      const advanced=['projects','pipeline','schedule','fixtures','settings'];
-      const links=[...nav.querySelectorAll(':scope > a[data-view]')].filter(a=>advanced.includes(a.dataset.view));
-      if(!links.length)return;
-      const more=document.createElement('details');
-      more.className='legacy-tools';
-      more.style.cssText='margin-top:8px;padding-top:8px;border-top:1px solid rgba(160,180,190,.17)';
-      const summary=document.createElement('summary');
-      summary.textContent='More classic tools';
-      summary.style.cssText='cursor:pointer;color:#9aaab7;font-size:12px;padding:10px 13px';
-      more.append(summary);
-      links.forEach(a=>more.append(a));
-      if(links.some(a=>a.classList.contains('active')))more.open=true;
-      nav.append(more);
-    }
-    const target=document.getElementById('app');
-    if(target){new MutationObserver(integrate).observe(target,{childList:true,subtree:true});integrate();}
-  })();
-  </script>
 </body>
 </html>
