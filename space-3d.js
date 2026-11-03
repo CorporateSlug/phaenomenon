@@ -9,8 +9,8 @@ const G=window.PhaenomenonGeometry, T=THREE;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const n=(v,d=0)=>Number.isFinite(+v)?+v:d;
 const rad=v=>v*Math.PI/180;
-const colors={light:0xf4bc76,audio:0xb49be7,power:0xe6a46d,network:0x6ad0cd,control:0xb3a1e8,rigging:0xb6c9c5,stage:0x80aba0,other:0xb9c9c7};
-const cableColors={power:0xeaa36f,network:0x6bd0ce,dmx:0xb6a2f2,audio:0x91bdf5};
+const colors={light:0xf4bc76,audio:0xb49be7,video:0xf3a0c6,power:0xe6a46d,network:0x6ad0cd,control:0xb3a1e8,rigging:0xb6c9c5,stage:0x80aba0,other:0xb9c9c7};
+const cableColors={power:0xeaa36f,network:0x6bd0ce,dmx:0xb6a2f2,audio:0x91bdf5,video:0xf5a0cb};
 function clearObjects(group){group.traverse(o=>{o.geometry?.dispose();const m=Array.isArray(o.material)?o.material:[o.material];m.forEach(x=>x?.dispose?.())});group.clear()}
 class SceneViewer{
  constructor(p){
@@ -129,6 +129,7 @@ class SceneViewer{
   }else if(kind==='stage'){const mesh=add(new T.Mesh(new T.BoxGeometry(clamp(n(o.width,1.8),.5,30),.26,clamp(n(o.depth,1.25),.5,30)),mat));mesh.position.y=.06}
   else if(kind==='rigging'){const mesh=add(new T.Mesh(new T.BoxGeometry(.2,1.5,.2),mat));mesh.position.y=.55}
   else if(kind==='audio'){add(new T.Mesh(new T.BoxGeometry(.52,.7,.38),mat))}
+  else if(kind==='video'){add(new T.Mesh(new T.BoxGeometry(1,.65,.14),mat));const foot=add(new T.Mesh(new T.BoxGeometry(.7,.05,.4),mat));foot.position.y=-.39}
   else{add(new T.Mesh(new T.BoxGeometry(.46,.27,.42),mat))}
   if(selected){const ring=new T.Mesh(new T.TorusGeometry(.51,.024,6,44),new T.MeshBasicMaterial({color:0xffd998}));ring.rotation.x=Math.PI/2;ring.position.y=-Math.max(.16,n(o.z))+.05;group.add(ring);
    group.add(new T.ArrowHelper(new T.Vector3(0,0,-1),new T.Vector3(0,.2,0),.9,0xffcb82,.15,.11))}
