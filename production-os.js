@@ -556,7 +556,7 @@
 
   function home(e,c){
     if(!e)return '<div class="empty">Create an event in the original workspace to begin.</div>';
-    return hero('YOUR EVENT WORKSPACE',e.title, date(e.date)+' · '+(venue(e)?.name||e.venue||'Venue not set'),pill(e.status||'Enquiry')+' '+pill('Crew pack r'+(published(e)?.revision||0)))+
+    return hero('YOUR EVENT WORKSPACE',e.title, date(e.date)+' · '+(venue(e)?.name||e.venue||'Venue not set'),'<a class="btn primary" href="#/builder/'+encodeURIComponent(e.id)+'">Continue event builder →</a> '+pill(e.status||'Enquiry')+' '+pill('Crew pack r'+(published(e)?.revision||0)))+
       changeNotice(e)+venueSettings(e)+
       '<div class="stats">'+stat('Spaces',areas(e).length,'Selected for this event')+stat('Placed equipment',(plan(e).items||[]).length,'All equipment and structures')+
       stat('Installation',c.installed+' / '+c.all,'Tasks marked installed')+stat('Open issues',c.issues,'Awaiting resolution')+'</div>'+
