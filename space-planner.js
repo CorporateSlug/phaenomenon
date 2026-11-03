@@ -118,7 +118,7 @@
             <button type="button" id="sp-zoom-in" class="sp-tool sp-zoom-btn" aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
           </div>
         </div></div>
-          <div class="sp-canvas-wrap"><canvas id="sp-canvas" tabindex="0" role="region" aria-label="Interactive event layout" aria-describedby="sp-canvas-status"></canvas><div id="sp-canvas-status" class="sp-canvas-activation" role="status" aria-live="polite"><span class="sp-canvas-activation-dot" aria-hidden="true"></span><span class="sp-canvas-activation-text">Click model to interact · scroll page normally</span></div><div class="sp-canvas-corner"><span>METRES · NOT TO SCALE FOR CONSTRUCTION</span></div></div>
+          <div class="sp-canvas-wrap"><canvas id="sp-canvas" tabindex="0" role="region" aria-label="Interactive event layout" aria-describedby="sp-canvas-status"></canvas><div id="sp-canvas-status" class="sp-canvas-activation" role="status" aria-live="polite"><span class="sp-canvas-activation-dot" aria-hidden="true"></span><span class="sp-canvas-activation-text">Click model to interact · scroll page normally</span></div></div>
           <div class="sp-floor-tools"><strong>Add to layout</strong><div class="sp-palette">${TYPES.map(([kind,label])=>`<button class="sp-add" data-kind="${kind}" type="button"><i style="background:${palette[kind]}"></i>${esc(label)}</button>`).join('')}</div></div>
           <div class="sp-hint"><span class="sp-dot" style="background:${CABLES.power.color}"></span> Power <span class="sp-dot" style="background:${CABLES.network.color}"></span> Network <span class="sp-dot" style="background:${CABLES.dmx.color}"></span> DMX <span class="sp-dot" style="background:${CABLES.audio.color}"></span> Audio <label><input id="sp-show-runs" type="checkbox" checked> Show cables</label></div>
         </section>
@@ -553,7 +553,7 @@
         c.shadowBlur=0;c.font=active?'600 12px system-ui':'11px system-ui';c.fillStyle=active?'#ffffff':'#e4edeb';c.textAlign='center';c.strokeStyle='#142528';c.lineWidth=3;c.lineJoin='round';c.strokeText(o.name,p.x,p.y-rr-10);c.fillText(o.name,p.x,p.y-rr-10);c.restore();
       }
       this.hitNodes=nodes.slice().reverse();
-      c.font='11px system-ui';c.fillStyle='#b5ccc7aa';c.textAlign='left';c.fillText(this.mode==='top'?'TOP PLAN · EDITABLE VENUE OUTLINE':'3D CONCEPT VIEW · ELEVATION REPRESENTED',17,25);
+
     }
     coord(e){const r=this.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
     pointerDown(e){if(e.button!==0)return;this.setCanvasActive(true);this.canvas.focus({preventScroll:true});const pos=this.coord(e);
