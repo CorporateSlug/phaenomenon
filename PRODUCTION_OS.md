@@ -14,9 +14,9 @@ The prototype shares the existing `localStorage` key `phaenomenon-demo-v1`, with
 
 | Record | Purpose |
 | --- | --- |
-| `productionOS.entities` | Canonical people, organisations, venues, spaces and event profiles; aliases and notes; deterministic links to the existing clients, venues, areas and bookings. |
+| `productionOS.entities` | Canonical people, organisations, venues, spaces and event profiles; aliases and notes; deterministic links to the existing clients, Venues, Spaces and bookings. |
 | `productionOS.relationships` | Typed entity edges, including source-derived venue/space and event/venue links and user-defined relationships. |
-| `productionOS.assignments` | Event-specific person/organisation roles and area responsibilities. Identity is independent of the role on a particular event. |
+| `productionOS.assignments` | Event-specific person/organisation roles and Space responsibilities. Identity is independent of the role on a particular event. |
 | `productionOS.teamHierarchy[eventId]` | Event-specific reporting hierarchy for people: a position such as In charge, Second in charge, Team lead or Helper; optional supervisor entity ID and responsibilities. Separate from job roles, identity and permissions. |
 | `productionOS.packAcknowledgements[eventId]` | Local review markers tied to a person and crew pack revision. Not authenticated or signed approvals. |
 | `productionOS.operations[eventId]` | Event load-in and return intervals used for preliminary equipment stock checks. |
@@ -28,6 +28,20 @@ The prototype shares the existing `localStorage` key `phaenomenon-demo-v1`, with
 **Asset separation:** the existing equipment catalogue (`equipment`), actual equipment quantities/stock, and an event's placed equipment items (`venuePlans[eventId].items`) are not synonymous. A future serial-numbered inventory layer can add individual physical asset IDs and reservations.
 
 **Source data:** venues, clients, events and venue spaces are presented as canonical entities while the classic `venues`, `clients` and `eventJobs` records remain their sources. This avoids destructive migration of existing prototype data.
+
+## Reusable Venues and Spaces
+
+The user-facing terminology is now consistent: **Venue** (reusable physical site), **Space** (room, hall, courtyard or stage area within a Venue), and **Event** (one booking selecting a Venue and the Spaces it uses). Lighting zones and production teams are separate concepts.
+
+The shared helper [venue-workflow.js](venue-workflow.js) powers both entry points. In **classic Event bookings**, the Venue is a saved-record selector, followed by checkboxes for Spaces used. **+ Create venue** opens a pop-up for a new Venue and first named Space. **+ Create missing space** adds a new Space to the *selected existing* Venue without duplicating the Venue or losing the event form. In **Production → Event home**, the same selection and creation flows are available. The classic 3D planner also uses the shared model.
+
+Venue master geometry lives in `venues[]`, and its Spaces in `venues[].spaces[]`. The event stores `venueId` and `spaceIds[]`, while each event's movable equipment and connections live in `venuePlans[eventId]`. If an existing venue acquires a new Space, previously configured events do **not** automatically acquire it. An Event's entity profile has derived **Uses space** relationships only to Spaces selected for that Event.
+
+Legacy single-space Venues are given one reusable **Main space**; venue names from old booking text are matched to existing Venue IDs instead of creating duplicates. Names are checked case-insensitively to prevent duplicate Venues or duplicate Spaces within a Venue. Moving an event with placements to another Venue prompts for confirmation and flags the saved layout for review. An occupied Space cannot be removed from an event's selections until its equipment is moved or removed. Adding a non-selected Space does not by itself invalidate crew packs issued for unrelated Events.
+
+Tests: [tests/venue-workflow.test.mjs](tests/venue-workflow.test.mjs) and [tests/venue-booking-ui.test.mjs](tests/venue-booking-ui.test.mjs).
+
+---
 
 ## User experience
 
