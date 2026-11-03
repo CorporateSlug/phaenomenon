@@ -1,5 +1,12 @@
 # Phaenomenon
 
+## Event switching and event schedule
+
+Open [All events & schedule](production.html#/events) from the Production OS sidebar (or the **All events** button beside the event selector). The event index reads the same saved bookings as the classic studio workspace, with an **Event list** showing upcoming, past and undated events and a **Month calendar** with previous/next month, Today and Selected event controls. Select any event to open its guided builder directly. The **Switch event** selector remains available throughout each event workspace and updates the browser route to the newly selected event, so follow-on navigation remains consistent. The classic [Studio calendar](index.html#/schedule) is linked from the event index for broader diary needs.
+
+All of these are local-browser views of your existing event data. No separate calendar database or cross-device sync is created.
+
+
 
 ## New: Guided Event Builder, equipment links and local recovery
 
