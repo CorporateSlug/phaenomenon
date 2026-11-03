@@ -25,7 +25,7 @@
     catch(e){return starter();}
   }
   const storedRaw=()=>{try{return localStorage.getItem(KEY);}catch(e){return null;}};
-  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'home',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',homeVenueOpen:false,teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
+  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'home',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',homeVenueOpen:false,builderFocus:'',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
   try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.crewPerson=saved.crewPerson||'all';ui.role=saved.role||'lead';ui.productionTab=saved.productionTab||'team';}catch(e){}
   function store(){
     try{
@@ -506,6 +506,39 @@
       '<p class="form-note">Changing a linked object can affect published crew instructions. Review and publish a revision if necessary.</p></div></details>';
   }
 
+
+  function builderBasics(e){
+    const eventTypes=['Other','Performance','Live music','Festival','Wedding','Corporate','Private','Exhibition'];
+    const statuses=['Enquiry','Quoted','Confirmed','Completed','Cancelled'];
+    return '<section class="panel section builder-inline-form"><div class="section-head"><h2>Event details</h2><span class="form-note">Edit the event without leaving the guided workflow</span></div>'+
+      '<form id="builder-basics-form" class="form-grid">'+
+      '<label class="wide">Event name<input class="input" name="title" required maxlength="120" value="'+esc(e.title)+'"></label>'+
+      '<label>Event date<input class="input" name="date" type="date" required value="'+esc(e.date)+'"></label>'+
+      '<label>Client<select name="clientId" required>'+db.clients.map(x=>'<option value="'+esc(x.id)+'" '+(e.clientId===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label>'+
+      '<label>Event type<select name="eventType">'+eventTypes.map(x=>'<option value="'+esc(x)+'" '+(e.eventType===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></label>'+
+      '<label>Status<select name="status">'+statuses.map(x=>'<option value="'+esc(x)+'" '+(e.status===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></label>'+
+      '<label>Expected guests<input class="input" name="guests" type="number" min="1" max="5000" value="'+Math.max(1,Math.floor(num(e.guests,1)))+'"></label>'+
+      '<label>Lighting zones (rough kit estimate)<input class="input" name="zones" type="number" min="1" max="12" value="'+Math.max(1,Math.floor(num(e.zones,1)))+'"></label>'+
+      '<label class="wide">Notes<textarea class="input" name="notes" maxlength="3000">'+esc(e.notes||'')+'</textarea></label>'+
+      '<div class="wide row"><button type="submit" class="btn primary">Save event details</button>'+
+      '<a class="btn" href="#/builder/'+encodeURIComponent(e.id)+'/spaces">Next: Venue &amp; spaces →</a></div>'+
+      '</form></section>';
+  }
+  function builderFocused(e,c){
+    const step=ui.builderFocus;
+    if(!step)return '';
+    const name={brief:'Event details',spaces:'Venue & spaces',design:'3D design',equipment:'Equipment kit',connections:'Technical connections',team:'People & responsibilities',review:'Review & publish'}[step];
+    if(!name)return '';
+    const content=step==='brief'?builderBasics(e):step==='spaces'?venueSettings(e):
+      step==='equipment'?logistics(e):step==='review'?
+      (changePanel(e)||'<section class="panel section"><h2>Published crew pack</h2><p class="muted">'+
+        (published(e)?'Revision '+published(e).revision+' is published. Review the technical record before issuing instructions.':'No crew pack published for this event.')+
+        '</p><button class="btn primary" data-act="publish">Publish current crew pack</button></section>'):'';
+    return '<div class="builder-focus section" id="builder-active-step"><div class="section-head"><div><span class="eyebrow">EDITING STEP</span><h2>'+esc(name)+'</h2></div>'+
+      '<a class="btn small" href="#/builder/'+encodeURIComponent(e.id)+'">Close step ×</a></div>'+
+      (content||'<p class="muted">Continue using the dedicated workspace for this stage.</p>')+'</div>';
+  }
+
   function builderPage(e,c){
     const model=window.PhaenomenonEventBuilder;
     if(!e)return hero('EVENT BUILDER','Start a production','Create an event to begin.','<button class="btn primary" data-act="builder-new">+ Create event</button>');
@@ -514,7 +547,11 @@
     const next=steps.find(x=>x.state!=='complete');
     const gear=model?.mapEquipment(db,e);
     const progress=steps.length?Math.round(setup/steps.length*100):0;
-    const actionLink=step=>'<a class="btn '+(step.id===(next?.id)?'primary':'small')+'" href="'+esc(step.href)+'">'+esc(step.action)+' →</a>';
+    const actionLink=step=>{
+      const local=['brief','spaces','equipment','review'].includes(step.id);
+      const href=local?'#/builder/'+encodeURIComponent(e.id)+'/'+step.id:step.href;
+      return '<a class="btn '+(step.id===(next?.id)?'primary':'small')+'" href="'+esc(href)+'">'+esc(local?'Edit step':step.action)+' →</a>';
+    };
     return hero('GUIDED EVENT BUILDER',e.title,'Choose the next step or jump directly to any part of the event. Nothing is locked.',
         '<button class="btn" data-act="builder-new">+ Another event</button>')+
       changeNotice(e)+
@@ -522,7 +559,7 @@
       '<div class="builder-progress" role="progressbar" aria-label="Event setup progress" aria-valuenow="'+setup+'" aria-valuemin="0" aria-valuemax="'+steps.length+'"><div style="width:'+progress+'%"></div></div></div>'+
       (next?'<div class="builder-next"><span class="eyebrow">SUGGESTED NEXT</span><strong>'+esc(next.title)+'</strong><small>'+esc(next.summary)+'</small>'+actionLink(next)+'</div>':
       '<div class="builder-next"><strong>All steps contain planning information</strong><small>Review technical assumptions and publish updates as needed.</small><a class="btn" href="#/design/'+encodeURIComponent(e.id)+'">Review &amp; publish →</a></div>')+
-      '</section>'+
+      '</section>'+builderFocused(e,c)+
       '<ol class="builder-step-list section">'+steps.map((step,index)=>{
         const stateLabel=({complete:'Configured',attention:'Needs attention',todo:'Not started'})[step.state]||'Draft';
         return '<li class="builder-step '+esc(step.state)+'"><div class="builder-number">'+(index+1)+'</div>'+
@@ -1003,7 +1040,8 @@
   function route(){
     const parts=location.hash.replace(/^#\/?/,'').split('/'),view=parts[0];
     ui.view=['builder','home','design','technical','crew','production','entities'].includes(view)?view:'home';
-    ui.homeVenueOpen=ui.view==='home'&&parts[1]==='venue';
+    ui.builderFocus=ui.view==='builder'&&['brief','spaces','design','equipment','connections','team','review'].includes(parts[2])?parts[2]:'';
+    ui.homeVenueOpen=(ui.view==='home'&&parts[1]==='venue')||(ui.view==='builder'&&ui.builderFocus==='spaces');
     const routeEvent=ui.view==='home'&&parts[1]==='venue'?parts[2]:ui.view==='production'&&['team','logistics','installation','show'].includes(parts[1])?parts[2]:ui.view==='entities'?null:parts[1];
     if(ui.view==='production'&&['team','logistics','installation','show'].includes(parts[1]))ui.productionTab=parts[1];
     if(routeEvent&&events().some(x=>x.id===decodeURIComponent(routeEvent)))ui.eventId=decodeURIComponent(routeEvent);
@@ -1249,8 +1287,25 @@
       return;
     }
     if(!$.contains(f))return;
-    if(!['assign-form','cue-form','look-form','entity-form','entity-note-form','relation-form','team-hierarchy-form','operations-form','event-venue-form'].includes(f.id))return;
+    if(!['assign-form','cue-form','look-form','entity-form','entity-note-form','relation-form','team-hierarchy-form','operations-form','event-venue-form','builder-basics-form'].includes(f.id))return;
     ev.preventDefault();const d=new FormData(f),val=k=>clean(d.get(k)),e=current(),o=org();
+    if(f.id==='builder-basics-form'){
+      const title=val('title').slice(0,120),day=val('date');
+      if(!title||!/^\d{4}-\d{2}-\d{2}$/.test(day)||!db.clients.some(x=>x.id===val('clientId'))){
+        notice('Enter an event name, valid date and client.');return;
+      }
+      e.title=title;e.date=day;e.clientId=val('clientId');
+      const allowed=['Other','Performance','Live music','Festival','Wedding','Corporate','Private','Exhibition'];
+      e.eventType=allowed.includes(val('eventType'))?val('eventType'):'Other';
+      const statuses=['Enquiry','Quoted','Confirmed','Completed','Cancelled'];
+      e.status=statuses.includes(val('status'))?val('status'):'Enquiry';
+      e.guests=Math.max(1,Math.min(5000,Math.floor(num(val('guests'),1))));
+      e.zones=Math.max(1,Math.min(12,Math.floor(num(val('zones'),1))));
+      e.notes=val('notes').slice(0,3000);
+      ensure();
+      if(store())notice('Event details saved. Continue with Venue & spaces when ready.');
+      return;
+    }
     if(f.id==='event-venue-form'){
       const v=window.PhaenomenonVenueWorkflow?.findVenue(db,val('venueId'));
       const checked=(d.getAll?d.getAll('spaceIds'):[]).map(String);
