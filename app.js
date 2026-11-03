@@ -208,7 +208,7 @@
     const fallback=ev?.venue&&!id?'<p class="venue-hint">Previous venue text: '+safe(ev.venue)+'. Select or create a reusable venue to link it.</p>':'';
     return '<div class="full venue-picker" data-venue-picker>'+
       '<div class="venue-picker-top"><label class="field-label" for="event-venue-id">Venue</label><button class="button small" type="button" data-action="venue-create">+ Create venue</button></div>'+
-      '<select class="form-select" id="event-venue-id" data-venue-pick name="venueId" required>'+venueOptionsHTML(id)+'</select>'+fallback+
+      '<select class="form-select" id="event-venue-id" data-venue-pick data-rendered-venue="'+(id||'')+'" name="venueId" required>'+venueOptionsHTML(id)+'</select>'+fallback+
       '<div class="venue-picker-top"><span class="field-label">Spaces used by this event</span><button class="button small" type="button" data-action="space-create" '+(!id?'disabled':'')+'>+ Create missing space</button></div>'+
       '<div data-space-choices>'+eventSpaceChoices(id,available)+'</div>'+
       '<p class="venue-hint">Venues and their spaces are reusable. Only checked spaces are included in this event; the venue library is never duplicated.</p></div>';
@@ -216,11 +216,12 @@
   function refreshVenuePicker(picker,venueId,extraSpaceId){
     if(!picker)return;
     const dropdown=picker.querySelector('[data-venue-pick]');
-    const previous=dropdown?.value;
+    const previous=dropdown?.dataset.renderedVenue||'';
     const checked=[...picker.querySelectorAll('input[name="spaceIds"]:checked')].map(x=>x.value);
     if(dropdown){
       dropdown.innerHTML=venueOptionsHTML(venueId);
       dropdown.value=venueId||'';
+      dropdown.dataset.renderedVenue=venueId||'';
     }
     const preserve=venueId===previous?checked:VE()?.ensureSpaces(VE()?.findVenue(db,venueId)).map(x=>x.id);
     if(extraSpaceId&&!preserve.includes(extraSpaceId))preserve.push(extraSpaceId);
@@ -401,12 +402,11 @@
     if(!field)return;
     const picker=field.closest('[data-venue-picker]');
     if(field.value==='__new__'){
-      const prior=field.dataset.oldVenue||'';
+      const prior=field.dataset.renderedVenue||'';
       field.value=prior;
       openVenueQuick('venue',picker);
       return;
     }
-    field.dataset.oldVenue=field.value;
     refreshVenuePicker(picker,field.value);
   });
   document.addEventListener('submit',e=>{
@@ -416,7 +416,7 @@
       const result=which==='quick-venue'?VE().addVenue(db,params):VE().addSpace(db,val('venueId'),{...params,name:val('spaceName')});
       if(result.error&&!result.existing){alert(result.error);return;}
       if(result.venue&&!result.error){if(!save())return;}
-      refreshVenuePicker(quickVenueOrigin,result.venue?.id||val('venueId'),result.space?.id||result.existing?.id);
+      refreshVenuePicker(quickVenueOrigin,result.venue?.id||(which==='quick-venue'?result.existing?.id:val('venueId')),result.space?.id||(which==='quick-space'?result.existing?.id:undefined));
       closeVenueQuick();
       flash(result.error||'Saved to the venue library. Choose the spaces for this event.');
       return;
