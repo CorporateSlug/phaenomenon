@@ -18,6 +18,8 @@ The prototype shares the existing `localStorage` key `phaenomenon-demo-v1`, with
 | `productionOS.relationships` | Typed entity edges, including source-derived venue/space and event/venue links and user-defined relationships. |
 | `productionOS.assignments` | Event-specific person/organisation roles and area responsibilities. Identity is independent of the role on a particular event. |
 | `productionOS.teamHierarchy[eventId]` | Event-specific reporting hierarchy for people: a position such as In charge, Second in charge, Team lead or Helper; optional supervisor entity ID and responsibilities. Separate from job roles, identity and permissions. |
+| `productionOS.packAcknowledgements[eventId]` | Local review markers tied to a person and crew pack revision. Not authenticated or signed approvals. |
+| `productionOS.operations[eventId]` | Event load-in and return intervals used for preliminary equipment stock checks. |
 | `productionOS.published[eventId]` | A numbered immutable-by-convention snapshot of the current venue layout, connections and technical records; corresponding instruction tasks, their statuses and archived revisions. |
 | `productionOS.issues` | Reported discrepancies or problems tied to an event and optionally an installation task. |
 | `productionOS.show[eventId]` | Lightweight run-of-show activities and optional links to creative lighting looks. |
@@ -33,8 +35,8 @@ The prototype shares the existing `localStorage` key `phaenomenon-demo-v1`, with
 
 1. **Design:** inspect the live multi-area venue and positioned equipment, then jump to the classic planner. Draft creative lighting looks.
 2. **Technical:** inspect current fixture patch, power circuits and cable runs. Independently mark already-installed tasks as verified.
-3. **Crew:** select an area, read published installation instructions and diagrams, mark equipment installed, report problems and print the pack.
-4. **Production:** manage the event team and role assignments, see readiness, review issues, maintain the run of show and publish new revisions.
+3. **Crew:** select an area and person, follow published installation instructions and diagrams, mark equipment installed, record review of a specific revision, report problems and print the pack.
+4. **Production:** manage the event hierarchy and task assignments, check installation readiness, monitor crew pack reviews, compare preliminary gear availability against overlapping events, review issues and run-of-show cues, and publish new revisions.
 5. **Entities:** search people, organisations, venues, spaces and events; add aliases, notes and relationships; drill into profiles with Back/Forward history.
 
 A **starting workspace** selector offers designer/lead, lighting technician, installation crew and production manager presets. These guide the starting screen only. Changing a view **does not** change permission.
@@ -63,18 +65,26 @@ The demo contains an illustrative two-area venue named **Abbotsford Convent · t
 ## What is deliberately not done
 
 - No synchronised accounts, invitations, backend, audit identity, real-time collaboration or enforced permissions.
-- No complete manufacturing-grade 3D/CAD, acoustic simulation, photometrics, TouchDesigner node engine, console/DMX playback or live show control.
+- No manufacturing-grade 3D/CAD, acoustic simulation, photometrics, TouchDesigner node engine, console/DMX playback or live show control. New video/SDI/HDMI-style connection planning is illustrative and does not validate signal integrity or physical cable limitations.
 - No certified cable/electrical planning, structural rigging approval, phase balancing, cable protection, RCD or weather safety verification.
-- No production-ready invoices, payments or supplier procurement.
-- No cross-browser/synchronised migration; changing a tab or device can leave an old copy in memory. **Use one active tab and export JSON backups** from the classic workspace.
+- No production-ready invoices, payments or supplier procurement. Supplier quantities shown in the event model are unverified and are not real supplier reservations.
+- No cross-device synchronisation or authenticated collaboration. Tabs on the same browser origin now detect saved changes and refresh; stale writes are blocked instead of silently overwriting newer data. This is **not** transactional collaboration. Still use JSON backups and avoid simultaneous live crew editing.
 
 ## Next engineering milestones
 
 1. **Typed domain schema and tests:** migrate to TypeScript; formalise People, Organisation, Venue, Space, Event, PhysicalAsset, ProductModel, Allocation, Assignment, Connection and CrewTask with stable IDs.
 2. **Durable storage and permissions:** authenticated organisations and project membership, role-scoped server actions, optimistic concurrency, backups, explicit approval identities and an audit log.
 3. **Change-impact engine:** dependency graph for circuit/patch/cable/fixture/crew-task changes, reviewable diffs, controlled superseding of issued plans and acknowledgement by affected staff.
-4. **Equipment and logistics:** owned vs hired stock, individually tracked fixtures/cases, date/time overlap, transport buffers, supplier commitments and picking/return workflows.
+4. **Equipment and logistics:** advance the new date/time overlap and count checks into separate owned/hired stock, individual fixture/case tracking, supplier confirmations, dispatch buffers, packing and returns.
 5. **Professional interoperability:** fixture sources, GDTF/MVR where appropriate, import/export validation, console/Tou​chDesigner interfaces behind explicit user controls.
 6. **Production operations:** production calendar, call sheets, crew invitations, approval and issue escalation, offline read-only packs and sync conflict handling.
 
 This is a proof of concept intended for usability testing with Aaron, not a deployable system for safety-critical production management.
+
+## Latest integrated workflows
+
+The new **Equipment and logistics** panel records load-in and return date/time windows, edits requested kit quantities, and checks against owned catalogue stock reserved by other **confirmed** overlapping events. Equipment allocated by suppliers is included as *expected* supply; it does not establish real supplier confirmation. If layout placements linked to the equipment catalogue exceed the event kit, the panel flags the discrepancy. These counts cannot prove venue, power, vehicle, delivery or inventory suitability.
+
+**Crew pack circulation** records that a selected team member reviewed a specific published revision. Publishing a new revision archives previous task snapshots and requires a new review marker. These are in-browser organisational records, not verified identities or legal/safety sign-offs.
+
+The scene planner now supports a **video equipment family** and HDMI/SDI-style video connections. The technical Review tab displays separate audio, video, Ethernet, DMX and power diagrams. They are schematic representations; the prototype does not process audiovisual signals or operate live equipment.
