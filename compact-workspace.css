@@ -223,3 +223,19 @@ body:has(#production-app) .calendar-grid { gap:4px; }
   }
   th { position:static!important; }
 }
+
+
+/* Reusable primitives for future list, catalogue and schedule workspaces. */
+.ph-bounded-list {
+  max-height:var(--ph-list-height);
+  overflow:auto;
+  overscroll-behavior:contain;
+  min-height:0;
+}
+.ph-table-region thead th {
+  position:sticky;
+  top:0;
+  z-index:3;
+}
+body:has(#production-app) .ph-table-region thead th { background:#202935;box-shadow:0 1px 0 #40505c; }
+body:has(#app) .ph-table-region thead th { background:#f1f6f3;box-shadow:0 1px 0 #dce8e3; }
