@@ -73,14 +73,14 @@ function production(memory=storage(),hash='#/home'){
     click:(act,id='')=>handlers.click({target:{closest:()=>({dataset:{act,id}})},preventDefault(){}})
   };
 }
-test('Studio sidebar groups advanced destinations without hiding Events and Studio home',()=>{
+test('Studio sidebar groups advanced destinations without hiding Events and Studio overview',()=>{
   const h=classic(),html=h.root.innerHTML;
   assert.equal((html.match(/class="nav-group"/g)||[]).length,3);
   assert.match(html,/Plan &amp; design/);
   assert.match(html,/Equipment library/);
   assert.match(html,/Studio management/);
   assert.match(html,/Event workspace/);
-  assert.match(html,/Studio home/);
+  assert.match(html,/Studio overview/);
   assert.match(html,/data-action="toggle-sidebar"/);
   assert.doesNotMatch(html,/More studio tools/);
   h.navigate('#/equipment');
@@ -98,7 +98,7 @@ test('Event bookings use focused tabs and switching does not re-render unsaved f
   assert.equal(h.panels[0].hidden,true);
   assert.equal(h.panels[1].hidden,false);
 });
-test('Studio home prioritises events and tasks with optional secondary metrics',()=>{
+test('Studio overview prioritises events and tasks with optional secondary metrics',()=>{
   const h=classic(storage(),'#/overview');
   assert.match(h.root.innerHTML,/Studio overview/);
   assert.match(h.root.innerHTML,/class="studio-more"/);
