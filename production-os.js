@@ -139,6 +139,46 @@
       technical:{patch:t.patch,power:t.power,deviceSpecs:t.deviceSpecs,circuits:t.circuits,universeCount:t.universeCount}
     });
   }
+
+  function changes(e){
+    const old=published(e)?.snapshot;if(!old)return [];
+    const fresh=snapshot(e),before=old.plan||{},after=fresh.plan||{},items=before.items||[],next=after.items||[];
+    const warnings=[],oldBy=new Map(items.map(x=>[x.id,x])),newBy=new Map(next.map(x=>[x.id,x]));
+    next.forEach(x=>{
+      const prior=oldBy.get(x.id);
+      if(!prior)warnings.push('New equipment: '+x.name);
+      else if(JSON.stringify([prior.x,prior.y,prior.z,prior.areaId,prior.rotation,prior.fixtureType,prior.name])!==
+        JSON.stringify([x.x,x.y,x.z,x.areaId,x.rotation,x.fixtureType,x.name]))
+        warnings.push('Equipment location or configuration changed: '+x.name);
+    });
+    items.filter(x=>!newBy.has(x.id)).forEach(x=>warnings.push('Removed equipment: '+x.name));
+    const a=new Map((before.runs||[]).map(x=>[x.id,x])),b=new Map((after.runs||[]).map(x=>[x.id,x]));
+    (after.runs||[]).forEach(x=>{
+      const y=a.get(x.id);
+      if(!y)warnings.push('New cable or signal connection: '+(x.cableId||x.id));
+      else if(JSON.stringify(y)!==JSON.stringify(x))warnings.push('Connection modified: '+(x.cableId||x.id));
+    });
+    (before.runs||[]).filter(x=>!b.has(x.id)).forEach(x=>warnings.push('Connection removed: '+(x.cableId||x.id)));
+    if(JSON.stringify(before.venueId)!==JSON.stringify(after.venueId)||
+      JSON.stringify([old.venue?.spaces,old.venue?.geometry,old.venue?.links,old.venue?.width,old.venue?.length])!==
+      JSON.stringify([fresh.venue?.spaces,fresh.venue?.geometry,fresh.venue?.links,fresh.venue?.width,fresh.venue?.length]))
+      warnings.push('Venue geometry or inter-area route changed: review site measurements and pathways');
+    if(JSON.stringify(old.technical?.patch||{})!==JSON.stringify(fresh.technical?.patch||{}))warnings.push('DMX addressing or fixture mode data changed');
+    if(JSON.stringify([old.technical?.power,old.technical?.circuits])!==JSON.stringify([fresh.technical?.power,fresh.technical?.circuits]))
+      warnings.push('Power distribution or circuit planning information changed');
+    if(JSON.stringify(old.technical?.deviceSpecs)!==JSON.stringify(fresh.technical?.deviceSpecs))
+      warnings.push('Equipment connector or technical specification changed');
+    if(!warnings.length&&isChanged(e))warnings.push('Other model metadata changed. Check live plan against the published snapshot.');
+    return warnings;
+  }
+  function changePanel(e){
+    if(!isChanged(e))return '';
+    return '<section id="revision-preview" class="panel section"><div class="section-head"><h2>Pending revision: review the impact</h2>'+pill(changes(e).length+' changes to inspect','warn')+'</div>'+
+      '<p class="muted">Review these changes before publishing. A new revision resets changed tasks and carries forward unchanged completed tasks.</p>'+
+      '<div class="stack">'+changes(e).map(x=>'<div class="linkrow"><span class="status-dot warn"></span><span style="flex:1">'+esc(x)+'</span></div>').join('')+'</div>'+
+      '<div class="row" style="margin-top:15px"><button class="btn primary" data-act="publish">Publish updated crew instructions</button>'+
+      '<span class="form-note">Human review required for safety-critical changes.</span></div></section>';
+  }
   function published(e){return org().published[e?.id]||null;}
   function isChanged(e){const pub=published(e);return !!(pub&&pub.signature!==signature(snapshot(e)));}
   function specTask(kind,sourceId,title,areaId,details,fp){
@@ -245,7 +285,7 @@
     const p=plan(e),v=venue(e);
     return hero('DESIGN WORKSPACE','Design the event','A guided entry point to the existing 3D space planner and its Design → Connect → Review → Export workflow.',
       '<a class="btn primary" href="index.html#/bookings/'+encodeURIComponent(e.id)+'">Open event and 3D planner ↗</a>')+
-      changeNotice(e)+
+      changeNotice(e)+changePanel(e)+
       '<div class="notice info section">The existing 3D editor is preserved in the classic workspace. Open this event booking, then select <strong>3D layout</strong>. Return here to review and publish installation instructions. This is the same browser data, reloaded between workspaces.</div>'+
       '<div class="grid cols2 section"><section class="panel"><h2>Physical venue model</h2>'+
       '<p class="muted">'+esc(v?.name||'Unassigned venue')+'</p>'+
@@ -340,7 +380,7 @@
     const done=c.all?Math.round(c.installed/c.all*100):0;
     return hero('PRODUCTION WORKSPACE','Run the production','People, suppliers, responsibilities, installation readiness, show cues and approvals in one place.',
       '<button class="btn primary" data-act="publish">Publish current crew revision</button>')+
-      changeNotice(e)+
+      changeNotice(e)+changePanel(e)+
       '<div class="stats">'+stat('Team & suppliers',a.length,'Event-specific roles')+stat('Installation',done+'%','Reported installed')+stat('Technical checks',c.verified,'Marked verified')+stat('Open issues',c.issues,'Awaiting response')+'</div>'+
       '<div class="grid cols2 section"><section class="panel"><div class="section-head"><h2>Event team</h2>'+pill(a.length+' assignments')+'</div>'+
       '<div class="stack">'+(a.length?a.map(x=>'<div class="linkrow"><div><strong><a href="#/entities/'+encodeURIComponent(x.entityId)+'" data-act="profile" data-id="'+esc(x.entityId)+'">'+esc(aname(x.entityId))+'</a></strong><div class="detail">'+esc(x.role)+' · '+esc(x.areaId==='all'?'Entire event':areaName(e,x.areaId))+(x.responsibility?' · '+esc(x.responsibility):'')+'</div></div><button class="btn small danger" data-act="remove-assignment" data-id="'+esc(x.id)+'">Remove</button></div>').join(''):'<div class="empty">No assignments yet.</div>')+'</div>'+
@@ -374,7 +414,9 @@
     for(const e of events()){
       if(org().assignments.some(a=>a.entityId===ent.id&&a.eventId===e.id)||
         ent.legacyType==='venue'&&venue(e)?.id===ent.legacyId||
-        ent.legacyType==='client'&&e.clientId===ent.legacyId)all.push(e);
+        ent.legacyType==='client'&&e.clientId===ent.legacyId||
+        ent.legacyType==='event'&&e.id===ent.legacyId||
+        ent.legacyType==='space'&&venue(e)?.id===ent.legacyVenueId)all.push(e);
     }
     return all;
   }
@@ -390,7 +432,7 @@
       '<p class="muted">'+(ent.aliases?.length?'Also known as: '+ent.aliases.map(esc).join(', '):'No aliases added')+'</p>'+
       '<div class="row"><button class="btn small" data-act="alias" data-id="'+esc(ent.id)+'">+ Alias</button><button class="btn small" data-act="rename" data-id="'+esc(ent.id)+'">Edit name</button></div>'+
       '<div class="sep"></div><h3>Notes</h3><form id="entity-note-form"><input type="hidden" name="id" value="'+esc(ent.id)+'"><textarea name="notes" maxlength="4000">'+esc(ent.notes||'')+'</textarea><button class="btn small" type="submit">Save notes</button></form>'+
-      (v?'<div class="sep"></div><h3>Spaces</h3><div class="chiprow">'+(v.spaces||[]).map(x=>'<span class="tag">'+esc(x.name)+'</span>').join('')+'</div>':'')+
+      (v?'<div class="sep"></div><h3>Spaces</h3><div class="chiprow">'+(v.spaces||[]).map(x=>{const sub=org().entities.find(y=>y.legacyType==='space'&&y.legacyVenueId===v.id&&y.legacySpaceId===x.id);return '<button class="btn small" data-act="profile" data-id="'+esc(sub?.id||'')+'">'+esc(x.name)+'</button>';}).join('')+'</div>':'')+
       '<div class="sep"></div><h3>Events</h3><div class="stack">'+(relatedEvents(ent).map(x=>'<button class="linkrow" data-act="select-event" data-id="'+esc(x.id)+'"><div><strong>'+esc(x.title)+'</strong><div class="detail">'+date(x.date)+'</div></div>→</button>').join('')||'<p class="muted">No linked events.</p>')+'</div>'+
       '<div class="sep"></div><h3>Event roles</h3><div class="stack">'+(al.map(x=>'<div class="tag">'+esc(x.role)+' · '+esc(events().find(t=>t.id===x.eventId)?.title||'Unknown event')+'</div>').join('')||'<p class="muted">No event assignments.</p>')+'</div>'+
       '<div class="sep"></div><h3>Relationships</h3><div class="stack">'+(r.map(x=>'<button class="linkrow" data-act="profile" data-id="'+esc(x.from===ent.id?x.to:x.from)+'"><div><strong>'+esc(aname(x.from===ent.id?x.to:x.from))+'</strong><div class="detail">'+esc(x.type)+(x.notes?' · '+esc(x.notes):'')+'</div></div>→</button>').join('')||'<p class="muted">No relationships recorded.</p>')+'</div>'+
@@ -406,7 +448,7 @@
     return hero('CONNECTED ENTITY REGISTRY','People, organisations and venues','Canonical records with aliases, event-specific roles, typed relationships and navigable profiles.')+
       '<div class="side-by-side"><div><section class="panel section"><div class="section-head"><h2>Browse entities</h2>'+pill(all.length+' records')+'</div>'+
       '<div class="form-grid section"><label>Search name, alias or notes<input class="input" id="entity-search" placeholder="Search entities" value="'+esc(ui.query)+'"></label>'+
-      '<label>Entity type<select id="entity-filter">'+['All','Person','Organisation','Venue','Space'].map(x=>'<option '+(ui.entityType===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label></div>'+
+      '<label>Entity type<select id="entity-filter">'+['All','Person','Organisation','Venue','Space','Event'].map(x=>'<option '+(ui.entityType===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label></div>'+
       '<div class="stack">'+(all.map(x=>'<button class="linkrow" data-act="profile" data-id="'+esc(x.id)+'"><div><strong>'+esc(x.name)+'</strong><div class="detail">'+esc(x.kind)+(x.aliases?.length?' · '+esc(x.aliases.join(', ')):'')+'</div></div><span class="chev">›</span></button>').join('')||'<div class="empty">No matching entities.</div>')+'</div></section>'+
       '<section class="panel"><h2>Create entity</h2><p class="muted">An entity exists once, even when it has different roles at different events.</p><form id="entity-form" class="form-grid">'+
       '<label>Name<input class="input" name="name" maxlength="140" required placeholder="Display name"></label>'+
