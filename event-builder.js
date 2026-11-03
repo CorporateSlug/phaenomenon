@@ -98,7 +98,7 @@
     const title=clean(fields.title).slice(0,120);
     const date=clean(fields.date);
     if(!title)return {error:'Enter an event name.'};
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(new Date(date+'T12:00:00').getTime()))return {error:'Choose a valid date.'};
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(new Date(date+'T00:00:00Z').getTime())||new Date(date+'T00:00:00Z').toISOString().slice(0,10)!==date)return {error:'Choose a valid date.'};
     let client=db.clients.find(x=>x.id===fields.clientId),newClient=null;
     const clientName=clean(fields.clientName).slice(0,120);
     if(!client&&clientName){
