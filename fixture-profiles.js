@@ -86,6 +86,11 @@ function build3D(T,o,group,add,beams){ensure(o);const p=get(o.fixtureType),color
  const beam=new T.Mesh(geometry,new T.MeshBasicMaterial({color,side:T.DoubleSide,transparent:true,opacity:.06+.15*num(o.intensity)/100,depthWrite:false,blending:T.AdditiveBlending,toneMapped:false}));beam.userData.noPick=true;beam.position.copy(direction.clone().multiplyScalar(length/2));beam.quaternion.setFromUnitVectors(new T.Vector3(0,-1,0),direction);group.add(beam);
  const arrow=new T.ArrowHelper(direction,new T.Vector3(),Math.min(1.2,length),new T.Color(color),.12,.07);group.add(arrow);
  if(floorDist<=range){const mark=new T.Mesh(new T.CircleGeometry(Math.max(.04,radius),40),new T.MeshBasicMaterial({color,transparent:true,opacity:.04+.10*num(o.intensity)/100,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending}));mark.rotation.x=-Math.PI/2;mark.position.copy(direction.clone().multiplyScalar(length));mark.position.y+=-height+.025;mark.userData.noPick=true;group.add(mark)}
+ if(p.gobo&&o.gobo!=='open'&&floorDist<=range){
+  const origin=direction.clone().multiplyScalar(length);
+  if(o.gobo==='dots'){for(let i=0;i<7;i++){const theta=i*Math.PI*2/7,spot=new T.Mesh(new T.CircleGeometry(Math.max(.04,radius*.11),12),new T.MeshBasicMaterial({color,transparent:true,opacity:.24*num(o.intensity)/100,depthWrite:false,blending:T.AdditiveBlending}));spot.rotation.x=-Math.PI/2;spot.position.copy(origin).add(new T.Vector3(Math.cos(theta)*radius*.52,-height+.05,Math.sin(theta)*radius*.52));spot.userData.noPick=true;group.add(spot)}}
+  else{for(let i=-1;i<=1;i++){const spot=new T.Mesh(new T.PlaneGeometry(Math.max(.05,radius*.18),Math.max(.08,radius*1.5)),new T.MeshBasicMaterial({color,transparent:true,opacity:.23*num(o.intensity)/100,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending}));spot.rotation.x=-Math.PI/2;spot.position.copy(origin).add(new T.Vector3(i*radius*.5,-height+.05,0));spot.userData.noPick=true;group.add(spot)}}
+ }
 }
 window.PhaenomenonFixtures={profiles,order,get,ensure,apply,set,pick,icon,mountInspector,build3D,effectiveColor};
 })();
