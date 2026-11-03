@@ -10,6 +10,11 @@ on:
       - 'tests/venue-workflow.test.mjs'
       - 'tests/venue-booking-ui.test.mjs'
       - 'tests/navigation.test.mjs'
+      - 'tests/event-builder.test.mjs'
+      - 'tests/workspace-safety.test.mjs'
+      - 'event-builder.js'
+      - 'workspace-safety.js'
+      - 'index.html'
       - 'styles.css'
       - 'venue-workflow.js'
       - 'venue-workflow.css'
@@ -26,6 +31,11 @@ on:
       - 'tests/venue-workflow.test.mjs'
       - 'tests/venue-booking-ui.test.mjs'
       - 'tests/navigation.test.mjs'
+      - 'tests/event-builder.test.mjs'
+      - 'tests/workspace-safety.test.mjs'
+      - 'event-builder.js'
+      - 'workspace-safety.js'
+      - 'index.html'
       - 'styles.css'
       - 'venue-workflow.js'
       - 'venue-workflow.css'
@@ -47,6 +57,6 @@ jobs:
         with:
           node-version: '22'
       - name: Verify JavaScript syntax
-        run: node --check production-os.js
+        run: node --check production-os.js && node --check app.js && node --check event-builder.js && node --check workspace-safety.js
       - name: Run Production OS and venue workflow regression suites
-        run: node --test tests/production-os.test.mjs tests/venue-workflow.test.mjs tests/venue-booking-ui.test.mjs tests/navigation.test.mjs
+        run: node --test tests/*.test.mjs
