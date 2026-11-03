@@ -99,6 +99,7 @@
   let storageBaseline=storedRaw();
   assureEventData(db);
   window.PhaenomenonSpacePlanner?.ensure(db);
+  window.PhaenomenonVenueWorkflow?.ensureAll(db);
   let ui={view:'overview',projectId:null,eventId:null,invoiceId:null,printInvoiceId:null,tab:'overview',filter:'All',search:'',fixtureSearch:'',calendar:new Date(new Date().getFullYear(),new Date().getMonth(),1),selectedDate:null,modal:null,toast:null};
   function save(force=false){
     try {
@@ -123,6 +124,7 @@
     db=data;storageBaseline=raw;
     assureEventData(db);
     window.PhaenomenonSpacePlanner?.ensure(db);
+    window.PhaenomenonVenueWorkflow?.ensureAll(db);
     ui.modal=null;ui.projectId=null;
     renderRoute();
     return true;
@@ -183,9 +185,79 @@
   function detailFixtures(p){const total=projectFixtureCost(p);return `<h3>Project fixture schedule</h3><p style="font-size:12px;color:#95a2a7">A live bill of materials linked to your fixture library. Adjust the quantities to update the estimate.</p>${(p.fixtures||[]).map(item=>{const f=db.fixtures.find(f=>f.id===item.id);if(!f)return '';return `<div class="quote-line" style="align-items:center"><div><strong>${safe(f.name)}</strong><br><span>${safe(f.code)} · ${money(f.cost)} each</span></div><div style="display:flex;gap:7px;align-items:center"><label style="font-size:10px;color:#8a969c" for="qty-${attr(p.id)}-${attr(f.id)}">Qty</label><input class="field" style="width:73px" id="qty-${attr(p.id)}-${attr(f.id)}" type="number" min="0" max="99999" data-action="fixture-qty" data-project="${attr(p.id)}" data-id="${attr(f.id)}" value="${item.qty}" aria-label="Quantity of ${attr(f.name)}"><button class="icon-button" aria-label="Remove fixture" data-action="remove-fixture" data-project="${attr(p.id)}" data-id="${attr(f.id)}">${icon('x',14)}</button></div></div>`}).join('')}<div class="quote-total"><span>Estimated fixture cost</span><span>${currency(total)}</span></div><form class="detail-section" data-form="assign-fixture"><h3>Specify another fixture</h3><label class="field-label" for="choose-fixture">Fixture</label><select class="form-select" name="fixtureId" id="choose-fixture" required>${db.fixtures.filter(f=>!(p.fixtures||[]).some(x=>x.id===f.id)).map(f=>`<option value="${attr(f.id)}">${safe(f.name)} · ${safe(f.code)}</option>`).join('')||'<option value="" disabled>No unassigned fixtures</option>'}</select><label class="field-label" for="fixture-assign-qty">Quantity</label><input class="field" type="number" id="fixture-assign-qty" name="qty" min="1" max="99999" value="1" required><input type="hidden" name="projectId" value="${attr(p.id)}"><button type="submit" class="button primary" style="margin-top:14px" ${db.fixtures.every(f=>(p.fixtures||[]).some(x=>x.id===f.id))?'disabled':''}>${icon('plus',14)} Add to schedule</button></form>`;}
   function detailEstimate(p){const parts=quoteParts(p), subtotal=quoteTotal(p),gst=subtotal*.1;return `<div class="quote-sheet"><div class="quote-head"><div><strong>PHAENOMENON / ESTIMATE</strong><br><small>Indicative fee and supply estimate</small></div><span class="status proposal">DRAFT</span></div><h3>${safe(p.name)}</h3><p style="font-size:11px;color:#98a3a9;margin:0">For ${safe(clientName(p.clientId))}<br>Reference: ${safe(p.code)}</p><div style="margin-top:24px">${parts.map(x=>`<div class="quote-line"><span>${x.label}</span><strong>${currency(x.value)}</strong></div>`).join('')}<div class="quote-line"><span>GST (10%)</span><strong>${currency(gst)}</strong></div></div><div class="quote-total"><span>Total incl. GST</span><span>${currency(subtotal+gst)}</span></div></div><div class="inline-actions"><button class="button primary" data-action="print-estimate">${icon('print',15)} Print / save PDF</button><button class="button" data-action="drawer-tab" data-tab="fixtures">${icon('bulb',15)} Edit fixture schedule</button></div><div class="callout"><strong>Draft only.</strong> This is a demonstrative estimate assembled from fictional unit costs, design services and an installation allowance. It is not a tax invoice, final quotation or validated procurement schedule.</div>`;}
   function printSheet(){const p=db.projects.find(p=>p.id===ui.projectId);if(!p)return '';const sub=quoteTotal(p);return `<div class="print-only"><h1>PHAENOMENON · Indicative estimate</h1><p>Project: ${safe(p.name)}<br>Client: ${safe(clientName(p.clientId))}<br>Reference: ${safe(p.code)}<br>Date: ${formatDate(iso(new Date()))}</p><table><thead><tr><th>Item</th><th>Estimated amount (AUD)</th></tr></thead><tbody>${quoteParts(p).map(part=>`<tr><td>${part.label}</td><td>${currency(part.value)}</td></tr>`).join('')}<tr><td>GST (10%)</td><td>${currency(sub*.1)}</td></tr></tbody></table><div class="total">Total incl. GST: ${currency(sub*1.1)}</div><p style="margin-top:50px;color:#666;font-size:12px">DEMO ONLY. Fictional costs. Not a formal quotation, invoice or purchase order.</p></div>`;}
+
+  /* Shared reusable venue/space selection in event forms. */
+  const VE=()=>window.PhaenomenonVenueWorkflow;
+  function venueOptionsHTML(venueId){
+    return '<option value="" '+(!venueId?'selected':'')+'>Select a venue…</option>'+
+      (db.venues||[]).slice().sort((a,b)=>a.name.localeCompare(b.name)).map(v=>
+        '<option value="'+attr(v.id)+'" '+(v.id===venueId?'selected':'')+'>'+safe(v.name)+'</option>').join('')+
+      '<option value="__new__">+ Create new venue…</option>';
+  }
+  function eventSpaceChoices(venueId,selectedIds){
+    const venue=VE()?.findVenue(db,venueId);
+    if(!venue)return '<p class="muted">Select a venue to choose its spaces.</p>';
+    const spaces=VE().ensureSpaces(venue),selected=new Set(selectedIds||spaces.map(s=>s.id));
+    return '<div class="venue-space-grid">'+spaces.map(sp=>
+      '<label class="venue-space-option"><input type="checkbox" name="spaceIds" value="'+attr(sp.id)+'" '+(selected.has(sp.id)?'checked':'')+'><span><strong>'+safe(sp.name)+'</strong><small>'+safe(sp.geometry?.kind||sp.kind||'indoor')+' · '+safe(sp.width)+' × '+safe(sp.length)+' m</small></span></label>').join('')+
+      '</div>';
+  }
+  function eventVenueFields(ev){
+    const id=VE()?.findVenue(db,ev?.venueId)?.id||'';
+    const available=id?VE()?.activeSpaces(ev,VE()?.findVenue(db,id)).map(s=>s.id):[];
+    const fallback=ev?.venue&&!id?'<p class="venue-hint">Previous venue text: '+safe(ev.venue)+'. Select or create a reusable venue to link it.</p>':'';
+    return '<div class="full venue-picker" data-venue-picker>'+
+      '<div class="venue-picker-top"><label class="field-label" for="event-venue-id">Venue</label><button class="button small" type="button" data-action="venue-create">+ Create venue</button></div>'+
+      '<select class="form-select" id="event-venue-id" data-venue-pick name="venueId" required>'+venueOptionsHTML(id)+'</select>'+fallback+
+      '<div class="venue-picker-top"><span class="field-label">Spaces used by this event</span><button class="button small" type="button" data-action="space-create" '+(!id?'disabled':'')+'>+ Create missing space</button></div>'+
+      '<div data-space-choices>'+eventSpaceChoices(id,available)+'</div>'+
+      '<p class="venue-hint">Venues and their spaces are reusable. Only checked spaces are included in this event; the venue library is never duplicated.</p></div>';
+  }
+  function refreshVenuePicker(picker,venueId,extraSpaceId){
+    if(!picker)return;
+    const dropdown=picker.querySelector('[data-venue-pick]');
+    const previous=dropdown?.value;
+    const checked=[...picker.querySelectorAll('input[name="spaceIds"]:checked')].map(x=>x.value);
+    if(dropdown){
+      dropdown.innerHTML=venueOptionsHTML(venueId);
+      dropdown.value=venueId||'';
+    }
+    const preserve=venueId===previous?checked:VE()?.ensureSpaces(VE()?.findVenue(db,venueId)).map(x=>x.id);
+    if(extraSpaceId&&!preserve.includes(extraSpaceId))preserve.push(extraSpaceId);
+    const spaceHost=picker.querySelector('[data-space-choices]');
+    if(spaceHost)spaceHost.innerHTML=eventSpaceChoices(venueId,preserve);
+    const add=picker.querySelector('[data-action="space-create"]');
+    if(add)add.disabled=!venueId;
+    picker.querySelector('.venue-hint')?.removeAttribute('hidden');
+  }
+  let quickVenueOrigin=null;
+  function closeVenueQuick(){
+    document.querySelector('[data-venue-quick-overlay]')?.remove();
+    quickVenueOrigin=null;
+  }
+  function openVenueQuick(kind,picker){
+    closeVenueQuick();
+    const venueId=picker?.querySelector('[data-venue-pick]')?.value;
+    if(kind==='space'&&!VE()?.findVenue(db,venueId)){alert('Select a saved venue before adding a space.');return;}
+    quickVenueOrigin=picker;
+    const name=kind==='venue'?'Create venue and first space':'Add space to '+VE().findVenue(db,venueId).name;
+    const fields=kind==='venue'?'<label>Venue name<input class="field" name="venueName" maxlength="120" required placeholder="e.g. Abbotsford Convent"></label>':'<div class="venue-hint">The new space will be added to the existing venue, not as another venue.</div>';
+    const html='<div class="venue-quick-backdrop" data-venue-quick-overlay role="presentation"><section class="venue-quick-dialog" role="dialog" aria-modal="true" aria-label="'+attr(name)+'"><header class="venue-picker-top"><div><h2>'+safe(name)+'</h2><p class="venue-hint">Dimensions are editable placeholders until checked on site.</p></div><button type="button" class="button" data-action="venue-quick-close" aria-label="Close">×</button></header>'+
+      '<form data-form="'+(kind==='venue'?'quick-venue':'quick-space')+'" class="venue-quick-form">'+
+      '<input type="hidden" name="venueId" value="'+attr(venueId||'')+'">'+fields+
+      '<label>Space name<input class="field" name="spaceName" required maxlength="120" value="'+(kind==='venue'?'Main space':'')+'" placeholder="e.g. Indoor hall"></label>'+
+      '<div class="form-grid"><label>Width (m)<input class="field" type="number" name="width" min="2" max="200" step="0.5" value="16" required></label>'+
+      '<label>Length (m)<input class="field" type="number" name="length" min="2" max="200" step="0.5" value="12" required></label>'+
+      '<label>Height (m)<input class="field" type="number" name="height" min="0.5" max="40" step="0.5" value="4" required></label>'+
+      '<label>Environment<select class="form-select" name="kind"><option value="indoor">Indoor</option><option value="outdoor">Outdoor</option></select></label></div>'+
+      '<div class="venue-quick-actions"><button type="button" class="button" data-action="venue-quick-close">Cancel</button><button type="submit" class="button primary">'+(kind==='venue'?'Create venue':'Add space')+'</button></div></form></section></div>';
+    document.body.insertAdjacentHTML('beforeend',html);
+    document.querySelector('[data-venue-quick-overlay] input[name="'+(kind==='venue'?'venueName':'spaceName')+'"]')?.focus();
+  }
+
   function modal(){const type=ui.modal;const titles={booking:['New event booking','Choose a repeat customer and capture the event brief.'],equipment:['New hire equipment','Add an item to the equipment kit catalogue.'],project:['New lighting project','Create a project with a client, scope and target date.'],lead:['New opportunity','Capture a potential lighting design commission.'],milestone:['New milestone','Put a meeting or delivery date on your studio calendar.'],fixture:['New fixture','Add a reusable fixture specification.'],client:['New client','Create a client record for future projects.']};const [heading,desc]=titles[type]||['New record',''];const field=(label,name,input='text',value='',extra='')=>`<div><label class="field-label" for="modal-${name}">${label}</label><input class="field" id="modal-${name}" type="${input}" name="${name}" value="${attr(value)}" ${extra}></div>`;
   let fields='';
-  if(type==='booking')fields=`<div class="form-grid"><div class="full">${field('Event name','title','text','','required maxlength="120" placeholder="e.g. Spring brand launch"')}</div><div class="full"><label class="field-label">Repeat customer</label><select class="form-select" name="clientId" required>${clientOptions(db.clients[0]?.id)}</select></div>${field('Event date','date','date',addDays(21),'required')}${field('Expected guests','guests','number','120','min="1" max="5000" required')}${field('Venue','venue','text','Melbourne','maxlength="120"')}${field('Lighting zones','zones','number','2','min="1" max="12" required')}<div><label class="field-label">Event type</label><select class="form-select" name="eventType">${eventOptions(EVENT_TYPES,'Corporate')}</select></div><div><label class="field-label">Production level</label><select class="form-select" name="complexity">${eventOptions(['Simple','Standard','Feature'],'Standard')}</select></div><div><label class="field-label">Environment</label><select class="form-select" name="environment">${eventOptions(['Indoor','Outdoor'],'Indoor')}</select></div></div>`;
+  if(type==='booking')fields=`<div class="form-grid"><div class="full">${field('Event name','title','text','','required maxlength="120" placeholder="e.g. Spring brand launch"')}</div><div class="full"><label class="field-label">Repeat customer</label><select class="form-select" name="clientId" required>${clientOptions(db.clients[0]?.id)}</select></div>${field('Event date','date','date',addDays(21),'required')}${field('Expected guests','guests','number','120','min="1" max="5000" required')}${eventVenueFields(null)}${field('Lighting zones','zones','number','2','min="1" max="12" required')}<div><label class="field-label">Event type</label><select class="form-select" name="eventType">${eventOptions(EVENT_TYPES,'Corporate')}</select></div><div><label class="field-label">Production level</label><select class="form-select" name="complexity">${eventOptions(['Simple','Standard','Feature'],'Standard')}</select></div><div><label class="field-label">Environment</label><select class="form-select" name="environment">${eventOptions(['Indoor','Outdoor'],'Indoor')}</select></div></div>`;
   if(type==='equipment')fields=`<div class="form-grid"><div class="full">${field('Equipment name','name','text','','required maxlength="120"')}</div>${field('Category','category','text','Lighting','required maxlength="70"')}${field('Owned quantity','owned','number','1','required min="0" max="100000"')}${field('Hire per event (AUD)','rate','number','50','required min="0" max="100000" step="0.01"')}${field('Power (W) optional','watts','number','0','min="0" max="100000"')}</div>`;
   if(type==='project')fields=`<div class="form-grid"><div class="full">${field('Project name','name','text','','required maxlength="100" placeholder="e.g. Riverside Library"')}</div><div class="full"><label class="field-label">Client</label><select class="form-select" name="clientId" required>${db.clients.map(c=>`<option value="${attr(c.id)}">${safe(c.name)}</option>`).join('')||'<option value="" disabled>Add a client first</option>'}</select></div>${field('Project type','type','text','Commercial','required maxlength="50"')}${field('Budget (AUD)','budget','number','50000','min="0" step="1" required')}${field('Target completion','due','date',addDays(45),'required')}<div><label class="field-label">Stage</label><select class="form-select" name="stage">${STAGES.map(s=>`<option>${s}</option>`).join('')}</select></div><div class="full">${field('Location','location','text','Melbourne, Victoria','maxlength="100"')}</div></div>`;
   if(type==='lead')fields=`<div class="form-grid"><div class="full">${field('Project / opportunity','name','text','','required maxlength="100" placeholder="e.g. Pavilion Fitout"')}</div><div class="full">${field('Prospective client','client','text','','required maxlength="100"')}</div>${field('Project category','kind','text','Commercial','maxlength="50"')}${field('Estimated value (AUD)','value','number','50000','required min="0"')}<div class="full">${field('Next step / note','note','text','Brief to be confirmed','maxlength="140"')}</div></div>`;
@@ -253,7 +325,7 @@
   function bookingDetail(ev){const suggested=recommendEquipment(ev),planMap=Object.fromEntries((ev.kit||[]).map(x=>[x.id,x.qty]));const kitTotal=gearTotal(ev),conflicts=[];
     const gearRows=db.equipment.map(g=>{const assigned=planMap[g.id]||0,reserved=overlapsOtherBookings(ev,g.id),free=Math.max(0,g.owned-reserved),warning=assigned>free&&ev.status!=='Cancelled';if(warning)conflicts.push(`${g.name}: ${assigned} required, ${free} available`);return `<tr><td><strong>${safe(g.name)}</strong><small>${safe(g.category)}</small></td><td>${Number(suggested[g.id])||0}</td><td><input class="field compact-input" type="number" min="0" max="9999" value="${assigned}" aria-label="${attr(g.name)} quantity" data-action="booking-kit-qty" data-id="${attr(g.id)}" data-event="${attr(ev.id)}"></td><td>${free} / ${g.owned}</td><td>${currency(g.rate)}</td><td>${currency(assigned*g.rate)}</td><td>${warning?'<span class="risk-pill">Check stock</span>':''}</td></tr>`;}).join('');
     return `<div class="event-work-head"><div><div class="eyebrow">${safe(ev.status.toUpperCase())} · ${safe(ev.eventType.toUpperCase())}</div><h2>${safe(ev.title)}</h2><p>${safe(eventClient(ev))} · ${safe(ev.venue)}</p></div><div class="inline-actions"><a class="button small" href="#/spaces" data-action="open-space" data-id="${attr(ev.id)}">${icon('layers',13)} 3D layout</a><button class="button small" data-action="duplicate-booking" data-id="${attr(ev.id)}">${icon('layers',13)} Rebook</button><button class="button primary small" data-action="invoice-from-booking" data-id="${attr(ev.id)}">${icon('file',13)} Draft invoice</button></div></div>
-    <form class="event-form" data-form="edit-booking"><input type="hidden" name="id" value="${attr(ev.id)}"><div class="form-grid event-fields"><div class="full"><label class="field-label">Event name</label><input class="field" name="title" maxlength="120" required value="${attr(ev.title)}"></div><div><label class="field-label">Customer</label><select class="form-select" name="clientId" required>${clientOptions(ev.clientId)}</select></div><div><label class="field-label">Event date</label><input class="field" type="date" name="date" required value="${attr(ev.date)}"></div><div><label class="field-label">Venue</label><input class="field" name="venue" maxlength="120" value="${attr(ev.venue)}"></div><div><label class="field-label">Event type</label><select class="form-select" name="eventType">${eventOptions(EVENT_TYPES,ev.eventType)}</select></div><div><label class="field-label">Guests / audience</label><input class="field" type="number" min="1" max="5000" name="guests" required value="${ev.guests}"></div><div><label class="field-label">Lighting zones / areas</label><input class="field" type="number" min="1" max="12" name="zones" required value="${ev.zones}"></div><div><label class="field-label">Environment</label><select class="form-select" name="environment">${eventOptions(['Indoor','Outdoor'],ev.environment)}</select></div><div><label class="field-label">Production level</label><select class="form-select" name="complexity">${eventOptions(['Simple','Standard','Feature'],ev.complexity)}</select></div><div><label class="field-label">Status</label><select class="form-select" name="status">${eventOptions(EVENT_STATUS,ev.status)}</select></div><div><label class="field-label">Crew hours</label><input class="field" type="number" name="labourHours" step="0.5" min="0" max="1000" value="${ev.labourHours||0}"></div><div><label class="field-label">Crew hourly rate (AUD)</label><input class="field" type="number" name="labourRate" step="0.01" min="0" max="100000" value="${ev.labourRate||0}"></div><div class="full"><label class="field-label">Event brief / notes</label><textarea class="form-textarea" name="notes" maxlength="3000">${safe(ev.notes||'')}</textarea></div></div><div class="inline-actions event-form-actions"><button type="submit" class="button primary">${icon('check',14)} Save brief & recalculate</button><small>Changing parameters recalculates suggested quantities after you save; assigned quantities stay as they were until you apply suggestions.</small></div></form>
+    <form class="event-form" data-form="edit-booking"><input type="hidden" name="id" value="${attr(ev.id)}"><div class="form-grid event-fields"><div class="full"><label class="field-label">Event name</label><input class="field" name="title" maxlength="120" required value="${attr(ev.title)}"></div><div><label class="field-label">Customer</label><select class="form-select" name="clientId" required>${clientOptions(ev.clientId)}</select></div><div><label class="field-label">Event date</label><input class="field" type="date" name="date" required value="${attr(ev.date)}"></div>${eventVenueFields(ev)}<div><label class="field-label">Event type</label><select class="form-select" name="eventType">${eventOptions(EVENT_TYPES,ev.eventType)}</select></div><div><label class="field-label">Guests / audience</label><input class="field" type="number" min="1" max="5000" name="guests" required value="${ev.guests}"></div><div><label class="field-label">Lighting zones / areas</label><input class="field" type="number" min="1" max="12" name="zones" required value="${ev.zones}"></div><div><label class="field-label">Environment</label><select class="form-select" name="environment">${eventOptions(['Indoor','Outdoor'],ev.environment)}</select></div><div><label class="field-label">Production level</label><select class="form-select" name="complexity">${eventOptions(['Simple','Standard','Feature'],ev.complexity)}</select></div><div><label class="field-label">Status</label><select class="form-select" name="status">${eventOptions(EVENT_STATUS,ev.status)}</select></div><div><label class="field-label">Crew hours</label><input class="field" type="number" name="labourHours" step="0.5" min="0" max="1000" value="${ev.labourHours||0}"></div><div><label class="field-label">Crew hourly rate (AUD)</label><input class="field" type="number" name="labourRate" step="0.01" min="0" max="100000" value="${ev.labourRate||0}"></div><div class="full"><label class="field-label">Event brief / notes</label><textarea class="form-textarea" name="notes" maxlength="3000">${safe(ev.notes||'')}</textarea></div></div><div class="inline-actions event-form-actions"><button type="submit" class="button primary">${icon('check',14)} Save brief & recalculate</button><small>Changing parameters recalculates suggested quantities after you save; assigned quantities stay as they were until you apply suggestions.</small></div></form>
     <div class="equipment-head"><div><h3>Suggested equipment kit</h3><p>Rule-of-thumb starting quantities based on guest count, zones, event type, environment and production level.</p></div><button class="button gold" data-action="apply-kit" data-id="${attr(ev.id)}">${icon('spark',14)} Apply suggestions</button></div>
     <div class="table-wrap"><table class="data-table equipment-table"><thead><tr><th>Equipment</th><th>Suggested</th><th>Assigned</th><th>Available / owned</th><th>Hire per unit</th><th>Line total</th><th>Notes</th></tr></thead><tbody>${gearRows}</tbody></table></div>
     ${conflicts.length?`<div class="stock-warning"><strong>Stock conflicts to review:</strong> ${safe(conflicts.join(' · '))}. The availability estimate subtracts equipment assigned to other confirmed events on the same date only.</div>`:'<p class="gear-advice">Stock check is illustrative. Verify inventory, transport, access, venue power, rigging, weather and local regulations before committing to a job.</p>'}
@@ -275,6 +347,10 @@
     if(action==='close-drawer-backdrop'&&e.target!==el)return;
     if(action==='modal-backdrop'&&e.target!==el)return;
     if(['select-booking','select-invoice','duplicate-booking','invoice-from-booking','apply-kit','new-invoice','add-invoice-line','delete-invoice-line','print-invoice','project','nav','filter','open-modal','close-project','drawer-tab','close-modal','modal-backdrop','close-drawer-backdrop','toggle-task','month-prev','month-next','month-today','select-day','clear-day','convert-lead','remove-fixture','save-brief','print-estimate','export','import','reset','view-guide','nav-client','nav-fixture'].includes(action))e.preventDefault();
+    if(action==='venue-quick-close'){e.preventDefault();closeVenueQuick();return;}
+    if(action==='venue-create'||action==='space-create'){
+      e.preventDefault();openVenueQuick(action==='venue-create'?'venue':'space',el.closest('[data-venue-picker]'));return;
+    }
     if(action==='open-space'){e.preventDefault();ui.eventId=el.dataset.id;location.hash='#/spaces';renderRoute();return;}
     if(action==='select-booking'){ui.eventId=el.dataset.id;location.hash='#/bookings/'+encodeURIComponent(ui.eventId);renderRoute();}
     if(action==='select-invoice'){ui.invoiceId=el.dataset.id;location.hash='#/invoices/'+encodeURIComponent(ui.invoiceId);renderRoute();}
@@ -320,10 +396,55 @@
     const type=el.id;if(!['global-search','project-search','fixture-search'].includes(type))return;
     const key=type==='fixture-search'?'fixtureSearch':'search';ui[key]=el.value;const selection=el.selectionStart;if(type==='global-search'){ui.view='search';if(location.hash!=='#/search')location.hash='#/search';}render();const next=document.getElementById(type);if(next){next.focus();try{next.setSelectionRange(selection,selection);}catch(_){}}
   });
+  document.addEventListener('change',e=>{
+    const field=e.target.closest('[data-venue-pick]');
+    if(!field)return;
+    const picker=field.closest('[data-venue-picker]');
+    if(field.value==='__new__'){
+      const prior=field.dataset.oldVenue||'';
+      field.value=prior;
+      openVenueQuick('venue',picker);
+      return;
+    }
+    field.dataset.oldVenue=field.value;
+    refreshVenuePicker(picker,field.value);
+  });
   document.addEventListener('submit',e=>{
     const form=e.target.closest('[data-form]');if(!form)return;e.preventDefault();const a=new FormData(form),val=n=>String(a.get(n)||'').trim(),num=n=>Math.max(0,Number(a.get(n))||0),which=form.dataset.form;
-    if(which==='new-booking'){if(!val('title')||!db.clients.some(c=>c.id===val('clientId'))||!val('date'))return;const ev={id:id('ev'),title:val('title').slice(0,120),clientId:val('clientId'),date:val('date'),venue:val('venue'),eventType:EVENT_TYPES.includes(val('eventType'))?val('eventType'):'Other',guests:Math.max(1,Math.min(5000,num('guests'))),zones:Math.max(1,Math.min(12,num('zones'))),environment:val('environment')==='Outdoor'?'Outdoor':'Indoor',complexity:['Simple','Standard','Feature'].includes(val('complexity'))?val('complexity'):'Standard',status:'Enquiry',labourHours:6,labourRate:90,notes:'',kit:[]};mutate(()=>{db.eventJobs.push(ev);ui.eventId=ev.id;ui.modal=null;location.hash='#/bookings/'+ev.id;},'Event created. Apply suggested kit to begin.');return;}
-    if(which==='edit-booking'){const ev=getBooking(val('id'));if(!ev||!val('title')||!val('date')||!db.clients.some(c=>c.id===val('clientId')))return;mutate(()=>{Object.assign(ev,{title:val('title').slice(0,120),clientId:val('clientId'),date:val('date'),venue:val('venue').slice(0,120),eventType:EVENT_TYPES.includes(val('eventType'))?val('eventType'):'Other',guests:Math.max(1,Math.min(5000,num('guests'))),zones:Math.max(1,Math.min(12,num('zones'))),environment:val('environment')==='Outdoor'?'Outdoor':'Indoor',complexity:['Simple','Standard','Feature'].includes(val('complexity'))?val('complexity'):'Standard',status:EVENT_STATUS.includes(val('status'))?val('status'):'Enquiry',labourHours:Math.min(1000,num('labourHours')),labourRate:Math.min(100000,num('labourRate')),notes:val('notes').slice(0,3000)});},'Event brief saved. Review suggested quantities.');return;}
+    if(which==='quick-venue'||which==='quick-space'){
+      const params={name:val('venueName'),spaceName:val('spaceName'),width:val('width'),length:val('length'),height:val('height'),kind:val('kind')};
+      const result=which==='quick-venue'?VE().addVenue(db,params):VE().addSpace(db,val('venueId'),{...params,name:val('spaceName')});
+      if(result.error&&!result.existing){alert(result.error);return;}
+      if(result.venue&&!result.error){if(!save())return;}
+      refreshVenuePicker(quickVenueOrigin,result.venue?.id||val('venueId'),result.space?.id||result.existing?.id);
+      closeVenueQuick();
+      flash(result.error||'Saved to the venue library. Choose the spaces for this event.');
+      return;
+    }
+    if(which==='new-booking'){
+      if(!val('title')||!db.clients.some(c=>c.id===val('clientId'))||!val('date'))return;
+      const v=VE()?.findVenue(db,val('venueId'));
+      const picked=(a.getAll?a.getAll('spaceIds'):[]).map(String);
+      if(!v||!picked.length){alert('Select an existing venue and at least one space, or create them from this form.');return;}
+      const ev={id:id('ev'),title:val('title').slice(0,120),clientId:val('clientId'),date:val('date'),venue:v.name,venueId:v.id,spaceIds:picked,eventType:EVENT_TYPES.includes(val('eventType'))?val('eventType'):'Other',guests:Math.max(1,Math.min(5000,num('guests'))),zones:Math.max(1,Math.min(12,num('zones'))),environment:val('environment')==='Outdoor'?'Outdoor':'Indoor',complexity:['Simple','Standard','Feature'].includes(val('complexity'))?val('complexity'):'Standard',status:'Enquiry',labourHours:6,labourRate:90,notes:'',kit:[]};
+      mutate(()=>{db.eventJobs.push(ev);ui.eventId=ev.id;ui.modal=null;location.hash='#/bookings/'+ev.id;},'Event created with its reusable venue and selected spaces.');return;
+    }
+    if(which==='edit-booking'){
+      const ev=getBooking(val('id')),v=VE()?.findVenue(db,val('venueId'));
+      if(!ev||!v||!val('title')||!val('date')||!db.clients.some(c=>c.id===val('clientId')))return;
+      const spaceIds=(a.getAll?a.getAll('spaceIds'):[]).map(String);
+      if(!spaceIds.length||spaceIds.some(x=>!v.spaces.some(sp=>sp.id===x))){alert('Choose at least one valid space belonging to this venue.');return;}
+      const p=db.venuePlans?.[ev.id],oldVenue=ev.venueId||p?.venueId;
+      if(oldVenue!==v.id&&p?.items?.length&&!confirm('This event already has equipment placed in another venue. Keep those placements marked for review when switching the venue?'))return;
+      if(oldVenue===v.id&&p?.items?.some(item=>item.areaId&&v.spaces.some(sp=>sp.id===item.areaId)&&!spaceIds.includes(item.areaId))){
+        alert('A deselected space still contains equipment. Move those items in the 3D planner before removing the space from the event.');return;
+      }
+      mutate(()=>{
+        const result=VE().updateEvent(db,ev.id,v.id,spaceIds);
+        if(result.error){alert(result.error);return;}
+        Object.assign(ev,{title:val('title').slice(0,120),clientId:val('clientId'),date:val('date'),eventType:EVENT_TYPES.includes(val('eventType'))?val('eventType'):'Other',guests:Math.max(1,Math.min(5000,num('guests'))),zones:Math.max(1,Math.min(12,num('zones'))),environment:val('environment')==='Outdoor'?'Outdoor':'Indoor',complexity:['Simple','Standard','Feature'].includes(val('complexity'))?val('complexity'):'Standard',status:EVENT_STATUS.includes(val('status'))?val('status'):'Enquiry',labourHours:Math.min(1000,num('labourHours')),labourRate:Math.min(100000,num('labourRate')),notes:val('notes').slice(0,3000)});
+      },'Event saved with selected venue spaces. Review the 3D layout after changing a venue.');return;
+    }
     if(which==='edit-equipment'){const gear=db.equipment.find(g=>g.id===val('id'));if(!gear)return;mutate(()=>{gear.owned=Math.min(100000,Math.floor(num('owned')));gear.rate=Math.min(100000,num('rate'));gear.watts=Math.min(100000,Math.floor(num('watts')));},'Equipment stock and hire rate updated');return;}
     if(which==='new-equipment'){if(!val('name')||!val('category'))return;mutate(()=>{db.equipment.push({id:id('eq'),name:val('name').slice(0,120),category:val('category').slice(0,70),owned:Math.min(100000,Math.floor(num('owned'))),rate:Math.min(100000,num('rate')),watts:Math.min(100000,Math.floor(num('watts')))});ui.modal=null;},'Equipment added to the catalogue');return;}
     if(which==='edit-invoice'){const inv=db.invoices.find(x=>x.id===val('id'));if(!inv||!val('number')||!val('issueDate')||!val('dueDate')||!db.clients.some(c=>c.id===val('clientId')))return;if(db.invoices.some(x=>x.id!==inv.id&&x.number.toLowerCase()===val('number').toLowerCase())){alert('That invoice number is already in use.');return;}const lines=inv.lines.map((line,i)=>({id:line.id,description:val('desc_'+i).slice(0,180),qty:Math.min(100000,num('qty_'+i)),rate:Math.min(10000000,num('rate_'+i))}));if(lines.some(x=>!x.description)){alert('All invoice lines need a description.');return;}mutate(()=>{Object.assign(inv,{number:val('number').slice(0,60),clientId:val('clientId'),issueDate:val('issueDate'),dueDate:val('dueDate'),status:BILL_STATUS.includes(val('status'))?val('status'):'Draft',gstPercent:val('gstPercent')==='10'?10:0,notes:val('notes').slice(0,3000),lines});},'Invoice draft saved');return;}
@@ -338,7 +459,7 @@
   window.addEventListener('afterprint',()=>{if(ui.printInvoiceId){ui.printInvoiceId=null;render();}});
   function exportData(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`phaenomenon-demo-${iso(new Date())}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);flash('Workspace exported as JSON');}
   $import.addEventListener('change',async()=>{const f=$import.files?.[0];if(!f)return;try{if(f.size>5_000_000)throw Error('File is too large.');const x=JSON.parse(await f.text());if(!valid(x))throw Error('This is not a compatible Phaenomenon export.');if(!confirm('Import this file and replace the workspace data stored in this browser?'))return;db=x;assureEventData(db);window.PhaenomenonSpacePlanner?.ensure(db);save(true);ui.modal=null;ui.projectId=null;ui.search='';ui.fixtureSearch='';location.hash='#/overview';renderRoute();flash('Workspace imported');}catch(err){alert('Import failed: '+err.message);}finally{$import.value='';}});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(ui.modal){ui.modal=null;render();}else if(ui.projectId)closeProject();}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.querySelector('[data-venue-quick-overlay]'))closeVenueQuick();else if(ui.modal){ui.modal=null;render();}else if(ui.projectId)closeProject();}});
   // Other tabs and the Production workspace share this browser's data, not a backend.
   // Refresh on storage/focus so a stale tab does not overwrite a newer event model.
   window.addEventListener('storage',event=>{if(event.key===STORE_KEY)refreshFromStorage();});
