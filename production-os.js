@@ -289,6 +289,10 @@
   }
   function publish(eventId,quiet){
     const e=events().find(x=>x.id===eventId);if(!e)return;
+    if(plan(e).needsVenueReview){
+      if(!quiet)notice('Review and confirm the new Venue layout before publishing an installation pack.');
+      return;
+    }
     const p=snapshot(e),old=org().published[eventId];
     if(!quiet&&old){
       if(!isChanged(e)){notice('The published pack already matches the current design.');return;}
@@ -865,7 +869,23 @@
     if(action==='venue-quick-close'){productionQuickClose();return;}
     if(action==='venue-create'){productionQuickOpen('venue');return;}
     if(action==='space-create'){productionQuickOpen('space');return;}
-    if(action==='venue-layout-reviewed'){plan(e).needsVenueReview=false;if(store())notice('Venue layout review marker recorded. Technical safety checks remain separate.');return;}
+    if(action==='venue-layout-reviewed'){
+      const v=venue(e),selected=areas(e),p=plan(e),G=window.PhaenomenonGeometry,M=window.PhaenomenonMultiSpace;
+      const outside=(p.items||[]).filter(item=>{
+        const space=selected.find(x=>x.id===item.areaId);
+        if(!space)return true;
+        if(G&&M?.polygon)return !G.contains(M.polygon(space),{x:num(item.x),y:num(item.y)});
+        return num(item.x)<num(space.x)||num(item.x)>num(space.x)+num(space.width)||
+          num(item.y)<num(space.y)||num(item.y)>num(space.y)+num(space.length);
+      });
+      if(outside.length){
+        notice('Cannot mark Venue layout reviewed: '+outside.length+' placed item(s) are outside their assigned, selected Space. Reposition them in the 3D planner first.');
+        return;
+      }
+      p.needsVenueReview=false;
+      if(store())notice('Venue placement review marked complete. Engineering and technical safety verification remain separate.');
+      return;
+    }
     if(action==='print'){window.print();return;}
     if(action==='export-backup'){
       try{
