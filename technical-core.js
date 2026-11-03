@@ -109,7 +109,13 @@ function evaluate(p){
  for(const run of plan.runs){
   if(!TYPES.includes(run.type))continue;
   const calc=routeInfo(p,run);
-  if(!calc){issue('error','Cables','missing-endpoint','A '+title(run.type)+' run refers to missing or unreachable equipment');continue;}
+  if(!calc){
+    const source=items.find(x=>x.id===run.from),target=items.find(x=>x.id===run.to),venue=p.venue;
+    const M=window.PhaenomenonMultiSpace;
+    const across=M?.hasAreas(venue)&&source&&target&&M.which(venue,source)?.id!==M.which(venue,target)?.id;
+    issue('error','Cables',across?'no-site-link':'missing-endpoint',across?'No permitted '+title(run.type)+' pathway is configured between '+source.name+' and '+target.name:'A '+title(run.type)+' run refers to missing or unreachable equipment');continue;
+  }
+  if(calc.betweenSpaces&&calc.provisional)issue('warning','Cables','unsurveyed-link','Between-space route '+calc.src.name+' → '+calc.dest.name+' is illustrative and must be measured, approved and physically protected before installation',run.id);
   const src=calc.src,dest=calc.dest,specFrom=t.deviceSpecs[src.id]||{},specTo=t.deviceSpecs[dest.id]||{};
   const key=run.type+':'+dest.id;inbound[key]=(inbound[key]||0)+1;
   const cable={run,...calc};
