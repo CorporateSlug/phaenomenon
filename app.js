@@ -95,10 +95,37 @@
   }
   function valid(x){return x&&Array.isArray(x.projects)&&Array.isArray(x.leads)&&Array.isArray(x.events)&&Array.isArray(x.clients)&&Array.isArray(x.fixtures);}
   let db=read();
+  let storageBaseline=localStorage.getItem(STORE_KEY);
   assureEventData(db);
   window.PhaenomenonSpacePlanner?.ensure(db);
   let ui={view:'overview',projectId:null,eventId:null,invoiceId:null,printInvoiceId:null,tab:'overview',filter:'All',search:'',fixtureSearch:'',calendar:new Date(new Date().getFullYear(),new Date().getMonth(),1),selectedDate:null,modal:null,toast:null};
-  function save(){try{localStorage.setItem(STORE_KEY,JSON.stringify(db));}catch(e){flash('Browser storage is unavailable. Export your work to keep it.');}}
+  function save(){
+    try {
+      const latest=localStorage.getItem(STORE_KEY);
+      if(latest!==storageBaseline){
+        alert('Another Phaenomenon tab saved newer data. This edit was not written over it. The current page will reload the newer data. Please retry your change.');
+        refreshFromStorage();
+        return false;
+      }
+      const payload=JSON.stringify(db);
+      localStorage.setItem(STORE_KEY,payload);
+      storageBaseline=payload;
+      return true;
+    } catch(e){flash('Browser storage is unavailable. Export your work to keep it.');return false;}
+  }
+  function refreshFromStorage(){
+    const raw=localStorage.getItem(STORE_KEY);
+    if(raw===storageBaseline)return false;
+    if(!raw)return false;
+    let data;try{data=JSON.parse(raw);}catch(e){return false;}
+    if(!valid(data))return false;
+    db=data;storageBaseline=raw;
+    assureEventData(db);
+    window.PhaenomenonSpacePlanner?.ensure(db);
+    ui.modal=null;ui.projectId=null;
+    renderRoute();
+    return true;
+  }
   function clientName(id){return db.clients.find(c=>c.id===id)?.name||'Unassigned';}
   function projectName(id){return db.projects.find(p=>p.id===id)?.name||'General';}
   function taskCount(project){return project.tasks?.length||0;}
@@ -311,6 +338,11 @@
   function exportData(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`phaenomenon-demo-${iso(new Date())}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);flash('Workspace exported as JSON');}
   $import.addEventListener('change',async()=>{const f=$import.files?.[0];if(!f)return;try{if(f.size>5_000_000)throw Error('File is too large.');const x=JSON.parse(await f.text());if(!valid(x))throw Error('This is not a compatible Phaenomenon export.');if(!confirm('Import this file and replace the workspace data stored in this browser?'))return;db=x;assureEventData(db);window.PhaenomenonSpacePlanner?.ensure(db);save();ui.modal=null;ui.projectId=null;ui.search='';ui.fixtureSearch='';location.hash='#/overview';renderRoute();flash('Workspace imported');}catch(err){alert('Import failed: '+err.message);}finally{$import.value='';}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(ui.modal){ui.modal=null;render();}else if(ui.projectId)closeProject();}});
+  // Other tabs and the Production workspace share this browser's data, not a backend.
+  // Refresh on storage/focus so a stale tab does not overwrite a newer event model.
+  window.addEventListener('storage',event=>{if(event.key===STORE_KEY)refreshFromStorage();});
+  window.addEventListener('focus',refreshFromStorage);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshFromStorage();});
   window.addEventListener('hashchange',renderRoute);
   if(!location.hash)location.hash='#/overview';
   renderRoute();
