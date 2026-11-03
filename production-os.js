@@ -319,9 +319,9 @@
   function viewName(){return ({home:'Event overview',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'People & organisations'}[ui.view]||'Event overview');}
   function render(){
     const e=current(),c=counts(e);
-    const navItem=(href,label,glyph,active)=>'<a href="'+href+'" class="nav'+(active?' active':'')+'"'+(active?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+glyph+'</span><span>'+label+'</span></a>';
+    const navItem=(href,label,glyph,active)=>'<a href="'+href+'" class="nav'+(active?' active':'')+'"'+(active?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+glyph+'</span><span>'+esc(label)+'</span></a>';
     const navGroup=(key,label,glyph,rows,isOpen)=>
-      '<details class="rail-group" '+(isOpen?'open':'')+'><summary class="rail-group-title"><span class="nav-symbol" aria-hidden="true">'+glyph+'</span><span>'+label+'</span><span class="rail-chevron" aria-hidden="true">⌄</span></summary>'+
+      '<details class="rail-group" '+(isOpen?'open':'')+'><summary class="rail-group-title"><span class="nav-symbol" aria-hidden="true">'+glyph+'</span><span>'+esc(label)+'</span><span class="rail-chevron" aria-hidden="true">⌄</span></summary>'+
       '<div class="rail-subnav">'+rows.join('')+'</div></details>';
     const eventId=e?.id?encodeURIComponent(e.id):'';
     const navigation=
