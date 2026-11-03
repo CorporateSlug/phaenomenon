@@ -86,14 +86,14 @@
       this.technical?.dispose();this.technical=null;
       this.threeView?.dispose();this.threeView=null;
       this.resizeObserver?.disconnect();
-      if(!this.event){this.root.innerHTML='<p>Create an event booking first to attach a venue plan.</p>';return;}
+      if(!this.event){this.root.innerHTML='<div class="panel" style="padding:20px"><h2>Create an event to begin</h2><p>Start a draft event, then choose its Venue and Spaces before placing equipment.</p><a class="button primary" href="production.html#/builder">Open Event Builder →</a></div>';return;}
       const v=this.venue;
       this.root.innerHTML=`<div class="sp-toolbar panel">
         <div class="sp-controls"><label class="sp-label">Event booking<select id="sp-event" class="form-select">${this.db.eventJobs.map(e=>`<option value="${esc(e.id)}" ${e.id===this.eventId?'selected':''}>${esc(e.title)} · ${esc(e.date)}</option>`).join('')}</select></label>
         <label class="sp-label">Venue<select id="sp-venue" class="form-select">${this.db.venues.map(venue=>`<option value="${esc(venue.id)}" ${venue.id===v.id?'selected':''}>${esc(venue.name)}</option>`).join('')}</select></label>
         <button id="sp-load-abbotsford" class="button" type="button" title="Load illustrative indoor and outdoor stages at Abbotsford Convent">Try two-stage demo</button>
         <button id="sp-new-venue" class="button">+ Create venue</button>
-        <a class="button" href="#/bookings/${encodeURIComponent(this.eventId)}">Open event brief</a></div>
+        <a class="button" href="production.html#/builder/${encodeURIComponent(this.eventId)}">← Event Builder</a></div>
         <div id="sp-venue-new" class="sp-newvenue" hidden><label>Venue name <input id="sp-newname" class="field" maxlength="90" placeholder="e.g. Civic Ballroom"></label><label>First space <input id="sp-newspace" class="field" maxlength="90" value="Main space" placeholder="e.g. Main hall"></label><label>Width (m) <input id="sp-neww" class="field" type="number" min="2" max="200" step="0.5" value="16"></label><label>Length (m) <input id="sp-newl" class="field" type="number" min="2" max="200" step="0.5" value="12"></label><label>Reference height (m) <input id="sp-newh" class="field" type="number" min="0.5" max="40" step="0.5" value="4"></label><label>Environment<select id="sp-newkind" class="form-select"><option value="indoor">Indoor / enclosed</option><option value="outdoor">Outdoor / open</option></select></label><button id="sp-create-venue" class="button primary">Create venue</button></div>
         <div class="sp-dimensions">${[['Site width','width'],['Site length','length'],['Reference height','height']].map(([label,key])=>`<label class="sp-label">${label} (m)<input class="field sp-dim" id="sp-${key}" type="number" step="0.1" min="2" max="200" value="${n(v[key])}"></label>`).join('')}<button id="sp-save-venue" class="button">Save dimensions</button><span class="sp-caption">Shared site measurements. Resizing scales the perimeter across bookings.</span></div>
       </div>
