@@ -623,6 +623,52 @@
   }
   function closeBuilderEvent(){document.querySelector('[data-builder-event-overlay]')?.remove();builderEventOpen=false;}
 
+
+  function monthKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+  function dateKey(d){return monthKey(d)+'-'+String(d.getDate()).padStart(2,'0');}
+  function validEventDate(value){return typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&!Number.isNaN(new Date(value+'T12:00:00').getTime());}
+  function eventSchedule(){
+    const all=events(),today=dateKey(new Date()),upcoming=all.filter(x=>validEventDate(x.date)&&x.date>=today).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title));
+    const past=all.filter(x=>validEventDate(x.date)&&x.date<today).sort((a,b)=>b.date.localeCompare(a.date)||a.title.localeCompare(b.title));
+    const unscheduled=all.filter(x=>!validEventDate(x.date)).sort((a,b)=>a.title.localeCompare(b.title));
+    const eventRow=x=>'<a class="event-index-row'+(x.id===ui.eventId?' is-current':'')+'" href="#/builder/'+encodeURIComponent(x.id)+'">'+
+      '<span class="event-index-date">'+esc(date(x.date))+'</span><span class="event-index-main"><strong>'+esc(x.title)+'</strong><small>'+esc(venue(x)?.name||x.venue||'Venue not assigned')+'</small></span>'+
+      '<span class="event-index-status">'+pill(x.status||'Enquiry')+(x.id===ui.eventId?'<small class="event-index-active">Current</small>':'')+'</span><span class="event-index-chevron" aria-hidden="true">›</span></a>';
+    const grouped=(name,list)=>list.length?'<section class="panel event-index-group"><h2>'+esc(name)+' <span class="muted">('+list.length+')</span></h2><div class="event-index-rows">'+list.map(eventRow).join('')+'</div></section>':'';
+    const selected=current(),monthPattern=/^\d{4}-(0[1-9]|1[0-2])$/;
+    const key=monthPattern.test(ui.scheduleMonth)?ui.scheduleMonth:monthKey(new Date());
+    const [year,month]=key.split('-').map(Number);
+    const first=new Date(year,month-1,1),startOffset=(first.getDay()+6)%7;
+    const days=new Date(year,month,0).getDate(),cells=Math.ceil((startOffset+days)/7)*7;
+    const monthEvents=all.filter(x=>validEventDate(x.date)&&x.date.slice(0,7)===key);
+    const monthTitle=first.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+    const grid=Array.from({length:cells},(_,i)=>{
+      const d=i-startOffset+1;
+      if(d<1||d>days)return '<div class="calendar-day is-outside" aria-hidden="true"></div>';
+      const stamp=key+'-'+String(d).padStart(2,'0');
+      const matches=monthEvents.filter(x=>x.date===stamp);
+      return '<div class="calendar-day'+(stamp===today?' is-today':'')+'"><span class="calendar-date">'+d+'</span>'+
+        matches.map(x=>'<a href="#/builder/'+encodeURIComponent(x.id)+'" title="'+esc(x.title)+'" class="calendar-event'+(x.id===ui.eventId?' is-current':'')+'">'+esc(x.title)+'</a>').join('')+'</div>';
+    }).join('');
+    return hero('EVENTS & SCHEDULE','All events','Find a booking, review the schedule and open any event without leaving Production OS.',
+      '<button class="btn primary" data-act="builder-new">+ New event</button>')+
+      '<div class="event-index-actions section"><div class="row"><button type="button" class="btn'+(ui.scheduleMode==='list'?' primary':'')+'" data-act="schedule-mode" data-id="list" aria-pressed="'+(ui.scheduleMode==='list')+'">Event list</button>'+
+      '<button type="button" class="btn'+(ui.scheduleMode==='calendar'?' primary':'')+'" data-act="schedule-mode" data-id="calendar" aria-pressed="'+(ui.scheduleMode==='calendar')+'">Month calendar</button></div>'+
+      (selected?'<a class="btn" href="#/builder/'+encodeURIComponent(selected.id)+'">Continue '+esc(selected.title)+' →</a>':'')+'</div>'+
+      (ui.scheduleMode==='calendar'?
+        '<section class="panel section event-calendar"><div class="event-calendar-head"><h2>'+esc(monthTitle)+'</h2>'+
+        '<div class="row"><button type="button" class="btn small" data-act="schedule-month" data-id="-1" aria-label="Previous month">←</button>'+
+        '<button type="button" class="btn small" data-act="schedule-today">Today</button>'+
+        '<button type="button" class="btn small" data-act="schedule-selected" '+(!selected||!validEventDate(selected.date)?'disabled':'')+'>Selected event</button>'+
+        '<button type="button" class="btn small" data-act="schedule-month" data-id="1" aria-label="Next month">→</button></div></div>'+
+        '<div class="calendar-grid" aria-label="'+esc(monthTitle)+'">'+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>'<div class="calendar-weekday">'+x+'</div>').join('')+grid+'</div>'+
+        '<p class="form-note">Event dates from your saved bookings. Select an event to open its builder. For the broader studio diary, use <a href="index.html#/schedule">Studio calendar ↗</a>.</p></section>'+
+        (monthEvents.length?grouped('Events this month',monthEvents.slice().sort((a,b)=>a.date.localeCompare(b.date))):'<p class="muted">No events scheduled this month. Use the arrows to browse other months or switch to Event list for every booking.</p>'):
+        (all.length?grouped('Upcoming',upcoming)+grouped('Past events',past)+grouped('Without a date',unscheduled):
+        '<div class="empty">No events yet. Select + New event to create your first production.</div>'))+
+      '<div class="row section"><a class="btn" href="index.html#/schedule">Open full studio calendar ↗</a><a class="btn" href="index.html#/bookings">Manage bookings in classic workspace ↗</a></div>';
+  }
+
   function home(e,c){
     if(!e)return '<div class="empty">Create an event in the original workspace to begin.</div>';
     return hero('YOUR EVENT WORKSPACE',e.title, date(e.date)+' · '+(venue(e)?.name||e.venue||'Venue not set'),'<a class="btn primary" href="#/builder/'+encodeURIComponent(e.id)+'">Continue event builder →</a> '+pill(e.status||'Enquiry')+' '+pill('Crew pack r'+(published(e)?.revision||0)))+
