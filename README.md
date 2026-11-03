@@ -105,3 +105,19 @@ The event, fixture positions, physical cable connections, DMX addresses, power a
 **Privacy:** The public demo is populated with fictional data. Aaron's supplied supplier list, workbook and event plan are not published to this repository. Future import tools should explicitly ask the operator before saving private event or supplier information.
 
 **Safety:** All figures are planning aids. The application does not establish safe loading, electrical compliance, structural/rigger certification or photometric accuracy. Verify the physical equipment specifications, power distribution, cable routing and local regulations with competent personnel before installation.
+
+## Multi-space venues and Abbotsford Convent demo
+
+Open **3D Space Planner → Try two-stage demo** to load **Abbotsford Convent · Indoor + Outdoor demo**. This creates a sample event and reusable venue containing:
+- One **indoor stage** with a roof profile, equipment, DMX node and independent power distribution.
+- One **outdoor stage** with open sky, its own equipment, DMX node and independent power distribution.
+- An **illustrative between-space site pathway**, used by a cross-area network cable. Estimated lengths go from equipment to the defined passage and then to the destination, instead of straight through the site. Route lengths update when equipment moves.
+- A **Whole venue / Indoor stage / Outdoor stage** switcher above the 3D viewport for whole-site or focused editing.
+- **Edit spaces** to update independent area position, size, environment, roof and a starting footprint template. Additional areas and provisional shared cable pathways can be added.
+
+This demo uses **invented dimensions, relative positions, equipment choices, cable pathways and electrical planning assumptions**. It is **not** a surveyed representation of the Abbotsford Convent and does not contain Aaron's private supplier or event data. Real paths, accessibility, room geometry, approved power sources and cable protection must be verified on site.
+
+In **Review**, the Power + Data Map includes between-space Ethernet links as well as DMX and power topology. In **Export**, the install pack lists fixtures by room and flags an unsurveyed connection. Each venue space and its equipment link back to the same event.
+
+Single-area venues still work unchanged; adding a second space is optional and does not erase existing placements.
+
