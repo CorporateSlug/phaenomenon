@@ -117,7 +117,7 @@
     if(!db.productionOS||typeof db.productionOS!=='object')db.productionOS={};
     const o=org();o.version=1;
     for(const [key] of [['entities'],['relationships'],['assignments'],['issues']])if(!Array.isArray(o[key]))o[key]=[];
-    for(const key of ['published','show','looks','taskAssignments','teamHierarchy'])if(!o[key]||typeof o[key]!=='object'||Array.isArray(o[key]))o[key]={};
+    for(const key of ['published','show','looks','taskAssignments','teamHierarchy','packAcknowledgements'])if(!o[key]||typeof o[key]!=='object'||Array.isArray(o[key]))o[key]={};
     db.clients.forEach(x=>savedByKind('client','client',x.id,x.name,{demo:!!x.demo||x.name.toLowerCase().includes('demo')}));
     db.venues.forEach(x=>{
       const parent=savedByKind('venue','venue',x.id,x.name,{demo:!!x.demo});
@@ -437,12 +437,48 @@
       '<text x="25" y="19" font-size="10" fill="#b5c4ce">Schematic · positions need site verification</text></svg>';
     return '<div class="section"><h3>'+esc(area.name)+'</h3>'+svg+'<div class="chiprow">'+items.map((i,n)=>'<span class="tag">'+(n+1)+'. '+esc(i.name)+'</span>').join('')+'</div></div>';
   }
+
+  function acknowledgements(e){return org().packAcknowledgements[e?.id]||[];}
+  function acknowledged(e,personId,revision){
+    return acknowledgements(e).find(x=>x.personId===personId&&x.revision===revision);
+  }
+  function acknowledgePack(e,personId){
+    const pub=published(e),person=crewMembers(e).find(p=>p.id===personId);
+    if(!pub||!person)return false;
+    if(!org().packAcknowledgements[e.id])org().packAcknowledgements[e.id]=[];
+    if(!acknowledged(e,personId,pub.revision)){
+      org().packAcknowledgements[e.id].push({personId,revision:pub.revision,at:now(),type:'recorded-in-browser'});
+    }
+    return true;
+  }
+  function crewAcknowledgement(e){
+    const pub=published(e);if(!pub)return '';
+    if(ui.crewPerson==='all')return '<div class="notice info section">Select a crew member to view their revision acknowledgement status. Acknowledgement records in this prototype are not identity-verified or signed approvals.</div>';
+    const item=acknowledged(e,ui.crewPerson,pub.revision);
+    return '<div class="notice info section"><strong>'+esc(aname(ui.crewPerson))+'</strong> · Crew pack r'+pub.revision+' · '+
+      (item?'Review recorded '+new Date(item.at).toLocaleString('en-AU')+'.':'Review not yet recorded for this person.')+
+      (item?'':' <button class="btn small no-print" data-act="ack-pack">Record review of revision '+pub.revision+'</button>')+
+      '<p class="form-note">This is a local workflow marker. It is not proof of identity, acceptance of risk, safety certification or formal sign-off.</p></div>';
+  }
+  function productionAcknowledgements(e){
+    const people=crewMembers(e),pub=published(e);if(!pub)return '';
+    const complete=people.filter(x=>acknowledged(e,x.id,pub.revision)).length;
+    return '<section class="panel section"><div class="section-head"><h2>Crew pack circulation</h2>'+pill(complete+' / '+people.length+' reviews recorded')+'</div>'+
+      '<p class="muted">Track which team members have reviewed the current published revision. Each new revision requires a fresh review. Statuses are self-reported in this prototype, not authenticated signatures.</p>'+
+      '<div class="stack">'+(people.map(x=>{
+        const ack=acknowledged(e,x.id,pub.revision),stale=acknowledgements(e).filter(a=>a.personId===x.id&&a.revision!==pub.revision).sort((a,b)=>b.revision-a.revision)[0];
+        return '<div class="linkrow"><div><strong>'+esc(x.name)+'</strong><div class="detail">'+
+          (ack?'Review recorded '+new Date(ack.at).toLocaleString('en-AU'):stale?'Previously reviewed r'+stale.revision+'. Current revision '+pub.revision+' needs review.':'No review recorded for current revision')+
+          '</div></div>'+pill(ack?'Reviewed r'+pub.revision:'Needs review',ack?'good':'warn')+'</div>';
+      }).join('')||'<div class="empty">Add people to the event team to track pack circulation.</div>')+'</div></section>';
+  }
+
   function crew(e,c){
     if(ui.crewPerson!=='all'&&!crewMembers(e).some(x=>x.id===ui.crewPerson))ui.crewPerson='all';
     const pub=published(e),total=(pub?.tasks||[]).filter(t=>matchesCrew(e,t)),done=total.filter(t=>t.state!=='pending').length;
     return hero('CREW WORKSPACE','Install the event','Simple, area-specific instructions from a versioned crew pack. Track installation separately from technical verification.',
       areaPicker(e)+crewSelector(e))+
-      changeNotice(e)+reportingSummary(e)+
+      changeNotice(e)+reportingSummary(e)+crewAcknowledgement(e)+
       (!pub?'<div class="empty">Publish a crew pack from Design to begin.</div>':
       '<div class="row between section no-print"><button class="btn" data-act="print">Print area crew pack / Save as PDF</button><span class="form-note">Select one area for a concise handout.</span></div><div class="notice info section">Crew pack revision <strong>'+pub.revision+'</strong> · issued '+new Date(pub.at).toLocaleString('en-AU')+'. '+
       (isChanged(e)?' A newer design has not been published. Do not use unreviewed new instructions.':' Instructions reflect the currently published plan.')+'</div>'+
@@ -594,7 +630,7 @@
       '<div class="sep"></div><h3>Open issues</h3>'+
       (org().issues.filter(x=>x.eventId===e.id&&x.status!=='Resolved').map(x=>'<div class="linkrow"><div><strong>'+esc(x.note)+'</strong><div class="detail">'+esc(x.taskId||'General issue')+' · '+new Date(x.at).toLocaleString('en-AU')+'</div></div><button class="btn small" data-act="resolve-issue" data-id="'+esc(x.id)+'">Resolve</button></div>').join('')||'<p class="muted">No open issues.</p>')+
       '<div class="sep"></div><button class="btn" data-act="report" data-id="">+ Report general issue</button></section></div>'+
-      taskOwnership(e)+
+      taskOwnership(e)+productionAcknowledgements(e)+
       '<section class="panel section"><div class="section-head"><h2>Run of show</h2>'+pill((org().show[e.id]||[]).length+' cues')+'</div>'+
       '<p class="muted">A lightweight production cue list. This does not drive live lighting consoles or control show-critical systems.</p>'+
       '<div class="table-scroll"><table><thead><tr><th>Time</th><th>Cue / activity</th><th>Area</th><th>Draft look</th><th>Status</th><th></th></tr></thead><tbody>'+
@@ -672,6 +708,13 @@
     const action=el.dataset.act,id=el.dataset.id,e=current(),p=published(e);
     ev.preventDefault();
     if(action==='print'){window.print();return;}
+    if(action==='ack-pack'){
+      if(ui.crewPerson==='all'){notice('Select a crew member first.');return;}
+      if(acknowledgePack(e,ui.crewPerson)){
+        if(store())notice('Pack review recorded for '+aname(ui.crewPerson)+' on revision '+published(e).revision+'.');
+      }else notice('Choose a team member with a current event assignment.');
+      return;
+    }
     if(action==='review-changes'){location.hash='#/design';route();return;}
     if(action==='profile'){navigateProfile(id);return;}
     if(action==='entity-back'||action==='entity-forward'){
