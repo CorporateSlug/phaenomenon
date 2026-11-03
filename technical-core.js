@@ -9,10 +9,10 @@ const valid=(v)=>Number.isFinite(Number(v))&&v!==''&&v!=null;
 const round=(x,d=2)=>+Number(x).toFixed(d);
 const clean=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ID=(prefix)=>prefix+'-'+Math.random().toString(36).slice(2,9);
-const TYPES=['dmx','power','network','audio'];
-const CONNECTORS={dmx:['','3-pin XLR','5-pin XLR','etherCON','Other / adaptor'],power:['','powerCON','Power Pro True / TRUE1','Mains / IEC','Other / adaptor'],network:['','etherCON / Cat6','RJ45 / Cat6','Fibre','Other'],audio:['','3-pin XLR','Speakon','TRS','Other']};
+const TYPES=['dmx','power','network','audio','video'];
+const CONNECTORS={dmx:['','3-pin XLR','5-pin XLR','etherCON','Other / adaptor'],power:['','powerCON','Power Pro True / TRUE1','Mains / IEC','Other / adaptor'],network:['','etherCON / Cat6','RJ45 / Cat6','Fibre','Other'],audio:['','3-pin XLR','Speakon','TRS','Other'],video:['','3G-SDI / BNC','12G-SDI / BNC','HDMI','DisplayPort','Fibre / SDI converter','Other']};
 const DEFAULT_LENGTHS=[2,3,5,10,15,20,25,30,50,100];
-const title=(x)=>({dmx:'DMX / data',power:'Power',network:'Ethernet',audio:'Audio'}[x]||x);
+const title=(x)=>({dmx:'DMX / data',power:'Power',network:'Ethernet',audio:'Audio',video:'Video / SDI / HDMI'}[x]||x);
 function ensure(db,eventId,plan){
  if(!db.technicalPlans || typeof db.technicalPlans!=='object'||Array.isArray(db.technicalPlans))db.technicalPlans={};
  let t=db.technicalPlans[eventId];
