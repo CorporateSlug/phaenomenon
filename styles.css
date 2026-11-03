@@ -164,3 +164,49 @@
 #space-planner-root .sp-canvas-activation.is-active .sp-canvas-activation-dot{background:#7bd6a6;box-shadow:0 0 0 3px #7bd6a627}
 #space-planner-root .sp-canvas-wrap canvas:focus-visible{outline:2px solid #80cba5;outline-offset:-3px}
 @media(max-width:650px){#space-planner-root .sp-canvas-activation{top:8px;right:8px;font-size:9px;padding:6px 8px}}
+
+
+/* Contextual venue editor: geometry tools share the inspector beside the live canvas. */
+#space-planner-root .sp-workspace.sp-venue-editing{grid-template-columns:minmax(0,1fr) minmax(318px,350px)}
+#space-planner-root .sp-inspector{min-width:0;overflow:hidden}
+#space-planner-root .sp-inspector-tabs{display:flex;gap:3px;flex:none;padding:6px;background:#f3f7f5;border-bottom:1px solid #e4ece8}
+#space-planner-root .sp-inspector-tabs button{height:34px;border:0;border-radius:7px;background:transparent;color:#738581;font-weight:750;font-size:11px;flex:1;cursor:pointer}
+#space-planner-root .sp-inspector-tabs button:hover{background:#e8f1ee;color:#315d55}
+#space-planner-root .sp-inspector-tabs button.is-active{background:#fff;color:#2d5b50;box-shadow:0 1px 4px #24443615}
+#space-planner-root .sp-inspector-pane{display:flex;flex-direction:column;min-width:0;min-height:0;flex:1}
+#space-planner-root .sp-inspector-pane[hidden],#space-planner-root .sp-geometry-section[hidden]{display:none!important}
+#space-planner-root .sp-venue-pane{overflow-y:auto;overscroll-behavior:contain}
+#space-planner-root .sp-venue-pane-head{padding:15px 14px 10px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+#space-planner-root .sp-venue-pane-head strong{font-size:14px;color:#365752}
+#space-planner-root .sp-venue-pane-head p{margin:4px 0 0;font-size:10px;line-height:1.5;color:#859995}
+#space-planner-root .sp-venue-done{border:1px solid #d4e4de;background:#f3faf6;color:#315d55;padding:6px 10px;border-radius:7px;font-weight:700;font-size:10px;cursor:pointer}
+#space-planner-root .sp-geometry-mode-tabs{display:flex;gap:3px;margin:0 14px;padding:3px;border-radius:9px;background:#f0f5f2;border:1px solid #e1eae5}
+#space-planner-root .sp-geometry-mode-tabs button{flex:1;min-width:0;height:32px;border:0;border-radius:6px;background:transparent;color:#697e78;font-size:11px;font-weight:750;cursor:pointer}
+#space-planner-root .sp-geometry-mode-tabs button.is-active{background:#fff;color:#2d6153;box-shadow:0 1px 3px #314a3e20}
+#space-planner-root .sp-venue-pane-meta{margin:10px 14px 0;border-radius:7px;background:#eff7f3;color:#5b8071;padding:8px 10px;font-size:10px;font-weight:750}
+#space-planner-root .sp-venue-pane .sp-geometry-panel{margin:0;padding:0 14px 16px;background:transparent;border:0;box-shadow:none;border-radius:0}
+#space-planner-root .sp-venue-pane .sp-dimensions{border:0;border-bottom:1px solid #e9efeb;padding:13px 0 14px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+#space-planner-root .sp-venue-pane .sp-dimensions .sp-label{min-width:0;max-width:none;font-size:10px;gap:5px}
+#space-planner-root .sp-venue-pane .sp-dimensions .field{min-width:0;width:100%;height:33px;font-size:11px}
+#space-planner-root .sp-venue-pane .sp-dimensions .button{grid-column:1/-1;width:100%;min-height:33px}
+#space-planner-root .sp-venue-pane .sp-dimensions .sp-caption{grid-column:1/-1;font-size:9px;margin:0;padding:0;color:#93a29f}
+#space-planner-root .sp-venue-pane .sp-geometry-columns{display:block;padding-top:14px}
+#space-planner-root .sp-venue-pane .sp-geometry-section{border:0;padding:0;min-width:0}
+#space-planner-root .sp-venue-pane .sp-geometry-section h3{font-size:12px;margin:0 0 9px}
+#space-planner-root .sp-venue-pane .sp-geometry-controls{gap:6px;margin:8px 0}
+#space-planner-root .sp-venue-pane .sp-geometry-controls label{flex:1 1 100%;min-width:0}
+#space-planner-root .sp-venue-pane .sp-geometry-controls .form-select{max-width:none;min-width:0;width:100%}
+#space-planner-root .sp-venue-pane .sp-geometry-controls button{flex:1 1 auto;min-height:31px;padding:6px 8px;white-space:normal}
+#space-planner-root .sp-venue-pane .sp-geometry-note{font-size:10px;line-height:1.5}
+#space-planner-root .sp-venue-pane .sp-area{margin-left:0;flex:1 1 100%;font-size:10px}
+#space-planner-root .sp-venue-pane .sp-roof-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#space-planner-root .sp-venue-pane .sp-roof-form label{min-width:0}
+#space-planner-root .sp-venue-pane .sp-custom-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+#space-planner-root .sp-open-venue.is-active{background:#315d55;color:#fff;border-color:#315d55}
+#space-planner-root .sp-geometry-shortcut{position:absolute;left:13px;bottom:11px;z-index:3;display:flex;align-items:center;gap:7px;border:1px solid #90b5a870;background:#1d3b37d9;color:#edfff7;font:700 10px system-ui;padding:8px 11px;border-radius:8px;cursor:pointer;box-shadow:0 4px 14px #061d1b25;backdrop-filter:blur(8px)}
+#space-planner-root .sp-geometry-shortcut:hover,#space-planner-root .sp-geometry-shortcut[aria-pressed="true"]{background:#376f5b;border-color:#9fd0b1}
+#space-planner-root .sp-workspace.sp-is-focused.sp-venue-editing{grid-template-columns:minmax(0,1fr) minmax(320px,375px)}
+#space-planner-root .sp-is-focused .sp-venue-pane{overflow-y:auto}
+@media(max-width:1100px){#space-planner-root .sp-workspace.sp-venue-editing{grid-template-columns:minmax(0,1fr) 320px}}
+@media(max-width:980px){#space-planner-root .sp-workspace.sp-venue-editing{grid-template-columns:1fr}#space-planner-root .sp-inspector-tabs{position:sticky;top:0;z-index:3}#space-planner-root .sp-workspace.sp-is-focused.sp-venue-editing{grid-template-columns:1fr;grid-template-rows:minmax(430px,70dvh) auto}}
+@media(max-width:700px){#space-planner-root .sp-venue-pane{max-height:none}#space-planner-root .sp-geometry-shortcut{bottom:9px;left:9px;font-size:9px}}
