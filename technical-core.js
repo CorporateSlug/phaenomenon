@@ -70,7 +70,7 @@ function routeInfo(p,run){
  let route=null;try{route=p.route(run)}catch(e){}
  if(!route)return null;
  const needed=round(N(route.length),1),selected=valid(run.cableLength)?N(run.cableLength):null;
- return {src,dest,needed,selected,short:selected!==null&&selected+.0001<needed,spare:selected!==null?round(selected-needed,1):null,suggested:DEFAULT_LENGTHS.find(x=>x>=needed)||null};
+ return {src,dest,needed,selected,short:selected!==null&&selected+.0001<needed,spare:selected!==null?round(selected-needed,1):null,suggested:DEFAULT_LENGTHS.find(x=>x>=needed)||null,betweenSpaces:!!route.betweenSpaces,provisional:!!route.provisional,siteLinkId:route.link?.id||null};
 }
 function evaluate(p){
  const plan=p.plan,t=ensure(p.db,p.eventId,plan),items=plan.items||[],itemMap=new Map(items.map(o=>[o.id,o]));
