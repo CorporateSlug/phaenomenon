@@ -104,7 +104,7 @@
     const changedVenue=!!(oldVenue&&oldVenue!==venue.id);
     const placements=plan?.items||[];
     if(!changedVenue){
-      const excluded=placements.filter(x=>x.areaId&&available.has(x.areaId)&&!requested.includes(x.areaId));
+      const excluded=placements.filter(x=>{const spaceId=available.has(x.areaId)?x.areaId:M?.which?.(venue,x)?.id;return spaceId&&available.has(spaceId)&&!requested.includes(spaceId);});
       if(excluded.length)return {error:'These spaces contain placed equipment. Move or remove the items before deselecting the space: '+[...new Set(excluded.map(x=>venue.spaces.find(sp=>sp.id===x.areaId)?.name||x.areaId))].join(', ')};
     }
     event.venueId=venue.id;
