@@ -1,6 +1,27 @@
 # Phaenomenon
 
 
+## Simplified navigation and focused workspaces (November 2026)
+
+The classic Studio and Production views now use the same task-based information architecture. The main menus keep **Event workspace**, **Events** and **Studio home** immediately accessible; specialised links sit in expandable groups:
+
+- **Plan & design:** 3D planner and technical connections.
+- **Deliver the event:** Crew installation and Production (team, equipment, installation, show schedule).
+- **Library & people:** Reusable Venues and Spaces, people and organisations, equipment and fixture profiles.
+- **Studio management:** Projects, opportunities, calendar, clients, invoices and Settings.
+
+The Studio sidebar has **Plan & design**, **Equipment library** and **Studio management** submenus, rather than a long flat list. Production offers **Plan & design**, **Deliver the event**, **Library & people** and **Studio management**. Both switch to an expandable vertical menu on smaller screens, instead of forcing users to scroll through a long horizontal bar.
+
+Within **Events**, selecting a booking shows two focused tabs: **Event details** (including the saved Venue and selected Spaces) and **Equipment kit**. Switching tabs does not rebuild the unsaved form fields. Optional booking totals are behind a summary disclosure, while rebooking and invoice drafting remain under **More**. The selected event can be opened directly in the Production workspace or 3D planner.
+
+The **Event overview** defaults to four primary tasks (3D design, connections, crew installation and production). Reusable Venue/Space configuration and extended progress detail can expand on demand. Production uses the short tabs **Team**, **Equipment & logistics**, **Installation** and **Show schedule**. Optional creation forms (assignments, show cues, draft looks and entity records) remain accessible but collapsed until needed. The starting-view preset and JSON backup live under **Options** in the Production header.
+
+The legacy **Design → Connect → Review → Export** technical-planning sequence and its DMX, power and cable subtasks are unchanged. All data and actions remain available; this is an information architecture and presentation pass, not a new data model or a security update.
+
+Navigation checks: `node --test tests/navigation.test.mjs`. Run the full suite with `node --test tests/*.test.mjs`.
+
+---
+
 ## New: Connected Event Production workspace
 
 **[Open the role-aware event production workspace](production.html)** · [Architecture and limitations](PRODUCTION_OS.md)
