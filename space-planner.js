@@ -132,10 +132,56 @@
         <div id="sp-totals" class="sp-cable-totals"></div>
         <p class="sp-safety"><strong>Planning estimate only.</strong> Routes follow approximate unobstructed ground-level paths inside the drawn perimeter, with vertical drops and the specified slack. They do not detect walls, furniture, elevation changes, doors, exclusion zones, actual cable containment, connectors, voltage drop, circuit capacities, power factor, network performance, rigging loads or electrical compliance. Confirm dimensions, routes, gear suitability and installation with qualified personnel. Never use these totals as an electrical safety approval.</p>
       </section>`;
+      this.arrangeWorkspace();
       this.canvas=this.root.querySelector('#sp-canvas');this.ctx=this.canvas.getContext('2d');
       this.bind();this.updateGeometry();this.updateAll();
       this.resizeObserver=typeof ResizeObserver!=='undefined'?new ResizeObserver(()=>this.resize()):null;
       this.resizeObserver?.observe(this.canvas.parentElement);
+      this.resize();
+    }
+
+    arrangeWorkspace(){
+      const toolbar=this.root.querySelector('.sp-toolbar');
+      const workspace=this.root.querySelector('.sp-workspace');
+      const metrics=this.root.querySelector('#sp-summary');
+      const geometry=this.root.querySelector('.sp-geometry-panel');
+      geometry.querySelector('.sp-geometry-title')?.remove();
+      const dimensions=toolbar.querySelector('.sp-dimensions');
+      geometry.prepend(dimensions);
+      const details=document.createElement('details');
+      details.id='sp-venue-details';details.className='sp-venue-details panel';
+      const header=document.createElement('summary');
+      header.className='sp-venue-summary';
+      header.innerHTML='<span class="sp-venue-summary-title"><span class="sp-disclosure-caret" aria-hidden="true">⌄</span><strong>Venue geometry & dimensions</strong><span class="sp-venue-summary-caption">Floorplan · roof · environment</span></span><span id="sp-venue-meta" class="sp-venue-meta"></span>';
+      details.append(header,geometry);
+      toolbar.after(workspace,metrics,details);
+      const controls=toolbar.querySelector('.sp-controls');
+      const edit=document.createElement('button');
+      edit.id='sp-edit-venue';edit.type='button';edit.className='button sp-open-venue';
+      edit.textContent='Edit venue';
+      controls.insertBefore(edit,controls.querySelector('#sp-new-venue'));
+      edit.addEventListener('click',()=>{details.open=!details.open;if(details.open)details.scrollIntoView({behavior:'smooth',block:'start'});});
+      const sceneHead=workspace.querySelector('.sp-scene-head h2');
+      if(sceneHead)sceneHead.textContent='Space layout';
+      const viewControls=workspace.querySelector('.sp-view-controls');
+      const focus=document.createElement('button');
+      focus.id='sp-focus';focus.type='button';focus.className='sp-tool sp-focus-button';
+      focus.setAttribute('aria-pressed','false');
+      focus.setAttribute('aria-label','Expand space planner');
+      focus.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"/></svg><span>Focus</span>';
+      viewControls.appendChild(focus);
+      focus.addEventListener('click',()=>this.setFocusMode(!this.isFocus));
+      if(this.boundFocusKeydown)window.removeEventListener('keydown',this.boundFocusKeydown);
+      this.boundFocusKeydown=e=>{if(e.key==='Escape'&&this.isFocus){e.preventDefault();this.setFocusMode(false);this.root.querySelector('#sp-focus')?.focus();}};
+      window.addEventListener('keydown',this.boundFocusKeydown);
+      this.isFocus=false;
+    }
+    setFocusMode(active){
+      this.isFocus=!!active;
+      const workspace=this.root.querySelector('.sp-workspace');
+      workspace?.classList.toggle('sp-is-focused',this.isFocus);
+      const button=this.root.querySelector('#sp-focus');
+      if(button){button.setAttribute('aria-pressed',String(this.isFocus));button.setAttribute('aria-label',this.isFocus?'Exit expanded space planner':'Expand space planner');button.querySelector('span').textContent=this.isFocus?'Exit focus':'Focus';}
       this.resize();
     }
     bind(){
@@ -268,6 +314,7 @@
       const $=s=>this.root.querySelector(s);
       $('#sp-kind').value=g.kind;$('#sp-roof-type').value=r.type;$('#sp-roof-axis').value=r.axis;$('#sp-eave').value=r.eave;$('#sp-peak').value=r.peak;
       $('#sp-area').textContent=`${G.area(g.footprint).toFixed(1)} m² mapped`;
+      const venueMeta=$('#sp-venue-meta');if(venueMeta)venueMeta.textContent=Math.round(G.area(g.footprint))+' m² · '+(g.kind==='outdoor'?'Outdoor':r.type==='none'?'Open roof':({flat:'Flat roof',mono:'Sloped roof',gable:'Pitched roof',custom:'Custom roof'}[r.type]||'Roof'));
       $('#sp-corner-count').textContent=`· ${g.footprint.length} corners`;
       $('#sp-remove-corner').disabled=!this.selectedVertex||g.footprint.length<=3;
       $('#sp-edit-outline').classList.toggle('primary',this.editOutline);
@@ -451,6 +498,6 @@
     pointerUp(){if(this.drag?.mode==='vertex'&&this.drag.changed){this.rehomeAll();this.save();this.updateGeometry();this.updateAll();}
       else if(this.drag?.mode==='object'&&this.drag.changed){this.save();this.updateInspector();this.updateRoutes();this.updateSummary();}this.drag=null;}
   }
-  function mount(root,db,onSave,onNotify,eventId){if(!root)return;ensure(db);if(window.__phaenomenonActivePlanner?.resizeObserver)window.__phaenomenonActivePlanner.resizeObserver.disconnect();window.__phaenomenonActivePlanner=new Planner(root,db,onSave,onNotify,eventId);}
+  function mount(root,db,onSave,onNotify,eventId){if(!root)return;ensure(db);if(window.__phaenomenonActivePlanner?.resizeObserver)window.__phaenomenonActivePlanner.resizeObserver.disconnect();if(window.__phaenomenonActivePlanner?.boundFocusKeydown)window.removeEventListener('keydown',window.__phaenomenonActivePlanner.boundFocusKeydown);window.__phaenomenonActivePlanner=new Planner(root,db,onSave,onNotify,eventId);}
   window.PhaenomenonSpacePlanner={ensure,mount};
 })();
