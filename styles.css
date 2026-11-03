@@ -293,3 +293,69 @@
 .sp-fixture-picker .sp-fixture-grid b{margin-left:auto;color:#81a291;font-size:20px}
 .sp-fixture-picker footer{border-top:1px solid #e6eee8;padding:12px 24px 16px;color:#9aad9f;font-size:10px;line-height:1.5}
 @media(max-width:620px){.sp-fixture-picker .sp-fixture-grid{grid-template-columns:1fr;padding:10px 15px}.sp-fixture-picker header{padding:20px 15px 10px}.sp-fixture-picker footer{padding:12px 15px}}
+
+
+/* Navigation v2: a small always-visible event core, collapsible tool collections. */
+.sidebar-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sidebar .logo{min-width:0}
+.sidebar .nav-items{display:flex;flex-direction:column;gap:4px}
+.sidebar .nav-label{margin:15px 9px 5px;font-size:9px;letter-spacing:.12em;color:#90a2a5}
+.nav-feature{border:1px solid #45635e!important;background:#243c38!important;color:#b6e8dc!important;margin:0 0 3px}
+.nav-feature:hover{background:#30514c!important;color:white!important}
+.nav-group{border-radius:10px;min-width:0}
+.nav-group[open]{background:#ffffff07}
+.nav-group-heading{list-style:none;display:flex;align-items:center;gap:12px;color:#bac7cb;border-radius:10px;padding:11px 12px;cursor:pointer;font-size:13px;font-weight:650;min-height:40px}
+.nav-group-heading::-webkit-details-marker{display:none}
+.nav-group-heading::marker{content:""}
+.nav-group-heading:hover,.nav-group-heading:focus-visible{background:#ffffff11;color:#fff}
+.nav-group-heading svg{flex:none;opacity:.8}
+.nav-group-heading>span:nth-child(2){min-width:0;flex:1}
+.nav-chevron{font-size:15px;color:#9ab1b0;transition:transform .17s;flex:none}
+.nav-group[open] .nav-chevron{transform:rotate(180deg)}
+.nav-subitems{padding:0 0 6px 13px;margin-left:18px;border-left:1px solid #46555a;display:grid;gap:2px}
+.nav-subitems .nav-link{font-size:12px;padding:9px 10px;min-height:35px}
+.nav-subitems .nav-link svg{width:14px;height:14px}
+.sidebar-bottom{margin-top:auto;padding:12px 5px 3px}
+.nav-help{display:flex;gap:9px;align-items:center;width:100%;padding:9px 12px;background:transparent;color:#bdc9cb;border:0;border-radius:9px;font:600 12px system-ui;cursor:pointer;text-align:left}
+.nav-help:hover{background:#ffffff11;color:white}
+.nav-disclaimer{margin:6px 12px 0;color:#7f9295;font-size:10px;line-height:1.45}
+.nav-mobile-toggle{display:none;align-items:center;gap:7px;background:#233338;border:1px solid #526469;border-radius:9px;padding:8px 11px;color:white;font:650 12px system-ui;cursor:pointer}
+.nav-link:focus-visible,.nav-mobile-toggle:focus-visible,.nav-help:focus-visible{outline:2px solid #a3e1d2;outline-offset:2px}
+
+/* Preserve readable submenu labels rather than collapsing into unlabelled icons on tablets. */
+@media (min-width:841px) and (max-width:920px){
+  .app-shell{grid-template-columns:215px minmax(0,1fr)}
+  .sidebar{padding:19px 10px 12px}
+  .logo{padding:0 9px 22px}
+  .logo-name,.logo-tag,.nav-label,.nav-link span,.nav-count,.sidebar-bottom,.nav-group-heading>span{display:initial}
+  .nav-group-heading{display:flex}
+  .nav-group-heading>span:nth-child(2){flex:1}
+  .nav-feature{display:flex}
+  .nav-link{justify-content:flex-start;padding:10px 11px}
+  .nav-group .nav-link{justify-content:flex-start}
+}
+/* On phones and small tablets, open a deliberate vertical menu instead of a long scrolling row. */
+@media (max-width:840px){
+  .app-shell{display:block}
+  .sidebar{height:auto;position:sticky;top:0;z-index:25;padding:9px 14px;display:flex;overflow:visible;flex-direction:column;gap:0}
+  .sidebar-heading{width:100%}
+  .sidebar .logo{display:flex;padding:0;gap:8px;align-items:center}
+  .logo-name{display:inline;font-size:16px}
+  .logo-tag{display:none}
+  .nav-mobile-toggle{display:flex}
+  .sidebar .nav-items{display:none;flex-direction:column;max-height:70vh;overflow-y:auto;padding:12px 0 8px;margin-top:7px;border-top:1px solid #425258}
+  .sidebar.is-expanded .nav-items{display:flex}
+  .sidebar .nav-label{display:block;margin:10px 10px 4px}
+  .sidebar .nav-link{justify-content:flex-start;white-space:normal;padding:10px 12px}
+  .sidebar .nav-link span{display:inline}
+  .sidebar .nav-count{display:inline-flex}
+  .sidebar .nav-group-heading>span{display:inline}
+  .sidebar .nav-group-heading{display:flex}
+  .sidebar .nav-group-heading>span:nth-child(2){flex:1}
+  .sidebar-bottom{display:none}
+  .nav-subitems{padding-left:13px}
+  .topbar{height:auto;min-height:60px;gap:9px;flex-wrap:wrap}
+  .top-search{width:min(45vw,200px)}
+}
+/* No menus in generated printouts. */
+@media print{.nav-mobile-toggle{display:none!important}}
