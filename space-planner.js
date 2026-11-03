@@ -75,6 +75,7 @@
       if(!Array.isArray(p.items))p.items=[];
       if(!Array.isArray(p.runs))p.runs=[];
       if(!this.event.venueId)this.event.venueId=p.venueId;
+      window.PhaenomenonVenueWorkflow?.ensureAll(this.db);
       window.PhaenomenonMultiSpace?.migrate(this.venue,p);
       this.focusSpaceId=p.focusSpaceId||'all';
     }
@@ -88,11 +89,11 @@
       const v=this.venue;
       this.root.innerHTML=`<div class="sp-toolbar panel">
         <div class="sp-controls"><label class="sp-label">Event booking<select id="sp-event" class="form-select">${this.db.eventJobs.map(e=>`<option value="${esc(e.id)}" ${e.id===this.eventId?'selected':''}>${esc(e.title)} · ${esc(e.date)}</option>`).join('')}</select></label>
-        <label class="sp-label">Saved venue<select id="sp-venue" class="form-select">${this.db.venues.map(venue=>`<option value="${esc(venue.id)}" ${venue.id===v.id?'selected':''}>${esc(venue.name)}</option>`).join('')}</select></label>
+        <label class="sp-label">Venue<select id="sp-venue" class="form-select">${this.db.venues.map(venue=>`<option value="${esc(venue.id)}" ${venue.id===v.id?'selected':''}>${esc(venue.name)}</option>`).join('')}</select></label>
         <button id="sp-load-abbotsford" class="button" type="button" title="Load illustrative indoor and outdoor stages at Abbotsford Convent">Try two-stage demo</button>
-        <button id="sp-new-venue" class="button">+ New venue</button>
+        <button id="sp-new-venue" class="button">+ Create venue</button>
         <a class="button" href="#/bookings/${encodeURIComponent(this.eventId)}">Open event brief</a></div>
-        <div id="sp-venue-new" class="sp-newvenue" hidden><label>Name <input id="sp-newname" class="field" maxlength="90" placeholder="e.g. Civic Ballroom"></label><label>Width (m) <input id="sp-neww" class="field" type="number" min="2" max="200" step="0.5" value="16"></label><label>Length (m) <input id="sp-newl" class="field" type="number" min="2" max="200" step="0.5" value="12"></label><label>Reference height (m) <input id="sp-newh" class="field" type="number" min="0.5" max="40" step="0.5" value="4"></label><label>Environment<select id="sp-newkind" class="form-select"><option value="indoor">Indoor / enclosed</option><option value="outdoor">Outdoor / open</option></select></label><button id="sp-create-venue" class="button primary">Create venue</button></div>
+        <div id="sp-venue-new" class="sp-newvenue" hidden><label>Venue name <input id="sp-newname" class="field" maxlength="90" placeholder="e.g. Civic Ballroom"></label><label>First space <input id="sp-newspace" class="field" maxlength="90" value="Main space" placeholder="e.g. Main hall"></label><label>Width (m) <input id="sp-neww" class="field" type="number" min="2" max="200" step="0.5" value="16"></label><label>Length (m) <input id="sp-newl" class="field" type="number" min="2" max="200" step="0.5" value="12"></label><label>Reference height (m) <input id="sp-newh" class="field" type="number" min="0.5" max="40" step="0.5" value="4"></label><label>Environment<select id="sp-newkind" class="form-select"><option value="indoor">Indoor / enclosed</option><option value="outdoor">Outdoor / open</option></select></label><button id="sp-create-venue" class="button primary">Create venue</button></div>
         <div class="sp-dimensions">${[['Site width','width'],['Site length','length'],['Reference height','height']].map(([label,key])=>`<label class="sp-label">${label} (m)<input class="field sp-dim" id="sp-${key}" type="number" step="0.1" min="2" max="200" value="${n(v[key])}"></label>`).join('')}<button id="sp-save-venue" class="button">Save dimensions</button><span class="sp-caption">Shared site measurements. Resizing scales the perimeter across bookings.</span></div>
       </div>
       <section class="sp-geometry-panel panel" aria-label="Venue geometry editor">
@@ -269,9 +270,12 @@
       $('#sp-event').addEventListener('change',e=>{this.eventId=e.target.value;this.selected=null;this.ensureActive();this.save();this.build();});
       $('#sp-venue').addEventListener('change',e=>{
         if(e.target.value===this.plan.venueId)return;
-        if(this.plan.items.length && !confirm('Change venue for this event? Equipment coordinates will be kept and clamped inside the new room.')){e.target.value=this.plan.venueId;return;}
-        this.plan.venueId=e.target.value;this.event.venueId=e.target.value;this.event.venue=this.venue.name;
-        this.plan.items.forEach(o=>this.constrainItem(o));
+        if(this.plan.items.length && !confirm('Change venue for this event? Existing equipment coordinates may be invalid and require a new layout review. Continue?')){e.target.value=this.plan.venueId;return;}
+        const chosen=this.db.venues.find(v=>v.id===e.target.value);
+        if(!chosen)return;
+        const result=window.PhaenomenonVenueWorkflow?.updateEvent(this.db,this.eventId,chosen.id,window.PhaenomenonVenueWorkflow.ensureSpaces(chosen).map(sp=>sp.id));
+        if(result?.error){alert(result.error);return;}
+        if(this.plan.items.length)this.notify('Venue changed. Review equipment positions and cabling before publishing revised installation instructions.');
         this.save();this.selected=null;this.build();
       });
       $('#sp-load-abbotsford').addEventListener('click',()=>{
@@ -283,9 +287,15 @@
       $('#sp-new-venue').addEventListener('click',()=>{const panel=$('#sp-venue-new');panel.hidden=!panel.hidden;});
       $('#sp-create-venue').addEventListener('click',()=>{
         const name=$('#sp-newname').value.trim();if(!name){alert('Enter a venue name.');return;}
-        const v={id:uid('ven'),name:name.slice(0,90),width:clamp(n($('#sp-neww').value,16),2,200),length:clamp(n($('#sp-newl').value,12),2,200),height:clamp(n($('#sp-newh').value,4),.5,40)};G.normalize(v);v.geometry.kind=$('#sp-newkind').value;if(v.geometry.kind==='outdoor')v.geometry.roof.type='none';
-        this.db.venues.push(v);this.plan.venueId=v.id;this.event.venueId=v.id;this.event.venue=v.name;
-        this.plan.items.forEach(o=>this.constrainItem(o));this.selected=null;this.save();this.build();this.notify('Venue added to the reusable library. Existing event placements were retained.');
+        const W=window.PhaenomenonVenueWorkflow;
+        const existing=W?.findByName(this.db,name);
+        if(existing){alert('This venue already exists in the reusable library. Select it above, then add a missing space if necessary.');return;}
+        if(this.plan.items.length&&!confirm('Changing venue will require a review of existing equipment positions. Continue creating a new venue?'))return;
+        const result=W.addVenue(this.db,{name,spaceName:$('#sp-newspace').value,width:$('#sp-neww').value,length:$('#sp-newl').value,height:$('#sp-newh').value,kind:$('#sp-newkind').value});
+        if(result.error){alert(result.error);return;}
+        const linked=W.updateEvent(this.db,this.eventId,result.venue.id,[result.space.id]);
+        if(linked.error){alert(linked.error);return;}
+        this.selected=null;this.focusSpaceId='all';this.save();this.build();this.notify('Created reusable venue and first space. Add other spaces using Edit spaces.');
       });
       $('#sp-save-venue').addEventListener('click',()=>{
         const v=this.venue;const w=n($('#sp-width').value),l=n($('#sp-length').value),h=n($('#sp-height').value);
