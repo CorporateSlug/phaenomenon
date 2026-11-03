@@ -24,9 +24,36 @@
     try{const raw=localStorage.getItem(KEY);const obj=raw?JSON.parse(raw):starter();return obj&&typeof obj==='object'&&!Array.isArray(obj)?obj:starter();}
     catch(e){return starter();}
   }
-  let db=load(), ui={view:'home',eventId:'',area:'all',crewPerson:'all',role:'lead',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
+  let db=load(),storageBaseline=localStorage.getItem(KEY),saveConflict=false, ui={view:'home',eventId:'',area:'all',crewPerson:'all',role:'lead',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
   try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.crewPerson=saved.crewPerson||'all';ui.role=saved.role||'lead';}catch(e){}
-  function store(){try{localStorage.setItem(KEY,JSON.stringify(db));localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,crewPerson:ui.crewPerson,role:ui.role}));}catch(e){alert('Browser storage is full or unavailable. Export your event information from the original app.');}}
+  function store(){
+    try{
+      const remote=localStorage.getItem(KEY);
+      if(remote!==storageBaseline){
+        saveConflict=true;
+        alert('A newer event change was saved in another Phaenomenon tab. This edit has NOT overwritten it. The latest data will now be loaded. Retry your edit.');
+        refreshFromStorage();
+        return false;
+      }
+      const next=JSON.stringify(db);
+      localStorage.setItem(KEY,next);
+      storageBaseline=next;
+      localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,crewPerson:ui.crewPerson,role:ui.role}));
+      return true;
+    }catch(e){alert('Browser storage is full or unavailable. Export a JSON backup of your event information from the original app.');return false;}
+  }
+  function refreshFromStorage(){
+    const latest=localStorage.getItem(KEY);
+    if(!latest||latest===storageBaseline)return false;
+    let value;try{value=JSON.parse(latest);}catch(e){return false;}
+    if(!value||!Array.isArray(value.eventJobs)||!Array.isArray(value.clients))return false;
+    db=value;storageBaseline=latest;
+    ensure();
+    if(!events().some(x=>x.id===ui.eventId))ui.eventId=events()[0]?.id||DEMO;
+    ui.entityId=entity(ui.entityId)?.id||null;
+    render();
+    return true;
+  }
   function org(){return db.productionOS;}
   function venues(){return db.venues||[];}
   function events(){return db.eventJobs||[];}
@@ -250,7 +277,7 @@
     const t=published(e)?.tasks||[];
     return {all:t.length,installed:t.filter(x=>x.state!=='pending').length,verified:t.filter(x=>x.state==='verified').length,issues:org().issues.filter(x=>x.eventId===e?.id&&x.status!=='Resolved').length};
   }
-  function notice(message){ui.notice=message;render();setTimeout(()=>{if(ui.notice===message){ui.notice='';document.querySelector('#message')?.remove();}},4200);}
+  function notice(message){if(saveConflict){message='Another tab updated the event. Your latest edit was not saved. Please retry it.';saveConflict=false;}ui.notice=message;render();setTimeout(()=>{if(ui.notice===message){ui.notice='';document.querySelector('#message')?.remove();}},4200);}
   function viewName(){return ({home:'Event home',design:'Design',technical:'Technical',crew:'Crew',production:'Production',entities:'Entities'}[ui.view]||'Event home');}
   function render(){
     const e=current(),c=counts(e);
@@ -758,6 +785,10 @@
     }
     store();notice('Saved to this browser.');
   });
+  // Prevent stale browser tabs from silently overwriting other production edits.
+  window.addEventListener('storage',event=>{if(event.key===KEY)refreshFromStorage();});
+  window.addEventListener('focus',refreshFromStorage);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshFromStorage();});
   window.addEventListener('hashchange',route);
   ensure();store();route();
 })();
