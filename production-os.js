@@ -117,7 +117,7 @@
     if(!db.productionOS||typeof db.productionOS!=='object')db.productionOS={};
     const o=org();o.version=1;
     for(const [key] of [['entities'],['relationships'],['assignments'],['issues']])if(!Array.isArray(o[key]))o[key]=[];
-    for(const key of ['published','show','looks','taskAssignments','teamHierarchy','packAcknowledgements'])if(!o[key]||typeof o[key]!=='object'||Array.isArray(o[key]))o[key]={};
+    for(const key of ['published','show','looks','taskAssignments','teamHierarchy','packAcknowledgements','operations'])if(!o[key]||typeof o[key]!=='object'||Array.isArray(o[key]))o[key]={};
     db.clients.forEach(x=>savedByKind('client','client',x.id,x.name,{demo:!!x.demo||x.name.toLowerCase().includes('demo')}));
     db.venues.forEach(x=>{
       const parent=savedByKind('venue','venue',x.id,x.name,{demo:!!x.demo});
@@ -608,6 +608,56 @@
       '</tbody></table></div>':'<div class="empty">Add a person to the event team above before assigning tasks.</div>')+
       '</section>';
   }
+
+  function eventOperations(e){return org().operations[e?.id]||{};}
+  function eventWindow(e){
+    if(!e)return null;
+    const o=eventOperations(e),first=o.loadInDate||e.date,last=o.packOutDate||e.date,
+      startTime=o.loadInTime||'00:00',endTime=o.packOutTime||'23:59';
+    const start=new Date(first+'T'+startTime+':00'),end=new Date(last+'T'+endTime+':00');
+    if(!Number.isFinite(start.getTime())||!Number.isFinite(end.getTime())||start>=end)return null;
+    return {start:start.getTime(),end:end.getTime(),provisional:!(o.loadInDate&&o.packOutDate),startLabel:first+' '+startTime,endLabel:last+' '+endTime};
+  }
+  function overlap(a,b){return !!(a&&b&&a.start<b.end&&b.start<a.end);}
+  function allocationRows(e){
+    const stocks=db.equipment||[],w=eventWindow(e),jobs=events().filter(x=>x.id!==e.id&&x.status==='Confirmed'&&overlap(w,eventWindow(x)));
+    const assigned=(e.kit||[]),requested=id=>assigned.filter(x=>x.id===id).reduce((sum,x)=>sum+Math.max(0,Math.floor(num(x.qty))),0);
+    const suppliers=org().assignments.filter(a=>a.eventId===e.id&&a.equipmentId&&a.quantity>0);
+    return stocks.map(gear=>{
+      const owned=Math.max(0,Math.floor(num(gear.owned))),planned=requested(gear.id);
+      const reserved=jobs.reduce((sum,x)=>sum+(x.kit||[]).filter(k=>k.id===gear.id).reduce((v,k)=>v+Math.max(0,Math.floor(num(k.qty))),0),0);
+      const confirmedSupplier=suppliers.filter(x=>x.equipmentId===gear.id).reduce((sum,x)=>sum+Math.max(0,Math.floor(num(x.quantity))),0);
+      const available=Math.max(0,owned-reserved),covered=available+confirmedSupplier;
+      const placed=(plan(e).items||[]).filter(item=>item.eqId===gear.id).length;
+      return {gear,owned,planned,reserved,available,covered,confirmedSupplier,shortfall:Math.max(0,planned-covered),placed};
+    });
+  }
+  function logistics(e){
+    const ops=eventOperations(e),w=eventWindow(e),rows=allocationRows(e),short=rows.filter(x=>x.shortfall>0),gap=rows.filter(x=>x.placed>x.planned);
+    return '<section class="panel section"><div class="section-head"><div><h2>Equipment and logistics</h2>'+
+      '<p class="muted">Allocate event stock and check overlaps with confirmed bookings.</p></div>'+
+      pill(short.length+' stock gaps',short.length?'warn':'good')+'</div>'+
+      '<div class="notice info section">Planning estimate only. Stock is counted by catalogue quantity, not individual serial numbers. Supplier commitments are unverified, and date/time availability requires dispatch, return and transport allowances.</div>'+
+      '<div class="grid cols2 section"><form id="operations-form" class="form-grid">'+
+      '<label>Load-in date<input type="date" class="input" name="loadInDate" value="'+esc(ops.loadInDate||e.date||'')+'" required></label>'+
+      '<label>Load-in time<input type="time" class="input" name="loadInTime" value="'+esc(ops.loadInTime||'08:00')+'" required></label>'+
+      '<label>Pack-down / return date<input type="date" class="input" name="packOutDate" value="'+esc(ops.packOutDate||e.date||'')+'" required></label>'+
+      '<label>Pack-down / return time<input type="time" class="input" name="packOutTime" value="'+esc(ops.packOutTime||'23:00')+'" required></label>'+
+      '<div class="wide"><button class="btn" type="submit">Save event logistics window</button></div></form>'+
+      '<div class="area-card"><h3>Availability assumptions</h3><p class="muted">'+(w?'From '+esc(w.startLabel)+' until '+esc(w.endLabel):'The current interval is invalid. Set an end after the start.')+'</p>'+
+      (w?.provisional?pill('Unconfirmed schedule','warn'):'')+
+      '<p class="form-note">Only other Confirmed bookings with intersecting time intervals reserve owned stock. Enquiries do not reserve it. Enter the full period gear is away from stock, including transport and returns.</p></div></div>'+
+      (rows.length?'<div class="table-scroll"><table><thead><tr><th>Equipment</th><th>Requested</th><th>Owned</th><th>Other confirmed reservations</th><th>Supplier allocations</th><th>Gap</th></tr></thead><tbody>'+
+      rows.map(x=>'<tr><td><strong>'+esc(x.gear.name)+'</strong><small>'+esc(x.gear.category||'Equipment')+(x.placed?' · '+x.placed+' linked placements':'')+'</small></td>'+
+        '<td><input class="input" type="number" data-act="kit-quantity" data-id="'+esc(x.gear.id)+'" min="0" max="9999" step="1" value="'+x.planned+'" style="width:79px" aria-label="Requested '+esc(x.gear.name)+'"></td>'+
+        '<td>'+x.owned+'</td><td>'+x.reserved+'</td><td>'+x.confirmedSupplier+'</td><td>'+(x.shortfall?pill('Short '+x.shortfall,'bad'):(x.placed>x.planned?pill('Kit below placement','warn'):pill('Covered','good')))+'</td></tr>').join('')+'</tbody></table></div>'+
+      '<p class="form-note">Supplier allocations represent stated quantities, not verified reservations. Review supplier availability and equipment suitability before confirming any event.</p>':
+      '<div class="empty">No equipment in the catalogue. Add equipment under Equipment in the classic studio workspace.</div>')+
+      (gap.length?'<div class="notice section">Linked placements exceed the event kit for: '+gap.map(x=>esc(x.gear.name)).join(', ')+'. Review the kit and placed objects.</div>':'')+
+      '<div class="row"><a class="btn" href="index.html#/bookings/'+encodeURIComponent(e.id)+'">Edit event booking ↗</a>'+
+      '<a class="btn" href="index.html#/equipment">Manage equipment catalogue ↗</a></div></section>';
+  }
+
   function production(e,c){
     const p=published(e),a=org().assignments.filter(x=>x.eventId===e.id);
     const done=c.all?Math.round(c.installed/c.all*100):0;
@@ -630,7 +680,7 @@
       '<div class="sep"></div><h3>Open issues</h3>'+
       (org().issues.filter(x=>x.eventId===e.id&&x.status!=='Resolved').map(x=>'<div class="linkrow"><div><strong>'+esc(x.note)+'</strong><div class="detail">'+esc(x.taskId||'General issue')+' · '+new Date(x.at).toLocaleString('en-AU')+'</div></div><button class="btn small" data-act="resolve-issue" data-id="'+esc(x.id)+'">Resolve</button></div>').join('')||'<p class="muted">No open issues.</p>')+
       '<div class="sep"></div><button class="btn" data-act="report" data-id="">+ Report general issue</button></section></div>'+
-      taskOwnership(e)+productionAcknowledgements(e)+
+      logistics(e)+taskOwnership(e)+productionAcknowledgements(e)+
       '<section class="panel section"><div class="section-head"><h2>Run of show</h2>'+pill((org().show[e.id]||[]).length+' cues')+'</div>'+
       '<p class="muted">A lightweight production cue list. This does not drive live lighting consoles or control show-critical systems.</p>'+
       '<div class="table-scroll"><table><thead><tr><th>Time</th><th>Cue / activity</th><th>Area</th><th>Draft look</th><th>Status</th><th></th></tr></thead><tbody>'+
@@ -766,6 +816,15 @@
     if(el.id==='area-picker'){ui.area=el.value;store();render();}
     if(el.id==='crew-person-picker'){ui.crewPerson=el.value;store();render();}
     if(el.id==='entity-filter'){ui.entityType=el.value;render();}
+    if(el.dataset.act==='kit-quantity'){
+      const e=current(),id=el.dataset.id;
+      if(!db.equipment.some(x=>x.id===id))return;
+      const qty=Math.min(9999,Math.max(0,Math.floor(num(el.value))));
+      if(!Array.isArray(e.kit))e.kit=[];
+      e.kit=e.kit.filter(x=>x.id!==id);
+      if(qty)e.kit.push({id,qty});
+      if(store())render();
+    }
     if(el.dataset.act==='task-owner'){
       const e=current(),t=published(e)?.tasks.find(x=>x.id===el.dataset.id);
       if(!t)return;
@@ -783,8 +842,20 @@
   });
   document.addEventListener('submit',ev=>{
     const f=ev.target;if(!$.contains(f))return;
-    if(!['assign-form','cue-form','look-form','entity-form','entity-note-form','relation-form','team-hierarchy-form'].includes(f.id))return;
+    if(!['assign-form','cue-form','look-form','entity-form','entity-note-form','relation-form','team-hierarchy-form','operations-form'].includes(f.id))return;
     ev.preventDefault();const d=new FormData(f),val=k=>clean(d.get(k)),e=current(),o=org();
+    if(f.id==='operations-form'){
+      const startDate=val('loadInDate'),endDate=val('packOutDate'),st=val('loadInTime'),et=val('packOutTime');
+      const validDate=x=>/^\d{4}-\d{2}-\d{2}$/.test(x)&&Number.isFinite(new Date(x+'T12:00:00').getTime());
+      const validTime=x=>/^([01]\d|2[0-3]):[0-5]\d$/.test(x);
+      if(!validDate(startDate)||!validDate(endDate)||!validTime(st)||!validTime(et)||
+         new Date(startDate+'T'+st+':00')>=new Date(endDate+'T'+et+':00')){
+        notice('Enter a valid logistics period with the end after the start.');return;
+      }
+      o.operations[e.id]={loadInDate:startDate,loadInTime:st,packOutDate:endDate,packOutTime:et};
+      if(store())notice('Event logistics window updated.');
+      return;
+    }
     if(f.id==='team-hierarchy-form'){
       const error=saveTeamLine(e,val('personId'),val('reportsTo'),val('position'),val('notes'));
       if(error){notice(error);return;}
