@@ -76,6 +76,7 @@
     }
     persist(){this.save();this.updateSummary();this.draw();}
     build(){
+      this.technical?.dispose();this.technical=null;
       this.threeView?.dispose();this.threeView=null;
       this.resizeObserver?.disconnect();
       if(!this.event){this.root.innerHTML='<p>Create an event booking first to attach a venue plan.</p>';return;}
@@ -140,6 +141,7 @@
       this.resizeObserver?.observe(this.canvas.parentElement);
       this.resize();
       if(window.Phaenomenon3D){this.threeView=window.Phaenomenon3D.attach(this);this.threeView?.decorateInspector();}
+      if(window.PhaenomenonTechnical)this.technical=window.PhaenomenonTechnical.attach(this);
     }
 
     arrangeWorkspace(){
@@ -433,7 +435,7 @@
       if((ev.kit||[]).length&&!confirm('Replace the assigned event kit with the catalogue-linked items placed in this layout? Unplaced items in the kit will be removed.'))return;
       ev.kit=Object.entries(counts).map(([id,qty])=>({id,qty}));this.save();this.notify('Placed equipment copied into the event kit. Review additional cables, stands and stock before invoicing.');
     }
-    updateAll(){this.updateInspector();this.updateRoutes();this.updateSummary();this.draw();}
+    updateAll(){this.updateInspector();this.updateRoutes();this.updateSummary();this.draw();this.technical?.refresh();}
     updateInspector(){
       const el=this.root.querySelector('#sp-inspect-body'),item=this.selectedItem();this.root.querySelector('#sp-count').textContent=`${this.plan.items.length}`;
       this.root.querySelector('#sp-placed').innerHTML=this.plan.items.length?this.plan.items.map(o=>`<button type="button" data-id="${esc(o.id)}" class="sp-object-row ${this.selected===o.id?'active':''}">${o.kind==='light'&&window.PhaenomenonFixtures?window.PhaenomenonFixtures.icon(o.fixtureType||'par'):'<i style="background:'+ (palette[o.kind]||palette.other)+'"></i>'}<span>${esc(o.name)}</span><small>${r1(o.x)}m, ${r1(o.y)}m</small></button>`).join(''):'<p class="sp-muted">Add some equipment using the palette.</p>';
@@ -464,6 +466,7 @@
       body.innerHTML=rows.length?rows.map(({run,calc})=>`<tr><td>${esc(calc.a.name)} <span class="sp-arrow">→</span> ${esc(calc.b.name)}</td><td><span class="sp-dot" style="background:${CABLES[run.type]?.color||'#aaa'}"></span>${esc(CABLES[run.type]?.label||run.type)}</td><td><strong>${calc.length.toFixed(1)} m</strong> <small>incl. ${clamp(n(run.slack),0,100)}% slack</small></td><td>${calc.suggested}</td><td><button type="button" class="sp-remove" data-remove-run="${esc(run.id)}" aria-label="Remove route">×</button></td></tr>`).join(''):'<tr><td colspan="5" class="sp-muted">Connect two objects above to see cable route estimates.</td></tr>';
       const totals={};for(const {run,calc} of rows)totals[run.type]=(totals[run.type]||0)+calc.length;
       this.root.querySelector('#sp-totals').innerHTML=Object.entries(CABLES).map(([kind,{label,color}])=>`<span><i style="background:${color}"></i>${esc(label)} <strong>${r1(totals[kind]||0).toFixed(1)} m</strong></span>`).join('');
+      this.technical?.refreshIfOpen();
     }
     updateSummary(){
       const v=this.venue,items=this.plan.items,watts=items.reduce((a,o)=>a+n(o.watts),0),length=this.plan.runs.reduce((a,r)=>a+(this.route(r)?.length||0),0);
@@ -586,7 +589,7 @@
     pointerUp(){if(this.drag?.mode==='vertex'&&this.drag.changed){this.rehomeAll();this.save();this.updateGeometry();this.updateAll();}
       else if(this.drag?.mode==='object'&&this.drag.changed){this.save();this.updateInspector();this.updateRoutes();this.updateSummary();}this.drag=null;}
   }
-  function mount(root,db,onSave,onNotify,eventId){if(!root)return;ensure(db);if(window.__phaenomenonActivePlanner?.resizeObserver)window.__phaenomenonActivePlanner.resizeObserver.disconnect();if(window.__phaenomenonActivePlanner?.threeView)window.__phaenomenonActivePlanner.threeView.dispose();if(window.__phaenomenonActivePlanner?.boundFocusKeydown)window.removeEventListener('keydown',window.__phaenomenonActivePlanner.boundFocusKeydown);if(window.__phaenomenonActivePlanner?.boundCanvasOutsidePointerdown)document.removeEventListener('pointerdown',window.__phaenomenonActivePlanner.boundCanvasOutsidePointerdown);window.__phaenomenonActivePlanner=new Planner(root,db,onSave,onNotify,eventId);}
+  function mount(root,db,onSave,onNotify,eventId){if(!root)return;ensure(db);if(window.__phaenomenonActivePlanner?.resizeObserver)window.__phaenomenonActivePlanner.resizeObserver.disconnect();if(window.__phaenomenonActivePlanner?.threeView)window.__phaenomenonActivePlanner.threeView.dispose();if(window.__phaenomenonActivePlanner?.technical)window.__phaenomenonActivePlanner.technical.dispose();if(window.__phaenomenonActivePlanner?.boundFocusKeydown)window.removeEventListener('keydown',window.__phaenomenonActivePlanner.boundFocusKeydown);if(window.__phaenomenonActivePlanner?.boundCanvasOutsidePointerdown)document.removeEventListener('pointerdown',window.__phaenomenonActivePlanner.boundCanvasOutsidePointerdown);window.__phaenomenonActivePlanner=new Planner(root,db,onSave,onNotify,eventId);}
   document.addEventListener('phaenomenon-three-ready',()=>{const p=window.__phaenomenonActivePlanner;if(p&&!p.threeView&&p.root?.isConnected){p.threeView=window.Phaenomenon3D.attach(p);p.threeView?.decorateInspector();}});
   window.addEventListener('hashchange',()=>{if(location.hash.startsWith('#/spaces'))return;const p=window.__phaenomenonActivePlanner;if(p?.threeView){p.threeView.dispose();p.threeView=null;}});
   window.PhaenomenonSpacePlanner={ensure,mount};
