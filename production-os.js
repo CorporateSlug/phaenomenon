@@ -517,8 +517,14 @@
       '<label>Client<select name="clientId" required>'+db.clients.map(x=>'<option value="'+esc(x.id)+'" '+(e.clientId===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label>'+
       '<label>Event type<select name="eventType">'+eventTypes.map(x=>'<option value="'+esc(x)+'" '+(e.eventType===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></label>'+
       '<label>Status<select name="status">'+statuses.map(x=>'<option value="'+esc(x)+'" '+(e.status===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></label>'+
+      '<details class="wide workspace-disclosure builder-assumptions"><summary>Planning assumptions &amp; estimated costs</summary><div class="disclosure-body form-grid">'+
       '<label>Expected guests<input class="input" name="guests" type="number" min="1" max="5000" value="'+Math.max(1,Math.floor(num(e.guests,1)))+'"></label>'+
-      '<label>Lighting zones (rough kit estimate)<input class="input" name="zones" type="number" min="1" max="12" value="'+Math.max(1,Math.floor(num(e.zones,1)))+'"></label>'+
+      '<label>Lighting zones (kit estimate)<input class="input" name="zones" type="number" min="1" max="12" value="'+Math.max(1,Math.floor(num(e.zones,1)))+'"></label>'+
+      '<label>Environment<select name="environment"><option value="Indoor" '+(e.environment!=='Outdoor'?'selected':'')+'>Indoor / covered</option><option value="Outdoor" '+(e.environment==='Outdoor'?'selected':'')+'>Outdoor</option></select></label>'+
+      '<label>Production complexity<select name="complexity">'+['Simple','Standard','Feature'].map(x=>'<option value="'+x+'" '+(e.complexity===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>'+
+      '<label>Estimated crew hours<input class="input" name="labourHours" type="number" min="0" max="1000" step="0.25" value="'+Math.max(0,num(e.labourHours))+'"></label>'+
+      '<label>Indicative crew rate (AUD/h)<input class="input" name="labourRate" type="number" min="0" max="100000" step="0.01" value="'+Math.max(0,num(e.labourRate))+'"></label>'+
+      '<p class="muted wide">These are estimates for a draft budget, not verified quantities, labour requirements or an electrical design.</p></div></details>'+
       '<label class="wide">Notes<textarea class="input" name="notes" maxlength="3000">'+esc(e.notes||'')+'</textarea></label>'+
       '<div class="wide row"><button type="submit" class="btn primary">Save event details</button>'+
       '<a class="btn" href="#/builder/'+encodeURIComponent(e.id)+'/spaces">Next: Venue &amp; spaces →</a></div>'+
@@ -1301,6 +1307,10 @@
       e.status=statuses.includes(val('status'))?val('status'):'Enquiry';
       e.guests=Math.max(1,Math.min(5000,Math.floor(num(val('guests'),1))));
       e.zones=Math.max(1,Math.min(12,Math.floor(num(val('zones'),1))));
+      e.environment=val('environment')==='Outdoor'?'Outdoor':'Indoor';
+      e.complexity=['Simple','Standard','Feature'].includes(val('complexity'))?val('complexity'):'Standard';
+      e.labourHours=Math.max(0,Math.min(1000,num(val('labourHours'))));
+      e.labourRate=Math.max(0,Math.min(100000,num(val('labourRate'))));
       e.notes=val('notes').slice(0,3000);
       ensure();
       if(store())notice('Event details saved. Continue with Venue & spaces when ready.');
