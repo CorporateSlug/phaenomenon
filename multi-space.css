@@ -70,3 +70,32 @@
 #space-planner-root .tech-area-card ul{margin:7px 0 0;padding-left:17px;color:#456353;font-size:11px;line-height:1.7}
 
 #space-planner-root .sp-venue-pane .sp-dimensions[hidden],#space-planner-root .sp-venue-pane .sp-geometry-panel[hidden]{display:none!important}
+
+
+/* PH MOBILE UX • reusable Venue/Space editing on a touch screen. */
+@media(max-width:840px){
+  #space-planner-root .msp-root{margin:0 0 11px;border-radius:10px}
+  #space-planner-root .msp-top{padding:10px;gap:7px}
+  #space-planner-root .msp-top-left{flex:1 1 100%;gap:6px}
+  #space-planner-root .msp-tabs{
+    flex-wrap:nowrap;max-width:100%;width:100%;overflow-x:auto;
+    overscroll-behavior-x:contain;scrollbar-width:thin;padding:4px;
+  }
+  #space-planner-root .msp-tabs button{flex:0 0 auto;min-height:43px;padding:9px 12px;font-size:12px}
+  #space-planner-root .msp-actions{display:flex;flex:1 1 100%;gap:7px}
+  #space-planner-root .msp-actions button{min-height:43px;font-size:12px}
+  #space-planner-root .msp-details{padding:12px 10px}
+  #space-planner-root .msp-area-cards{grid-template-columns:1fr;gap:9px}
+  #space-planner-root .msp-field-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  #space-planner-root .msp-field-grid input,#space-planner-root .msp-field-grid select{min-width:0;max-width:100%;font-size:16px;min-height:43px}
+  #space-planner-root .msp-create-link{gap:7px;align-items:stretch}
+  #space-planner-root .msp-create-link select{max-width:none;min-height:43px;font-size:16px}
+  #space-planner-root .msp-create-link button{min-height:43px}
+  #space-planner-root .msp-editor-head{align-items:flex-start;gap:8px}
+  #space-planner-root .msp-editor-head button{min-height:42px}
+  #space-planner-root .msp-editor-foot{gap:8px;align-items:stretch}
+  #space-planner-root .msp-editor-foot button{min-height:43px}
+}
+@media(max-width:370px){
+  #space-planner-root .msp-field-grid{grid-template-columns:1fr}
+}
