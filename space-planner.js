@@ -47,6 +47,8 @@
   function ensure(db){
     if(!Array.isArray(db.venues))db.venues=defaults();
     db.venues.forEach(v=>G.normalize(v));
+    window.PhaenomenonMultiSpace?.seed(db);
+    db.venues.forEach(v=>window.PhaenomenonMultiSpace?.ensure(v));
     if(!db.venuePlans||typeof db.venuePlans!=='object'||Array.isArray(db.venuePlans))db.venuePlans={};
     for(const e of db.eventJobs||[]){
       if(!e.venueId){const match=db.venues.find(v=>v.name.toLowerCase()===(e.venue||'').trim().toLowerCase());if(match)e.venueId=match.id;}
@@ -59,7 +61,7 @@
       this.root=root;this.db=db;this.save=onSave;this.notify=onNotify;
       this.eventId=(db.eventJobs||[]).some(e=>e.id===initialEventId)?initialEventId:(db.eventJobs||[])[0]?.id;
       this.mode='three';this.yaw=-.65;this.tilt=.54;this.zoom=1;this.selected=null;this.drag=null;
-      this.creatingVenue=false;this.showRuns=true;this.geometry=null;this.editOutline=false;this.selectedVertex=null;this.canvasActive=false;
+      this.creatingVenue=false;this.showRuns=true;this.geometry=null;this.editOutline=false;this.selectedVertex=null;this.canvasActive=false;this.focusSpaceId='all';
       this.ensureActive();this.build();
     }
     get event(){return this.db.eventJobs.find(e=>e.id===this.eventId);}
@@ -73,9 +75,12 @@
       if(!Array.isArray(p.items))p.items=[];
       if(!Array.isArray(p.runs))p.runs=[];
       if(!this.event.venueId)this.event.venueId=p.venueId;
+      window.PhaenomenonMultiSpace?.migrate(this.venue,p);
+      this.focusSpaceId=p.focusSpaceId||'all';
     }
     persist(){this.save();this.updateSummary();this.draw();}
     build(){
+      this.multi?.dispose();this.multi=null;
       this.technical?.dispose();this.technical=null;
       this.threeView?.dispose();this.threeView=null;
       this.resizeObserver?.disconnect();
@@ -84,6 +89,7 @@
       this.root.innerHTML=`<div class="sp-toolbar panel">
         <div class="sp-controls"><label class="sp-label">Event booking<select id="sp-event" class="form-select">${this.db.eventJobs.map(e=>`<option value="${esc(e.id)}" ${e.id===this.eventId?'selected':''}>${esc(e.title)} · ${esc(e.date)}</option>`).join('')}</select></label>
         <label class="sp-label">Saved venue<select id="sp-venue" class="form-select">${this.db.venues.map(venue=>`<option value="${esc(venue.id)}" ${venue.id===v.id?'selected':''}>${esc(venue.name)}</option>`).join('')}</select></label>
+        <button id="sp-load-abbotsford" class="button" type="button" title="Load illustrative indoor and outdoor stages at Abbotsford Convent">Try two-stage demo</button>
         <button id="sp-new-venue" class="button">+ New venue</button>
         <a class="button" href="#/bookings/${encodeURIComponent(this.eventId)}">Open event brief</a></div>
         <div id="sp-venue-new" class="sp-newvenue" hidden><label>Name <input id="sp-newname" class="field" maxlength="90" placeholder="e.g. Civic Ballroom"></label><label>Width (m) <input id="sp-neww" class="field" type="number" min="2" max="200" step="0.5" value="16"></label><label>Length (m) <input id="sp-newl" class="field" type="number" min="2" max="200" step="0.5" value="12"></label><label>Reference height (m) <input id="sp-newh" class="field" type="number" min="0.5" max="40" step="0.5" value="4"></label><label>Environment<select id="sp-newkind" class="form-select"><option value="indoor">Indoor / enclosed</option><option value="outdoor">Outdoor / open</option></select></label><button id="sp-create-venue" class="button primary">Create venue</button></div>
@@ -141,6 +147,7 @@
       this.resizeObserver?.observe(this.canvas.parentElement);
       this.resize();
       if(window.Phaenomenon3D){this.threeView=window.Phaenomenon3D.attach(this);this.threeView?.decorateInspector();}
+      if(window.PhaenomenonMultiSpace)this.multi=window.PhaenomenonMultiSpace.attach(this);
       if(window.PhaenomenonTechnical)this.technical=window.PhaenomenonTechnical.attach(this);
     }
 
@@ -267,6 +274,12 @@
         this.plan.items.forEach(o=>this.constrainItem(o));
         this.save();this.selected=null;this.build();
       });
+      $('#sp-load-abbotsford').addEventListener('click',()=>{
+        const id=window.PhaenomenonMultiSpace?.DEMO_ID;
+        if(!id||!this.db.eventJobs.some(e=>e.id===id)){this.notify('The two-stage demonstration is unavailable.');return;}
+        this.eventId=id;this.selected=null;this.focusSpaceId='all';this.ensureActive();this.plan.focusSpaceId='all';this.save();this.build();
+        this.notify('Two-stage demo opened. Select Whole venue, Indoor stage or Outdoor stage to explore.');
+      });
       $('#sp-new-venue').addEventListener('click',()=>{const panel=$('#sp-venue-new');panel.hidden=!panel.hidden;});
       $('#sp-create-venue').addEventListener('click',()=>{
         const name=$('#sp-newname').value.trim();if(!name){alert('Enter a venue name.');return;}
@@ -313,6 +326,7 @@
       this.setCanvasActive(false);
     }
     constrainItem(o){
+      if(window.PhaenomenonMultiSpace?.hasAreas(this.venue)){window.PhaenomenonMultiSpace.constrain(this.venue,o);return;}
       const v=this.venue,poly=v.geometry.footprint;
       const p={x:clamp(n(o.x),0,v.width),y:clamp(n(o.y),0,v.length)};
       const inside=G.insidePosition(poly,p);o.x=inside.x;o.y=inside.y;o.z=clamp(n(o.z),0,Math.max(v.height,G.peakHeight(v)));
@@ -416,18 +430,24 @@
       const proposed={x:r1(clamp(v.width/2+(items.length%4-1.5)*1.2,0,v.width)),y:r1(clamp(v.length/2+Math.floor(items.length/4)*1.1,0,v.length))};
       const {x,y}=G.insidePosition(v.geometry.footprint,proposed);
       const obj={id:uid('obj'),kind,name:TYPES.find(t=>t[0]===kind)?.[1]||'Equipment',x,y,z:kind==='light'?Math.min(2.5,G.peakHeight(v)):0,watts:0,eqId:''};
+      const M=window.PhaenomenonMultiSpace;
+      if(M?.hasAreas(v)){
+        const room=v.spaces.find(s=>s.id===this.focusSpaceId)||v.spaces[0];
+        obj.areaId=room.id;obj.x=r1(room.x+room.width*.5+(items.length%3-1)*1.2);obj.y=r1(room.y+room.length*.5);
+        M.constrain(v,obj);
+      }
       if(kind==='light'&&F)F.apply(obj,fixtureType||'par');
       items.push(obj);this.selected=obj.id;this.persist();this.updateAll();
     }
     editItem(e){const item=this.selectedItem();if(!item)return;const key=e.target.dataset.key;if(!key)return;const v=this.venue;
-      if(['x','y','z','watts'].includes(key)){const max=key==='x'?v.width:key==='y'?v.length:key==='z'?Math.max(v.height,G.peakHeight(v)):100000;const min=0;item[key]=r1(clamp(n(e.target.value),min,max));if(key==='x'||key==='y'){const loc=G.insidePosition(v.geometry.footprint,{x:item.x,y:item.y});item.x=loc.x;item.y=loc.y;}}
+      if(['x','y','z','watts'].includes(key)){const max=key==='x'?v.width:key==='y'?v.length:key==='z'?Math.max(v.height,G.peakHeight(v)):100000;const min=0;item[key]=r1(clamp(n(e.target.value),min,max));if(key==='x'||key==='y'){const loc=G.insidePosition(v.geometry.footprint,{x:item.x,y:item.y});item.x=loc.x;item.y=loc.y;}this.constrainItem(item);}
       else if(key==='kind'){if(palette[e.target.value]){item.kind=e.target.value;if(item.kind==='light')window.PhaenomenonFixtures?.ensure(item);}}
       else if(key==='name')item.name=e.target.value.slice(0,100).trim()||'Equipment';
       else if(key==='eqId'){const gear=this.db.equipment.find(g=>g.id===e.target.value);item.eqId=gear?.id||'';if(gear){item.name=gear.name;item.kind=this.kindForGear(gear);item.watts=n(gear.watts);if(item.kind==='light')window.PhaenomenonFixtures?.ensure(item);}}
       this.persist();this.updateAll();
     }
     deleteSelected(){if(!this.selectedItem())return;this.plan.items=this.plan.items.filter(o=>o.id!==this.selected);this.plan.runs=this.plan.runs.filter(r=>r.from!==this.selected&&r.to!==this.selected);this.selected=null;this.persist();this.updateAll();}
-    duplicateSelected(){const o=this.selectedItem();if(!o)return;const v=this.venue,p=G.insidePosition(v.geometry.footprint,{x:r1(clamp(o.x+1,0,v.width)),y:r1(clamp(o.y+1,0,v.length))}),clone={...o,id:uid('obj'),name:o.name+' copy',x:p.x,y:p.y};this.plan.items.push(clone);this.selected=clone.id;this.persist();this.updateAll();}
+    duplicateSelected(){const o=this.selectedItem();if(!o)return;const v=this.venue,p=G.insidePosition(v.geometry.footprint,{x:r1(clamp(o.x+1,0,v.width)),y:r1(clamp(o.y+1,0,v.length))}),clone={...o,id:uid('obj'),name:o.name+' copy',x:p.x,y:p.y};this.constrainItem(clone);this.plan.items.push(clone);this.selected=clone.id;this.persist();this.updateAll();}
     syncKit(){
       const ev=this.event,items=this.plan.items.filter(o=>o.eqId&&this.db.equipment.some(g=>g.id===o.eqId));
       if(!items.length){alert('Link at least one placed item to an equipment catalogue entry in the inspector first.');return;}
@@ -449,6 +469,7 @@
       if(F)F.mountInspector(el,item,(changed,refresh)=>{this.save();if(refresh)this.updateInspector();this.draw();});
     }
     route(r){
+      if(window.PhaenomenonMultiSpace?.hasAreas(this.venue))return window.PhaenomenonMultiSpace.route(this,r);
       const a=this.plan.items.find(x=>x.id===r.from),b=this.plan.items.find(x=>x.id===r.to);if(!a||!b)return null;
       const floorPath=G.shortest(this.venue.geometry.footprint,{x:a.x,y:a.y},{x:b.x,y:b.y});
       if(!floorPath)return null;
@@ -589,7 +610,7 @@
     pointerUp(){if(this.drag?.mode==='vertex'&&this.drag.changed){this.rehomeAll();this.save();this.updateGeometry();this.updateAll();}
       else if(this.drag?.mode==='object'&&this.drag.changed){this.save();this.updateInspector();this.updateRoutes();this.updateSummary();}this.drag=null;}
   }
-  function mount(root,db,onSave,onNotify,eventId){if(!root)return;ensure(db);if(window.__phaenomenonActivePlanner?.resizeObserver)window.__phaenomenonActivePlanner.resizeObserver.disconnect();if(window.__phaenomenonActivePlanner?.threeView)window.__phaenomenonActivePlanner.threeView.dispose();if(window.__phaenomenonActivePlanner?.technical)window.__phaenomenonActivePlanner.technical.dispose();if(window.__phaenomenonActivePlanner?.boundFocusKeydown)window.removeEventListener('keydown',window.__phaenomenonActivePlanner.boundFocusKeydown);if(window.__phaenomenonActivePlanner?.boundCanvasOutsidePointerdown)document.removeEventListener('pointerdown',window.__phaenomenonActivePlanner.boundCanvasOutsidePointerdown);window.__phaenomenonActivePlanner=new Planner(root,db,onSave,onNotify,eventId);}
+  function mount(root,db,onSave,onNotify,eventId){if(!root)return;ensure(db);if(window.__phaenomenonActivePlanner?.resizeObserver)window.__phaenomenonActivePlanner.resizeObserver.disconnect();if(window.__phaenomenonActivePlanner?.multi)window.__phaenomenonActivePlanner.multi.dispose();if(window.__phaenomenonActivePlanner?.threeView)window.__phaenomenonActivePlanner.threeView.dispose();if(window.__phaenomenonActivePlanner?.technical)window.__phaenomenonActivePlanner.technical.dispose();if(window.__phaenomenonActivePlanner?.boundFocusKeydown)window.removeEventListener('keydown',window.__phaenomenonActivePlanner.boundFocusKeydown);if(window.__phaenomenonActivePlanner?.boundCanvasOutsidePointerdown)document.removeEventListener('pointerdown',window.__phaenomenonActivePlanner.boundCanvasOutsidePointerdown);window.__phaenomenonActivePlanner=new Planner(root,db,onSave,onNotify,eventId);}
   document.addEventListener('phaenomenon-three-ready',()=>{const p=window.__phaenomenonActivePlanner;if(p&&!p.threeView&&p.root?.isConnected){p.threeView=window.Phaenomenon3D.attach(p);p.threeView?.decorateInspector();}});
   window.addEventListener('hashchange',()=>{if(location.hash.startsWith('#/spaces'))return;const p=window.__phaenomenonActivePlanner;if(p?.threeView){p.threeView.dispose();p.threeView=null;}});
   window.PhaenomenonSpacePlanner={ensure,mount};
