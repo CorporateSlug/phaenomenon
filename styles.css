@@ -72,3 +72,19 @@
 .sp-custom-grid input{min-width:0;width:100%;font-size:11px;padding:7px 6px}
 @media(max-width:1150px){.sp-geometry-columns{grid-template-columns:1fr;gap:15px}.sp-geometry-section:first-child{border-right:0;border-bottom:1px solid #edf1f0;padding-right:0;padding-bottom:15px}.sp-roof-form{grid-template-columns:repeat(3,minmax(0,1fr))}.sp-roof-form label:first-child{grid-column:auto}}
 @media(max-width:670px){.sp-geometry-panel{padding:15px}.sp-geometry-title{flex-direction:column;gap:8px}.sp-geometry-controls{gap:6px}.sp-geometry-controls label{flex:1;min-width:135px}.sp-geometry-controls .form-select{max-width:none;width:100%}.sp-roof-form{grid-template-columns:1fr 1fr}.sp-custom-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Compact scene controls. Group related actions and keep the header height stable. */
+.sp-view-controls{display:flex;align-items:center;justify-content:flex-end;gap:9px;white-space:nowrap;margin-left:auto;flex-wrap:nowrap}
+.sp-view-controls .sp-control-group{display:inline-flex;align-items:center;gap:2px;padding:3px;border:1px solid #dce5e3;background:#f3f7f6;border-radius:10px;flex:none}
+.sp-view-controls .sp-tool{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;min-height:32px;padding:0 12px;border:0;border-radius:7px;background:transparent;color:#516465;font-size:12px;font-weight:700;line-height:1;white-space:nowrap;box-shadow:none;transform:none;transition:background-color .15s ease,color .15s ease,box-shadow .15s ease}
+.sp-view-controls .sp-tool:hover{background:#e5efec;color:#294e49;box-shadow:none;transform:none}
+.sp-view-controls .sp-tool:active{transform:none}
+.sp-view-controls .sp-tool.is-active,.sp-view-controls .sp-tool.is-active:hover{background:#315d55;color:#fff;box-shadow:0 1px 3px #203c3226}
+.sp-view-controls .sp-toggle{min-width:55px}
+.sp-view-controls .sp-reset{height:38px;min-height:38px;padding:0 11px;border:1px solid #dce5e3;background:#fff;border-radius:10px}
+.sp-view-controls .sp-reset:hover{background:#f3f8f6}
+.sp-view-controls .sp-zoom-btn{width:33px;padding:0}
+.sp-view-controls svg{display:block;flex:none}
+@media(max-width:1350px){.sp-scene-head .sp-view-controls{align-self:flex-end}}
+@media(max-width:550px){.sp-scene-head{gap:10px}.sp-scene-head .sp-view-controls{align-self:stretch;justify-content:flex-end;margin-left:0;gap:7px}.sp-view-controls .sp-toggle{min-width:48px}.sp-view-controls .sp-reset{padding:0 9px}.sp-view-controls .sp-zoom-btn{width:30px}}
+@media(max-width:370px){.sp-view-controls .sp-reset span{display:none}.sp-view-controls .sp-reset{width:37px;justify-content:center}}
