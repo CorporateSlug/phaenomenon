@@ -82,7 +82,18 @@ class SceneViewer{
    const step=Math.max(1,Math.ceil(Math.max(this.v.width,this.v.length)/35));
    for(let x=step;x<this.v.width;x+=step){let pts=[];for(let y=0;y<=this.v.length;y+=.4){const p={x,y};if(G.contains(fp,p))pts.push(this.point(x,y,.03));else if(pts.length>1){this.line(pts,0x8db2a8,.14);pts=[]}}if(pts.length>1)this.line(pts,0x8db2a8,.14)}
    for(let y=step;y<this.v.length;y+=step){let pts=[];for(let x=0;x<=this.v.width;x+=.4){const p={x,y};if(G.contains(fp,p))pts.push(this.point(x,y,.03));else if(pts.length>1){this.line(pts,0x8db2a8,.14);pts=[]}}if(pts.length>1)this.line(pts,0x8db2a8,.14)}
-   if(this.v.geometry.roof.type!=='none')fp.forEach((a,i)=>{const b=fp[(i+1)%fp.length],ha=G.height(this.v,a),hb=G.height(this.v,b);this.line([this.point(a.x,a.y),this.point(a.x,a.y,ha)],0x9cbfba,.45);this.line([this.point(a.x,a.y,ha),this.point(b.x,b.y,hb)],0xb9d5cb,.7)});
+   if(this.v.geometry.roof.type!=='none'){
+    fp.forEach((a,i)=>{const b=fp[(i+1)%fp.length],ha=G.height(this.v,a),hb=G.height(this.v,b);this.line([this.point(a.x,a.y),this.point(a.x,a.y,ha)],0x9cbfba,.45);this.line([this.point(a.x,a.y,ha),this.point(b.x,b.y,hb)],0xb9d5cb,.7)});
+    if(this.v.geometry.roof.type==='gable'){
+      const roof=this.v.geometry.roof,ridge=[];
+      for(let i=0;i<=60;i++){
+        const p=roof.axis==='x'?{x:this.v.width*.5,y:i*this.v.length/60}:{x:i*this.v.width/60,y:this.v.length*.5};
+        if(G.contains(fp,p))ridge.push(this.point(p.x,p.y,G.height(this.v,p)));
+        else if(ridge.length>1){this.line([...ridge],0xe1c595,.68);ridge.length=0;}
+      }
+      if(ridge.length>1)this.line(ridge,0xe1c595,.68);
+    }
+   }
    if(this.mode==='top'&&this.p.editOutline)fp.forEach((p,i)=>{const mesh=new T.Mesh(new T.SphereGeometry(.19,12,8),new T.MeshBasicMaterial({color:p.id===this.p.selectedVertex?0xf0bf78:0xc3e7db}));mesh.position.copy(this.point(p.x,p.y,.18));mesh.userData.vertexId=p.id;this.world.add(mesh);this.picks.push(mesh);this.label(''+(i+1),this.point(p.x,p.y,.49),'corner')});
    if(this.showDims){
     fp.slice(0,12).forEach((a,i)=>{
