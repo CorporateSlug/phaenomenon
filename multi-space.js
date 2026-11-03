@@ -24,7 +24,7 @@ function seed(db){
     area({id:'ab-indoor',name:'Indoor stage',x:3,y:4,width:19,length:15,height:6.2,kind:'indoor',roof:'gable'}),
     area({id:'ab-outdoor',name:'Outdoor stage',x:29,y:5,width:18,length:17,height:4.5,kind:'outdoor',roof:'none'})
    ],
-   links:[{id:'ab-courtyard-link',name:'Illustrative site cable passage',fromSpace:'ab-indoor',toSpace:'ab-outdoor',from:{x:21,y:12,z:0},to:{x:30,y:12,z:0},via:[{x:25.5,y:12,z:0}],extraMeters:2,verified:false,allowedTypes:['dmx','network','audio','power'],notes:'Pathway is hypothetical. Obtain permission to cross the site, confirm elevation, protected cable crossing and physical route.'}]
+   links:[{id:'ab-courtyard-link',name:'Illustrative site cable passage',fromSpace:'ab-indoor',toSpace:'ab-outdoor',from:{x:21,y:12,z:0},to:{x:30,y:12,z:0},via:[{x:25.5,y:12,z:0}],extraMeters:2,verified:false,allowedTypes:['dmx','network','audio','video','power'],notes:'Pathway is hypothetical. Obtain permission to cross the site, confirm elevation, protected cable crossing and physical route.'}]
   };
   G.normalize(venue);db.venues.push(venue);
  }
@@ -51,7 +51,9 @@ function seed(db){
     itm('ab-o-distro','Outdoor power distribution (illustrative)','power','ab-outdoor',31,9,0),
     itm('ab-o-wash1','Outdoor wash · left','light','ab-outdoor',33,17,3,160,{fixtureType:'par',pan:15,tilt:58,beamAngle:28,colorHex:'#a9e8cb'}),
     itm('ab-o-wash2','Outdoor wash · centre','light','ab-outdoor',39,17,3,160,{fixtureType:'par',pan:0,tilt:60,beamAngle:28,colorHex:'#d4aaff'}),
-    itm('ab-o-wash3','Outdoor wash · right','light','ab-outdoor',44,17,3,160,{fixtureType:'par',pan:-15,tilt:60,beamAngle:28,colorHex:'#f6c17d'})
+    itm('ab-o-wash3','Outdoor wash · right','light','ab-outdoor',44,17,3,160,{fixtureType:'par',pan:-15,tilt:60,beamAngle:28,colorHex:'#f6c17d'}),
+    itm('ab-i-media','Indoor video media server','video','ab-indoor',9,8,.7,150),
+    itm('ab-o-screen','Outdoor video screen (illustrative)','video','ab-outdoor',40,20,1.8,300)
    ],
    runs:[
     {id:'ab-net-between',cableId:'NET-01',type:'network',from:'ab-i-node',to:'ab-o-node',cableLength:30,slack:15,connector:'RJ45 / Cat6',linkType:'Direct'},
@@ -64,7 +66,8 @@ function seed(db){
     {id:'ab-i-power2',cableId:'PWR-I-02',type:'power',from:'ab-i-distro',to:'ab-i-wash2',cableLength:20,slack:15,linkType:'Direct'},
     {id:'ab-o-power1',cableId:'PWR-O-01',type:'power',from:'ab-o-distro',to:'ab-o-wash1',cableLength:15,slack:15,linkType:'Direct'},
     {id:'ab-o-power2',cableId:'PWR-O-02',type:'power',from:'ab-o-distro',to:'ab-o-wash2',cableLength:20,slack:15,linkType:'Direct'},
-    {id:'ab-o-power3',cableId:'PWR-O-03',type:'power',from:'ab-o-distro',to:'ab-o-wash3',cableLength:25,slack:15,linkType:'Direct'}
+    {id:'ab-o-power3',cableId:'PWR-O-03',type:'power',from:'ab-o-distro',to:'ab-o-wash3',cableLength:25,slack:15,linkType:'Direct'},
+    {id:'ab-video-between',cableId:'VID-01',type:'video',from:'ab-i-media',to:'ab-o-screen',cableLength:50,slack:15,connector:'3G-SDI / BNC'}
    ]};
  }
  if(!db.technicalPlans||typeof db.technicalPlans!=='object')db.technicalPlans={};
@@ -232,7 +235,7 @@ function attach(p){
    if(p.venue.links.some(l=>l.fromSpace===src&&l.toSpace===dst||l.fromSpace===dst&&l.toSpace===src)){p.notify?.('These spaces already have a shared pathway.');return}
    const a=p.venue.spaces.find(x=>x.id===src),b=p.venue.spaces.find(x=>x.id===dst);
    const ca={x:r(a.x+a.width/2),y:r(a.y+a.length/2),z:0},cb={x:r(b.x+b.width/2),y:r(b.y+b.length/2),z:0};
-   p.venue.links.push({id:uid('site-link'),name:'Provisional cable route',fromSpace:src,toSpace:dst,from:ca,to:cb,via:[],extraMeters:3,verified:false,allowedTypes:['dmx','power','network','audio']});
+   p.venue.links.push({id:uid('site-link'),name:'Provisional cable route',fromSpace:src,toSpace:dst,from:ca,to:cb,via:[],extraMeters:3,verified:false,allowedTypes:['dmx','power','network','audio','video']});
    p.save();o.render();p.draw();p.technical?.refresh();return;
   }
  });
