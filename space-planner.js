@@ -145,24 +145,45 @@
       const workspace=this.root.querySelector('.sp-workspace');
       const metrics=this.root.querySelector('#sp-summary');
       const geometry=this.root.querySelector('.sp-geometry-panel');
+      const inspector=workspace.querySelector('.sp-inspector');
       geometry.querySelector('.sp-geometry-title')?.remove();
-      const dimensions=toolbar.querySelector('.sp-dimensions');
-      geometry.prepend(dimensions);
-      const details=document.createElement('details');
-      details.id='sp-venue-details';details.className='sp-venue-details panel';
-      const header=document.createElement('summary');
-      header.className='sp-venue-summary';
-      header.innerHTML='<span class="sp-venue-summary-title"><span class="sp-disclosure-caret" aria-hidden="true">⌄</span><strong>Venue geometry & dimensions</strong><span class="sp-venue-summary-caption">Floorplan · roof · environment</span></span><span id="sp-venue-meta" class="sp-venue-meta"></span>';
-      details.append(header,geometry);
-      toolbar.after(workspace,metrics,details);
+      geometry.prepend(toolbar.querySelector('.sp-dimensions'));
+      toolbar.after(workspace,metrics);
+      // Venue measurements and 3D editing now share the same workspace, not a distant form.
+      const equipmentPane=document.createElement('div');
+      equipmentPane.id='sp-equipment-pane';equipmentPane.className='sp-inspector-pane';
+      equipmentPane.append(...Array.from(inspector.children));
+      const venuePane=document.createElement('div');
+      venuePane.id='sp-venue-pane';venuePane.className='sp-inspector-pane sp-venue-pane';
+      venuePane.hidden=true;
+      venuePane.innerHTML='<div class="sp-venue-pane-head"><div><strong>Venue geometry</strong><p>Shared measurements for every event here</p></div><button id="sp-close-venue" type="button" class="sp-venue-done">Done</button></div><div class="sp-geometry-mode-tabs" role="group" aria-label="Venue editing tools"><button type="button" data-sp-geometry-mode="floor" aria-pressed="true" class="is-active">Floorplan</button><button type="button" data-sp-geometry-mode="roof" aria-pressed="false">Roof &amp; site</button></div><div id="sp-venue-meta" class="sp-venue-pane-meta"></div>';
+      venuePane.appendChild(geometry);
+      const paneTabs=document.createElement('div');
+      paneTabs.className='sp-inspector-tabs';
+      paneTabs.innerHTML='<button type="button" data-sp-inspector-mode="equipment" class="is-active" aria-pressed="true">Equipment</button><button type="button" data-sp-inspector-mode="venue" aria-pressed="false">Venue</button>';
+      inspector.append(paneTabs,equipmentPane,venuePane);
+      // Switch between floor plan and roof settings without separating the tools from the model.
+      const sections=geometry.querySelectorAll('.sp-geometry-section');
+      if(sections[1])sections[1].hidden=true;
+      this.inspectorMode='equipment';this.geometryTab='floor';
+      paneTabs.querySelectorAll('[data-sp-inspector-mode]').forEach(btn=>btn.addEventListener('click',()=>this.setInspectorMode(btn.dataset.spInspectorMode)));
+      venuePane.querySelector('#sp-close-venue').addEventListener('click',()=>this.setInspectorMode('equipment'));
+      venuePane.querySelectorAll('[data-sp-geometry-mode]').forEach(btn=>btn.addEventListener('click',()=>this.setGeometryTab(btn.dataset.spGeometryMode)));
       const controls=toolbar.querySelector('.sp-controls');
       const edit=document.createElement('button');
       edit.id='sp-edit-venue';edit.type='button';edit.className='button sp-open-venue';
-      edit.textContent='Edit venue';
+      edit.textContent='Venue tools';
       controls.insertBefore(edit,controls.querySelector('#sp-new-venue'));
-      edit.addEventListener('click',()=>{details.open=!details.open;if(details.open)details.scrollIntoView({behavior:'smooth',block:'start'});});
+      edit.addEventListener('click',()=>this.setInspectorMode(this.inspectorMode==='venue'?'equipment':'venue'));
       const sceneHead=workspace.querySelector('.sp-scene-head h2');
       if(sceneHead)sceneHead.textContent='Space layout';
+      const caption=workspace.querySelector('.sp-scene-head p');
+      if(caption)caption.textContent='Select equipment, or open Venue tools to shape the space.';
+      const shortcut=document.createElement('button');
+      shortcut.type='button';shortcut.id='sp-geometry-shortcut';shortcut.className='sp-geometry-shortcut';
+      shortcut.innerHTML='<span aria-hidden="true">▱</span> <span class="sp-geometry-shortcut-label">Edit venue</span>';
+      workspace.querySelector('.sp-canvas-wrap').appendChild(shortcut);
+      shortcut.addEventListener('click',()=>this.setInspectorMode('venue'));
       const viewControls=workspace.querySelector('.sp-view-controls');
       const focus=document.createElement('button');
       focus.id='sp-focus';focus.type='button';focus.className='sp-tool sp-focus-button';
@@ -175,6 +196,43 @@
       this.boundFocusKeydown=e=>{if(e.key!=='Escape')return;if(this.isFocus){e.preventDefault();this.setFocusMode(false);this.root.querySelector('#sp-focus')?.focus();}else if(this.canvasActive){e.preventDefault();this.setCanvasActive(false);this.canvas?.blur();}};
       window.addEventListener('keydown',this.boundFocusKeydown);
       this.isFocus=false;
+    }
+    setInspectorMode(mode){
+      const venue=mode==='venue';
+      this.inspectorMode=venue?'venue':'equipment';
+      const workspace=this.root.querySelector('.sp-workspace');
+      workspace?.classList.toggle('sp-venue-editing',venue);
+      const gear=this.root.querySelector('#sp-equipment-pane'),tools=this.root.querySelector('#sp-venue-pane');
+      if(gear)gear.hidden=venue;
+      if(tools)tools.hidden=!venue;
+      this.root.querySelectorAll('[data-sp-inspector-mode]').forEach(button=>{
+        const active=button.dataset.spInspectorMode===this.inspectorMode;
+        button.classList.toggle('is-active',active);
+        button.setAttribute('aria-pressed',String(active));
+      });
+      const quick=this.root.querySelector('#sp-edit-venue');
+      if(quick){quick.classList.toggle('is-active',venue);quick.setAttribute('aria-pressed',String(venue));quick.textContent=venue?'Equipment tools':'Venue tools';}
+      const shortcut=this.root.querySelector('#sp-geometry-shortcut');
+      if(shortcut)shortcut.setAttribute('aria-pressed',String(venue));
+      if(venue)this.setGeometryTab(this.geometryTab||'floor');
+      else {this.editOutline=false;this.updateGeometry();this.draw();}
+      this.resize();
+    }
+    setGeometryTab(tab){
+      this.geometryTab=tab==='roof'?'roof':'floor';
+      const roof=this.geometryTab==='roof';
+      this.root.querySelectorAll('.sp-geometry-section').forEach((section,i)=>section.hidden=roof?i===0:i===1);
+      this.root.querySelectorAll('[data-sp-geometry-mode]').forEach(button=>{
+        const active=button.dataset.spGeometryMode===this.geometryTab;
+        button.classList.toggle('is-active',active);
+        button.setAttribute('aria-pressed',String(active));
+      });
+      this.editOutline=!roof;
+      this.setView(roof?'three':'top');
+      this.updateGeometry();
+      const help=this.root.querySelector('.sp-scene-head p');
+      if(help)help.textContent=roof?'Adjust roof and site settings while inspecting the model in 3D.':'Drag the numbered corners to shape the venue floorplan.';
+      this.resize();
     }
     setFocusMode(active){
       this.isFocus=!!active;
@@ -330,7 +388,7 @@
       const $=s=>this.root.querySelector(s);
       $('#sp-kind').value=g.kind;$('#sp-roof-type').value=r.type;$('#sp-roof-axis').value=r.axis;$('#sp-eave').value=r.eave;$('#sp-peak').value=r.peak;
       $('#sp-area').textContent=`${G.area(g.footprint).toFixed(1)} m² mapped`;
-      const venueMeta=$('#sp-venue-meta');if(venueMeta)venueMeta.textContent=Math.round(G.area(g.footprint))+' m² · '+(g.kind==='outdoor'?'Outdoor':r.type==='none'?'Open roof':({flat:'Flat roof',mono:'Sloped roof',gable:'Pitched roof',custom:'Custom roof'}[r.type]||'Roof'));
+      const venueMeta=$('#sp-venue-meta');if(venueMeta)venueMeta.textContent=Math.round(G.area(g.footprint))+' m² · '+(g.kind==='outdoor'?'Outdoor':r.type==='none'?'Open roof':({flat:'Flat roof',mono:'Sloped roof',gable:'Pitched roof',custom:'Custom roof'}[r.type]||'Roof'));const venueShortcut=$('#sp-geometry-shortcut .sp-geometry-shortcut-label');if(venueShortcut)venueShortcut.textContent='Venue · '+Math.round(G.area(g.footprint))+' m²';
       $('#sp-corner-count').textContent=`· ${g.footprint.length} corners`;
       $('#sp-remove-corner').disabled=!this.selectedVertex||g.footprint.length<=3;
       $('#sp-edit-outline').classList.toggle('primary',this.editOutline);
