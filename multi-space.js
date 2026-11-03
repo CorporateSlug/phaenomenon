@@ -12,7 +12,7 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const uid=prefix=>prefix+'-'+Math.random().toString(36).slice(2,10);
 const DEMO_ID='ev-abbotsford-two-stage-demo',VENUE_ID='ven-abbotsford-two-stage-demo';
 function area({id,name,x,y,width,length,height=5,kind='indoor',roof='flat',shape='rectangle'}){
- const v={id,name,x,y,width,length,height,geometry:{kind,footprint:G.template(shape==='l'?'L':shape==='u'?'U':shape,width,length),roof:{type:roof,eave:height,peak:height+1.5,axis:'x',heights:{}}}};
+ const v={id,name,x,y,width,length,height,shape,geometry:{kind,footprint:G.template(shape==='l'?'L':shape==='u'?'U':shape,width,length),roof:{type:roof,eave:height,peak:height+1.5,axis:'x',heights:{}}}};
  G.normalize(v);return v;
 }
 function seed(db){
@@ -107,7 +107,7 @@ function migrate(v,plan){if(!hasAreas(v))return;ensure(v);for(const o of plan.it
 function convert(v){
  if(hasAreas(v))return ensure(v);
  const first=area({id:uid('space'),name:'Main space',x:0,y:0,width:v.width,length:v.length,height:v.height,kind:v.geometry?.kind||'indoor',roof:v.geometry?.roof?.type||'flat'});
- first.geometry=JSON.parse(JSON.stringify(v.geometry||first.geometry));G.normalize(first);
+ first.geometry=JSON.parse(JSON.stringify(v.geometry||first.geometry));first.shape='custom';G.normalize(first);
  v.spaces=[first];v.links=[];return v.spaces;
 }
 function expand(v){
@@ -203,7 +203,7 @@ function attach(p){
      '<div class="msp-field-grid">'+
      input(a,'name','Name','text')+input(a,'x','X (m)','number')+input(a,'y','Y (m)','number')+input(a,'width','Width (m)','number')+input(a,'length','Length (m)','number')+input(a,'height','Height / reference (m)','number')+
      '<label>Environment<select data-msp-area="'+esc(a.id)+'" data-msp-field="kind"><option value="indoor" '+(a.geometry.kind==='indoor'?'selected':'')+'>Indoor</option><option value="outdoor" '+(a.geometry.kind==='outdoor'?'selected':'')+'>Outdoor / open air</option></select></label>'+
-     '<label>Floorplan<select data-msp-area="'+esc(a.id)+'" data-msp-field="shape">'+['rectangle','l','u','angled'].map(x=>'<option value="'+x+'">'+({rectangle:'Rectangle',l:'L shape',u:'U shape',angled:'Angled'}[x])+'</option>').join('')+'</select></label>'+
+     '<label>Floorplan<select data-msp-area="'+esc(a.id)+'" data-msp-field="shape">'+(a.shape==='custom'?'<option value="custom" disabled selected>Custom existing</option>':'')+['rectangle','l','u','angled'].map(x=>'<option value="'+x+'" '+(a.shape===x?'selected':'')+'>'+({rectangle:'Rectangle',l:'L shape',u:'U shape',angled:'Angled'}[x])+'</option>').join('')+'</select></label>'+
      '<label>Roof<select data-msp-area="'+esc(a.id)+'" data-msp-field="roof">'+['none','flat','mono','gable'].map(x=>'<option value="'+x+'" '+(a.geometry.roof.type===x?'selected':'')+'>'+({none:'None / open sky',flat:'Flat',mono:'Sloped',gable:'Pitched'}[x])+'</option>').join('')+'</select></label>'+
      '</div></div>').join('')+'</div>'+
      '<div class="msp-link-head"><strong>Between-space connections</strong><p>These are permitted cable pathways, not automatic power or data connections. Verify actual access and cable protection.</p></div>'+
@@ -242,7 +242,7 @@ function attach(p){
    const a=p.venue.spaces.find(x=>x.id===spaceId);if(!a)return;
    if(field==='kind'){a.geometry.kind=el.value;a.geometry.roof.type=el.value==='outdoor'?'none':'flat'}
    else if(field==='roof'){a.geometry.roof.type=el.value;}
-   else if(field==='shape'){const ok=window.confirm('Replace this area’s outline with a '+el.value+' template? Equipment will remain in the nearest valid position.');if(!ok)return;a.geometry.footprint=G.template(el.value==='l'?'L':el.value==='u'?'U':el.value,a.width,a.length);}
+   else if(field==='shape'){const ok=window.confirm('Replace this area’s outline with a '+el.value+' template? Equipment will remain in the nearest valid position.');if(!ok)return;a.geometry.footprint=G.template(el.value==='l'?'L':el.value==='u'?'U':el.value,a.width,a.length);a.shape=el.value;}
    else if(field==='name'){a.name=String(el.value).slice(0,75).trim()||a.name;}
    else{
     const previous={width:a.width,length:a.length};
