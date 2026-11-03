@@ -95,7 +95,8 @@
   }
   function valid(x){return x&&Array.isArray(x.projects)&&Array.isArray(x.leads)&&Array.isArray(x.events)&&Array.isArray(x.clients)&&Array.isArray(x.fixtures);}
   let db=read();
-  let storageBaseline=localStorage.getItem(STORE_KEY);
+  const storedRaw=()=>{try{return localStorage.getItem(STORE_KEY);}catch(e){return null;}};
+  let storageBaseline=storedRaw();
   assureEventData(db);
   window.PhaenomenonSpacePlanner?.ensure(db);
   let ui={view:'overview',projectId:null,eventId:null,invoiceId:null,printInvoiceId:null,tab:'overview',filter:'All',search:'',fixtureSearch:'',calendar:new Date(new Date().getFullYear(),new Date().getMonth(),1),selectedDate:null,modal:null,toast:null};
@@ -114,7 +115,7 @@
     } catch(e){flash('Browser storage is unavailable. Export your work to keep it.');return false;}
   }
   function refreshFromStorage(){
-    const raw=localStorage.getItem(STORE_KEY);
+    const raw=storedRaw();
     if(raw===storageBaseline)return false;
     if(!raw)return false;
     let data;try{data=JSON.parse(raw);}catch(e){return false;}
