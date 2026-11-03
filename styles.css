@@ -394,3 +394,19 @@
  .event-more-list{right:auto;left:0}
  .bookings-metrics .event-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+
+/* Studio overview: immediate work first, reporting and calendar on demand. */
+.studio-more{background:#f8fbfa;border:1px solid #dce7e3;border-radius:13px;margin:19px 0 27px;overflow:hidden}
+.studio-more>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:15px 18px;font-weight:700;color:#536e71;font-size:12px}
+.studio-more>summary::-webkit-details-marker{display:none}
+.studio-more>summary::marker{content:""}
+.studio-more>summary:hover{background:#eef5f2}
+.studio-more>summary span{transition:transform .16s}
+.studio-more[open]>summary span{transform:rotate(180deg)}
+.studio-more-content{padding:0 15px 16px;display:grid;gap:15px}
+.studio-more-content .cards-4,.studio-more-content .bottom-grid{margin:0}
+.studio-more-content .cards-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.studio-more-content .metric-card{min-height:115px}
+@media(max-width:1100px){.studio-more-content .cards-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.studio-more-content{padding:0 10px 10px}.studio-more-content .cards-4{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-more-content .metric-card{padding:12px}}
