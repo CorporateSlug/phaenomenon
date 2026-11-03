@@ -10,7 +10,14 @@ const options=(list,value)=>list.map(v=>'<option value="'+E(v)+'" '+(String(v)==
 const fmt=(n,d=1)=>Number(n||0).toFixed(d);
 const badge=(v)=>'<span class="tech-pill '+v+'">'+(v==='error'?'Issue':v==='warning'?'Review':'OK')+'</span>';
 const attrs=(o)=>Object.entries(o).map(([k,v])=>' '+k+'="'+E(v)+'"').join('');
-const nav=[['layout','3D layout'],['map','Power + data map'],['patch','DMX patch'],['power','Power'],['cables','Cable runs'],['report','Install pack']];
+const nav=[['layout','Design'],['connect','Connect'],['map','Review'],['report','Export']];
+const substages=[['patch','DMX patch'],['power','Power circuits'],['cables','Cable runs']];
+const flowInfo={
+ layout:{title:'Build the lighting layout',description:'Choose a venue, shape the space and place your fixtures. You can move and aim equipment directly in the model.',action:'Continue to connections'},
+ connect:{title:'Connect the equipment',description:'Work through DMX, power and physical cabling one task at a time. All edits stay linked to your layout.',action:'Review connections'},
+ map:{title:'Review the technical plan',description:'Check the generated connection maps and resolve issues before preparing instructions for your crew.',action:'Prepare install pack'},
+ report:{title:'Prepare the install pack',description:'Review the latest schedules and export an installation pack. Always verify the plan on site.',action:'Back to layout'}
+};
 function graph(p,e,type){
  const t=e.t,groups=type==='dmx'?Array.from({length:t.universeCount},(_,i)=>({id:String(i+1),label:'Universe '+(i+1),items:e.patchRows.filter(r=>r.u===i+1).map(r=>r.o)})).filter(g=>g.items.length):e.circuits.map(q=>({id:q.c.id,label:q.c.name,items:q.assigned})).filter(g=>g.items.length);
  if(!groups.length)return '<div class="tech-empty">No '+T(type)+' assignments yet. Use '+(type==='dmx'?'DMX patch':'Power')+' to add them.</div>';
@@ -39,40 +46,94 @@ function issuesPanel(e,only){
 }
 class Technical{
  constructor(p){
-  this.p=p;this.tab='layout';this.t=C.ensure(p.db,p.eventId,p.plan);this.lastSig='';
+  this.p=p;this.t=C.ensure(p.db,p.eventId,p.plan);this.lastSig='';
+  const saved=this.t.workflowTab;
+  this.tab=['layout','patch','power','cables','map','report'].includes(saved)?saved:'layout';
   this.root=document.createElement('section');this.root.className='tech-root';this.root.id='tech-root';
-  this.nav=document.createElement('div');this.nav.className='tech-tabs';this.nav.setAttribute('role','tablist');this.nav.setAttribute('aria-label','Technical planning views');
-  this.content=document.createElement('div');this.content.className='tech-content panel';this.content.hidden=true;
-  this.root.append(this.nav,this.content);
+  this.nav=document.createElement('div');this.nav.className='tech-tabs tech-flow-steps';this.nav.setAttribute('role','navigation');this.nav.setAttribute('aria-label','Lighting layout workflow');
+  this.guide=document.createElement('div');this.guide.className='tech-flow-guide';
+  this.content=document.createElement('div');this.content.className='tech-content panel';
+  this.root.append(this.nav,this.guide,this.content);
   p.root.querySelector('.sp-workspace').before(this.root);
   this.oldCables=p.root.querySelector('.sp-cable-panel');if(this.oldCables)this.oldCables.style.display='none';
   this.layout=p.root.querySelector('.sp-workspace');this.metrics=p.root.querySelector('#sp-summary');
-  this.renderNav();this.render();
-  this.nav.addEventListener('click',ev=>{const btn=ev.target.closest('[data-tech-tab]');if(btn)this.select(btn.dataset.techTab)});
+  this.layoutFooter=document.createElement('div');this.layoutFooter.className='tech-flow-layout-footer';
+  this.layout.after(this.layoutFooter);
+  this.setVisible();
+  this.render();
+  this.root.addEventListener('click',ev=>{
+    const step=ev.target.closest('[data-tech-step]');if(step){this.select(step.dataset.techStep);return;}
+    const jump=ev.target.closest('[data-tech-jump]');if(jump){this.select(jump.dataset.techJump);return;}
+    const next=ev.target.closest('[data-tech-next]');if(next){this.next();return;}
+    const previous=ev.target.closest('[data-tech-back]');if(previous){this.back();return;}
+  });
+  this.layoutFooter.addEventListener('click',ev=>{if(ev.target.closest('[data-tech-next]'))this.next()});
   this.content.addEventListener('change',ev=>this.change(ev));
   this.content.addEventListener('click',ev=>this.click(ev));
  }
- dispose(){this.root.remove();if(this.oldCables)this.oldCables.style.display='';}
+ dispose(){this.layoutFooter?.remove();this.root.remove();if(this.oldCables)this.oldCables.style.display='';}
  state(){this.t=C.ensure(this.p.db,this.p.eventId,this.p.plan);return C.evaluate(this.p)}
+ step(){return ['patch','power','cables'].includes(this.tab)?'connect':this.tab;}
+ setVisible(){
+  const visible=this.tab==='layout';
+  this.layout.hidden=!visible;this.metrics.hidden=!visible;this.content.hidden=visible;
+  this.layoutFooter.hidden=!visible;this.layout.classList.toggle('tech-layout-hidden',!visible);
+  if(this.oldCables)this.oldCables.style.display='none';
+ }
  renderNav(){
-  const e=this.state();
-  this.nav.innerHTML=nav.map(([id,label])=>'<button type="button" role="tab" data-tech-tab="'+id+'" aria-selected="'+(this.tab===id)+'" class="'+(this.tab===id?'active':'')+'">'+label+'</button>').join('')+'<div class="tech-health">'+(e.counts.errors?'<span class="tech-bad">'+e.counts.errors+' issues</span>':'')+(e.counts.warnings?'<span class="tech-caution">'+e.counts.warnings+' to review</span>':'')+(!e.counts.errors&&!e.counts.warnings?'<span class="tech-green">No flagged checks</span>':'')+'</div>';
+  const e=this.state(),current=this.step();
+  this.nav.innerHTML='<div class="tech-flow-track">'+nav.map(([id,label],i)=>
+   '<button type="button" class="tech-flow-step '+(current===id?'active':'')+'" data-tech-step="'+id+'" '+(current===id?'aria-current="step"':'')+
+   ' aria-label="Step '+(i+1)+': '+label+'"><span class="tech-flow-index">'+(i+1)+'</span><span class="tech-flow-label">'+label+'</span></button>'
+  ).join('')+'</div><div class="tech-flow-status">'+
+  (e.counts.errors?'<span class="tech-bad">'+e.counts.errors+' critical</span>':'')+
+  (e.counts.warnings?'<span class="tech-caution">'+e.counts.warnings+' to review</span>':'')+
+  (!e.counts.errors&&!e.counts.warnings?'<span class="tech-green">No automated issues flagged</span>':'')+'</div>';
+ }
+ renderGuide(e){
+  const step=this.step(),index=nav.findIndex(([id])=>id===step);
+  const info=flowInfo[step];
+  const summary=step==='layout'?
+    this.p.plan.items.length+' placed items · '+this.p.plan.runs.length+' mapped connections':
+    step==='connect'?('Part '+(substages.findIndex(([id])=>id===this.tab)+1)+' of 3 · '+(substages.find(([id])=>id===this.tab)?.[1]||'DMX patch')):
+    step==='map'?(e.counts.errors+' critical issues · '+e.counts.warnings+' checks to review'):
+    'Generated from the latest event data';
+  this.guide.innerHTML='<div class="tech-flow-guide-copy"><span class="tech-flow-eyebrow">STEP '+(index+1)+' OF 4 <span aria-hidden="true">·</span> '+E(summary)+'</span><h2>'+E(info.title)+'</h2><p>'+E(info.description)+'</p></div>'+
+    (step==='layout'?'<button type="button" class="tech-flow-forward" data-tech-next>Connect equipment <span aria-hidden="true">→</span></button>':'');
+  this.layoutFooter.innerHTML='<span>Venue and fixture placement can be revisited at any stage.</span><button type="button" class="tech-flow-forward" data-tech-next>Continue to connections <span aria-hidden="true">→</span></button>';
  }
  select(tab){
-  if(!nav.some(([v])=>v===tab))return;this.tab=tab;
-  const visible=tab==='layout';this.layout.hidden=!visible;this.metrics.hidden=!visible;this.content.hidden=visible;
-  this.layout.classList.toggle('tech-layout-hidden',!visible);
-  if(this.oldCables)this.oldCables.style.display='none';
-  this.render();if(visible){this.p.resize();this.p.threeView?.resize();}
+  if(!['layout','patch','power','cables','connect','map','report'].includes(tab))return;
+  this.tab=tab==='connect'?'patch':tab;
+  this.t.workflowTab=this.tab;
+  this.p.save();
+  this.setVisible();
+  this.render();
+  if(this.tab==='layout'){this.p.resize();this.p.threeView?.resize();}
+  this.root.scrollIntoView?.({behavior:'smooth',block:'start'});
  }
- refresh(){this.renderNav();if(this.tab!=='layout')this.render(); }
- refreshIfOpen(){if(this.tab!=='layout')this.refresh();else this.renderNav()}
+ next(){
+  const next={layout:'patch',patch:'power',power:'cables',cables:'map',map:'report',report:'layout'}[this.tab]||'layout';
+  this.select(next);
+ }
+ back(){
+  const previous={layout:'layout',patch:'layout',power:'patch',cables:'power',map:'cables',report:'map'}[this.tab]||'layout';
+  this.select(previous);
+ }
+ refresh(){this.render();}
+ refreshIfOpen(){this.render();}
  render(){
-  this.renderNav();if(this.tab==='layout')return;
-  const e=this.state();
-  const head='<div class="tech-heading"><div><span class="tech-overline">EVENT SYSTEMS</span><h2>'+E(nav.find(([v])=>v===this.tab)[1])+'</h2><p>Connected to '+E(this.p.event?.title||'current event')+' · '+e.items.length+' placed items · changes automatically update calculations and reports</p></div><div class="tech-heading-side">'+e.counts.errors+' critical · '+e.counts.warnings+' review</div></div>';
+  this.renderNav();
+  const e=this.state();this.renderGuide(e);
+  if(this.tab==='layout')return;
+  const active=this.step(),isConnect=active==='connect';
+  const subnav=isConnect?'<div class="tech-substeps" role="group" aria-label="Connection tasks">'+substages.map(([id,label],i)=>
+   '<button type="button" data-tech-jump="'+id+'" class="'+(this.tab===id?'active':'')+'" '+(this.tab===id?'aria-current="step"':'')+'><span>'+(i+1)+'</span>'+label+'</button>').join('')+'</div>':'';
+  const fix=active==='map'?'<div class="tech-flow-fixes"><span>Need to change something?</span><button type="button" data-tech-jump="patch">Edit DMX</button><button type="button" data-tech-jump="power">Edit power</button><button type="button" data-tech-jump="cables">Edit cables</button><button type="button" data-tech-jump="layout">Move fixtures</button></div>':'';
   const body=this.tab==='map'?this.map(e):this.tab==='patch'?this.patch(e):this.tab==='power'?this.power(e):this.tab==='cables'?this.cables(e):this.report(e);
-  this.content.innerHTML=head+body;
+  const backLabel=this.tab==='patch'?'Back to layout':this.tab==='power'?'Back to DMX':this.tab==='cables'?'Back to power':this.tab==='map'?'Back to cables':'Back to review';
+  const nextLabel={patch:'Next: Power',power:'Next: Cables',cables:'Review connection map',map:'Prepare install pack',report:'Return to layout'}[this.tab];
+  this.content.innerHTML=subnav+fix+body+'<div class="tech-flow-footer"><button type="button" class="tech-flow-back" data-tech-back><span aria-hidden="true">←</span> '+backLabel+'</button><button type="button" class="tech-flow-forward" data-tech-next>'+nextLabel+' <span aria-hidden="true">→</span></button></div>';
  }
  map(e){
   return '<div class="tech-summary-grid"><div><small>DMX devices</small><strong>'+e.patchRows.length+'</strong></div><div><small>Data runs</small><strong>'+e.cables.filter(x=>x.run.type==='dmx').length+'</strong></div><div><small>Power circuits</small><strong>'+e.circuits.length+'</strong></div><div><small>Power runs</small><strong>'+e.cables.filter(x=>x.run.type==='power').length+'</strong></div></div><div class="tech-two-cols"><section><div class="tech-subhead"><h3>Data topology</h3><p>Blue connections are actual configured DMX cables, not implied links.</p></div>'+graph(this.p,e,'dmx')+'</section><section><div class="tech-subhead"><h3>Power topology</h3><p>Red connections are actual configured power cables.</p></div>'+graph(this.p,e,'power')+'</section></div><div class="tech-explainer">The topology shows mapped connections. A fixture with an address or circuit assignment but no incoming cable remains disconnected. Moving equipment in 3D recalculates mapped lengths; it does not silently reroute circuits or DMX chains.</div>'+issuesPanel(e);
