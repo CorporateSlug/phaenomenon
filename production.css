@@ -386,3 +386,11 @@
   body:has(.venue-quick-backdrop){overflow:hidden}
 }
 @media(min-width:841px){.mobile-local-note{display:none}}
+
+
+.header-title-mobile{display:none}
+@media(max-width:840px){
+  .header-title-mobile{display:inline}
+  .header-title-desktop{display:none}
+  .header-title{font-size:14px;max-width:106px}
+}
