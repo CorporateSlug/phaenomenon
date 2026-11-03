@@ -76,6 +76,7 @@
     }
     persist(){this.save();this.updateSummary();this.draw();}
     build(){
+      this.threeView?.dispose();this.threeView=null;
       this.resizeObserver?.disconnect();
       if(!this.event){this.root.innerHTML='<p>Create an event booking first to attach a venue plan.</p>';return;}
       const v=this.venue;
@@ -138,6 +139,7 @@
       this.resizeObserver=typeof ResizeObserver!=='undefined'?new ResizeObserver(()=>this.resize()):null;
       this.resizeObserver?.observe(this.canvas.parentElement);
       this.resize();
+      if(window.Phaenomenon3D){this.threeView=window.Phaenomenon3D.attach(this);this.threeView?.decorateInspector();}
     }
 
     arrangeWorkspace(){
@@ -281,9 +283,9 @@
       this.bindGeometry();
       $('#sp-view-three').addEventListener('click',()=>this.setView('three'));
       $('#sp-view-top').addEventListener('click',()=>this.setView('top'));
-      $('#sp-fit').addEventListener('click',()=>{this.zoom=1;this.yaw=-.65;this.tilt=.54;this.draw();});
-      $('#sp-zoom-in').addEventListener('click',()=>{this.zoom=clamp(this.zoom*1.2,.55,2.7);this.draw();});
-      $('#sp-zoom-out').addEventListener('click',()=>{this.zoom=clamp(this.zoom/1.2,.55,2.7);this.draw();});
+      $('#sp-fit').addEventListener('click',()=>{if(this.threeView)this.threeView.fit();else{this.zoom=1;this.yaw=-.65;this.tilt=.54;this.draw();}});
+      $('#sp-zoom-in').addEventListener('click',()=>{if(this.threeView)this.threeView.zoomBy(1.2);else{this.zoom=clamp(this.zoom*1.2,.55,2.7);this.draw();}});
+      $('#sp-zoom-out').addEventListener('click',()=>{if(this.threeView)this.threeView.zoomBy(1/1.2);else{this.zoom=clamp(this.zoom/1.2,.55,2.7);this.draw();}});
       $('#sp-show-runs').addEventListener('change',e=>{this.showRuns=e.target.checked;this.draw();});
       this.root.querySelectorAll('.sp-add').forEach(btn=>btn.addEventListener('click',()=>this.add(btn.dataset.kind)));
       $('#sp-inspect-body').addEventListener('change',e=>this.editItem(e));
@@ -304,7 +306,7 @@
       this.canvas.addEventListener('focus',()=>this.setCanvasActive(true));
       this.canvas.addEventListener('wheel',e=>{if(!this.canvasActive)return;e.preventDefault();this.zoom=clamp(this.zoom*(e.deltaY>0?.91:1.1),.55,2.7);this.draw();},{passive:false});
       if(this.boundCanvasOutsidePointerdown)document.removeEventListener('pointerdown',this.boundCanvasOutsidePointerdown);
-      this.boundCanvasOutsidePointerdown=e=>{if(this.canvasActive&&!this.isFocus&&!this.canvas.contains(e.target)){this.setCanvasActive(false);}};
+      this.boundCanvasOutsidePointerdown=e=>{if(this.canvasActive&&!this.isFocus&&!this.canvas.parentElement.contains(e.target)){this.setCanvasActive(false);}};
       document.addEventListener('pointerdown',this.boundCanvasOutsidePointerdown);
       this.setCanvasActive(false);
     }
@@ -402,7 +404,7 @@
       $('#sp-roof-corners').innerHTML=r.type==='custom'?`<p class="sp-geometry-note">Set a different elevation at each perimeter corner:</p><div class="sp-custom-grid">${g.footprint.map((p,i)=>`<label>Corner ${i+1}<input type="number" data-roof-vertex="${esc(p.id)}" class="field" min="0.5" max="50" step="0.1" value="${G.round(Number.isFinite(Number(r.heights[p.id]))?Number(r.heights[p.id]):r.eave)}"></label>`).join('')}</div>`:'';
       const edit=$('#sp-edit-outline');edit.setAttribute('aria-pressed',String(this.editOutline));
     }
-    setView(mode){this.mode=mode;for(const [id,active] of [['sp-view-three',mode==='three'],['sp-view-top',mode==='top']]){const button=this.root.querySelector('#'+id);button.classList.toggle('is-active',active);button.setAttribute('aria-pressed',String(active));}this.draw();}
+    setView(mode){this.mode=mode;for(const [id,active] of [['sp-view-three',mode==='three'],['sp-view-top',mode==='top'],['sp-view-perspective',mode==='perspective']]){const button=this.root.querySelector('#'+id);if(!button)continue;button.classList.toggle('is-active',active);button.setAttribute('aria-pressed',String(active));}if(this.threeView)this.threeView.setMode(mode);else this.draw();}
     selectedItem(){return this.plan.items.find(x=>x.id===this.selected);}
     kindForGear(g){const s=(g?.category||'').toLowerCase();return s.includes('light')?'light':s.includes('audio')?'audio':s.includes('power')?'power':s.includes('control')?'control':s.includes('rig')?'rigging':s.includes('network')?'network':'other';}
     add(kind){const v=this.venue,items=this.plan.items;const proposed={x:r1(clamp(v.width/2+(items.length%4-1.5)*1.2,0,v.width)),y:r1(clamp(v.length/2+Math.floor(items.length/4)*1.1,0,v.length))};const {x,y}=G.insidePosition(v.geometry.footprint,proposed);const obj={id:uid('obj'),kind,name:TYPES.find(t=>t[0]===kind)?.[1]||'Equipment',x,y,z:kind==='light'?Math.min(2.5,G.peakHeight(v)):0,watts:0,eqId:''};items.push(obj);this.selected=obj.id;this.persist();this.updateAll();}
@@ -456,7 +458,7 @@
       const v=this.venue,items=this.plan.items,watts=items.reduce((a,o)=>a+n(o.watts),0),length=this.plan.runs.reduce((a,r)=>a+(this.route(r)?.length||0),0);
       this.root.querySelector('#sp-summary').innerHTML=`<div class="sp-stat"><span>Venue footprint</span><strong>${G.area(v.geometry.footprint).toFixed(1)} m²</strong><small>${v.geometry.kind==='outdoor'?'Open-air site': 'Enclosed / covered'} · ${r1(v.width)} × ${r1(v.length)} m bounds</small></div><div class="sp-stat"><span>Placed items</span><strong>${items.length}</strong><small>${items.filter(o=>o.eqId).length} inventory-linked</small></div><div class="sp-stat"><span>Connected cable</span><strong>${r1(length).toFixed(1)} m</strong><small>${this.plan.runs.length} routed connections</small></div><div class="sp-stat"><span>Indicative connected load</span><strong>${r1(watts).toLocaleString()} W</strong><small>Fixture ratings only, not load approval</small></div>`;
     }
-    resize(){if(!this.canvas)return;const rect=this.canvas.getBoundingClientRect();if(rect.width<=0)return;const dpr=clamp(window.devicePixelRatio||1,1,2);this.canvas.width=Math.round(rect.width*dpr);this.canvas.height=Math.round(rect.height*dpr);this.ctx.setTransform(dpr,0,0,dpr,0,0);this.draw();}
+    resize(){if(this.threeView){this.threeView.resize();return;}if(!this.canvas)return;const rect=this.canvas.getBoundingClientRect();if(rect.width<=0)return;const dpr=clamp(window.devicePixelRatio||1,1,2);this.canvas.width=Math.round(rect.width*dpr);this.canvas.height=Math.round(rect.height*dpr);this.ctx.setTransform(dpr,0,0,dpr,0,0);this.draw();}
     computeCamera(){
       const w=this.canvas.clientWidth||900,h=this.canvas.clientHeight||550,v=this.venue;
       const angle=this.mode==='top'?0:this.yaw,c=Math.cos(angle),s=Math.sin(angle);const horiz=Math.abs(v.width*c)+Math.abs(v.length*s);const depth=Math.abs(v.width*s)+Math.abs(v.length*c);
@@ -475,6 +477,7 @@
     }
     path(points,stroke,fill,width=1,dash=[]){const c=this.ctx;c.save();c.beginPath();points.forEach((o,i)=>{const p=this.project(o);if(i)c.lineTo(p.x,p.y);else c.moveTo(p.x,p.y);});if(fill){c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.lineWidth=width;c.setLineDash(dash);c.stroke();}c.restore();}
     draw(){
+      if(this.threeView){this.threeView.rebuild();return;}
       if(!this.canvas||!this.canvas.clientWidth)return;this.computeCamera();const c=this.ctx,g=this.geometry,v=this.venue;
       c.clearRect(0,0,g.w,g.h);c.fillStyle='#18292d';c.fillRect(0,0,g.w,g.h);
       // ambient accent
@@ -572,6 +575,8 @@
     pointerUp(){if(this.drag?.mode==='vertex'&&this.drag.changed){this.rehomeAll();this.save();this.updateGeometry();this.updateAll();}
       else if(this.drag?.mode==='object'&&this.drag.changed){this.save();this.updateInspector();this.updateRoutes();this.updateSummary();}this.drag=null;}
   }
-  function mount(root,db,onSave,onNotify,eventId){if(!root)return;ensure(db);if(window.__phaenomenonActivePlanner?.resizeObserver)window.__phaenomenonActivePlanner.resizeObserver.disconnect();if(window.__phaenomenonActivePlanner?.boundFocusKeydown)window.removeEventListener('keydown',window.__phaenomenonActivePlanner.boundFocusKeydown);if(window.__phaenomenonActivePlanner?.boundCanvasOutsidePointerdown)document.removeEventListener('pointerdown',window.__phaenomenonActivePlanner.boundCanvasOutsidePointerdown);window.__phaenomenonActivePlanner=new Planner(root,db,onSave,onNotify,eventId);}
+  function mount(root,db,onSave,onNotify,eventId){if(!root)return;ensure(db);if(window.__phaenomenonActivePlanner?.resizeObserver)window.__phaenomenonActivePlanner.resizeObserver.disconnect();if(window.__phaenomenonActivePlanner?.threeView)window.__phaenomenonActivePlanner.threeView.dispose();if(window.__phaenomenonActivePlanner?.boundFocusKeydown)window.removeEventListener('keydown',window.__phaenomenonActivePlanner.boundFocusKeydown);if(window.__phaenomenonActivePlanner?.boundCanvasOutsidePointerdown)document.removeEventListener('pointerdown',window.__phaenomenonActivePlanner.boundCanvasOutsidePointerdown);window.__phaenomenonActivePlanner=new Planner(root,db,onSave,onNotify,eventId);}
+  document.addEventListener('phaenomenon-three-ready',()=>{const p=window.__phaenomenonActivePlanner;if(p&&!p.threeView&&p.root?.isConnected){p.threeView=window.Phaenomenon3D.attach(p);p.threeView?.decorateInspector();}});
+  window.addEventListener('hashchange',()=>{if(location.hash.startsWith('#/spaces'))return;const p=window.__phaenomenonActivePlanner;if(p?.threeView){p.threeView.dispose();p.threeView=null;}});
   window.PhaenomenonSpacePlanner={ensure,mount};
 })();
