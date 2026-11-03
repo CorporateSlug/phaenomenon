@@ -407,12 +407,21 @@
     setView(mode){this.mode=mode;for(const [id,active] of [['sp-view-three',mode==='three'],['sp-view-top',mode==='top'],['sp-view-perspective',mode==='perspective']]){const button=this.root.querySelector('#'+id);if(!button)continue;button.classList.toggle('is-active',active);button.setAttribute('aria-pressed',String(active));}if(this.threeView)this.threeView.setMode(mode);else this.draw();}
     selectedItem(){return this.plan.items.find(x=>x.id===this.selected);}
     kindForGear(g){const s=(g?.category||'').toLowerCase();return s.includes('light')?'light':s.includes('audio')?'audio':s.includes('power')?'power':s.includes('control')?'control':s.includes('rig')?'rigging':s.includes('network')?'network':'other';}
-    add(kind){const v=this.venue,items=this.plan.items;const proposed={x:r1(clamp(v.width/2+(items.length%4-1.5)*1.2,0,v.width)),y:r1(clamp(v.length/2+Math.floor(items.length/4)*1.1,0,v.length))};const {x,y}=G.insidePosition(v.geometry.footprint,proposed);const obj={id:uid('obj'),kind,name:TYPES.find(t=>t[0]===kind)?.[1]||'Equipment',x,y,z:kind==='light'?Math.min(2.5,G.peakHeight(v)):0,watts:0,eqId:''};items.push(obj);this.selected=obj.id;this.persist();this.updateAll();}
+    add(kind,fixtureType=null){
+      const F=window.PhaenomenonFixtures;
+      if(kind==='light'&&!fixtureType&&F){F.pick(type=>this.add('light',type));return;}
+      const v=this.venue,items=this.plan.items;
+      const proposed={x:r1(clamp(v.width/2+(items.length%4-1.5)*1.2,0,v.width)),y:r1(clamp(v.length/2+Math.floor(items.length/4)*1.1,0,v.length))};
+      const {x,y}=G.insidePosition(v.geometry.footprint,proposed);
+      const obj={id:uid('obj'),kind,name:TYPES.find(t=>t[0]===kind)?.[1]||'Equipment',x,y,z:kind==='light'?Math.min(2.5,G.peakHeight(v)):0,watts:0,eqId:''};
+      if(kind==='light'&&F)F.apply(obj,fixtureType||'par');
+      items.push(obj);this.selected=obj.id;this.persist();this.updateAll();
+    }
     editItem(e){const item=this.selectedItem();if(!item)return;const key=e.target.dataset.key;if(!key)return;const v=this.venue;
       if(['x','y','z','watts'].includes(key)){const max=key==='x'?v.width:key==='y'?v.length:key==='z'?Math.max(v.height,G.peakHeight(v)):100000;const min=0;item[key]=r1(clamp(n(e.target.value),min,max));if(key==='x'||key==='y'){const loc=G.insidePosition(v.geometry.footprint,{x:item.x,y:item.y});item.x=loc.x;item.y=loc.y;}}
-      else if(key==='kind'){if(palette[e.target.value])item.kind=e.target.value;}
+      else if(key==='kind'){if(palette[e.target.value]){item.kind=e.target.value;if(item.kind==='light')window.PhaenomenonFixtures?.ensure(item);}}
       else if(key==='name')item.name=e.target.value.slice(0,100).trim()||'Equipment';
-      else if(key==='eqId'){const gear=this.db.equipment.find(g=>g.id===e.target.value);item.eqId=gear?.id||'';if(gear){item.name=gear.name;item.kind=this.kindForGear(gear);item.watts=n(gear.watts);}}
+      else if(key==='eqId'){const gear=this.db.equipment.find(g=>g.id===e.target.value);item.eqId=gear?.id||'';if(gear){item.name=gear.name;item.kind=this.kindForGear(gear);item.watts=n(gear.watts);if(item.kind==='light')window.PhaenomenonFixtures?.ensure(item);}}
       this.persist();this.updateAll();
     }
     deleteSelected(){if(!this.selectedItem())return;this.plan.items=this.plan.items.filter(o=>o.id!==this.selected);this.plan.runs=this.plan.runs.filter(r=>r.from!==this.selected&&r.to!==this.selected);this.selected=null;this.persist();this.updateAll();}
@@ -427,13 +436,15 @@
     updateAll(){this.updateInspector();this.updateRoutes();this.updateSummary();this.draw();}
     updateInspector(){
       const el=this.root.querySelector('#sp-inspect-body'),item=this.selectedItem();this.root.querySelector('#sp-count').textContent=`${this.plan.items.length}`;
-      this.root.querySelector('#sp-placed').innerHTML=this.plan.items.length?this.plan.items.map(o=>`<button type="button" data-id="${esc(o.id)}" class="sp-object-row ${this.selected===o.id?'active':''}"><i style="background:${palette[o.kind]||palette.other}"></i><span>${esc(o.name)}</span><small>${r1(o.x)}m, ${r1(o.y)}m</small></button>`).join(''):'<p class="sp-muted">Add some equipment using the palette.</p>';
+      this.root.querySelector('#sp-placed').innerHTML=this.plan.items.length?this.plan.items.map(o=>`<button type="button" data-id="${esc(o.id)}" class="sp-object-row ${this.selected===o.id?'active':''}">${o.kind==='light'&&window.PhaenomenonFixtures?window.PhaenomenonFixtures.icon(o.fixtureType||'par'):'<i style="background:'+ (palette[o.kind]||palette.other)+'"></i>'}<span>${esc(o.name)}</span><small>${r1(o.x)}m, ${r1(o.y)}m</small></button>`).join(''):'<p class="sp-muted">Add some equipment using the palette.</p>';
       if(!item){el.innerHTML='<div class="sp-empty"><span>◎</span><strong>Nothing selected</strong><p>Click a model object or choose one from the equipment list. Its coordinates and height will appear here.</p></div>';return;}
       const field=(label,key,value,max)=>`<label>${label}<input data-key="${key}" class="field" type="number" step="0.1" min="0" max="${max}" value="${r1(value)}"></label>`;
       el.innerHTML=`<label class="sp-inspect-full">Item name<input data-key="name" class="field" maxlength="100" value="${esc(item.name)}"></label><label class="sp-inspect-full">Equipment type<select data-key="kind" class="form-select">${TYPES.map(([k,label])=>`<option value="${k}" ${item.kind===k?'selected':''}>${label}</option>`).join('')}</select></label>
       <label class="sp-inspect-full">Link to equipment inventory<select data-key="eqId" class="form-select"><option value="">Not linked (visual only)</option>${this.db.equipment.map(g=>`<option value="${esc(g.id)}" ${item.eqId===g.id?'selected':''}>${esc(g.name)}</option>`).join('')}</select></label>
       <div class="sp-coordinates">${field('X · metres','x',item.x,this.venue.width)}${field('Y · metres','y',item.y,this.venue.length)}${field('Height · m','z',item.z,G.peakHeight(this.venue))}${field('Watts (estimate)','watts',item.watts,100000)}</div>
       <div class="sp-inspect-actions"><button type="button" class="button small" data-cmd="duplicate">Duplicate</button><button type="button" class="button small" data-cmd="remove">Remove</button></div>`;
+      const F=window.PhaenomenonFixtures;
+      if(F)F.mountInspector(el,item,(changed,refresh)=>{this.save();if(refresh)this.updateInspector();this.draw();});
     }
     route(r){
       const a=this.plan.items.find(x=>x.id===r.from),b=this.plan.items.find(x=>x.id===r.to);if(!a||!b)return null;
