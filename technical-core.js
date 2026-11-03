@@ -154,5 +154,5 @@ function evaluate(p){
  const rank={error:0,warning:1,info:2};issues.sort((a,b)=>rank[a.severity]-rank[b.severity]||a.section.localeCompare(b.section));
  return {plan,t,items,patchRows:patchRows.sort((a,b)=>a.u-b.u||(a.start??9999)-(b.start??9999)),circuits,cables,issues,counts:{errors:issues.filter(x=>x.severity==='error').length,warnings:issues.filter(x=>x.severity==='warning').length}};
 }
-window.PhaenomenonTechCore={ensure,autoPatch,evaluate,routeInfo,sortedPatch,clean,round,n,clamp,ID,TYPES,CONNECTORS,DEFAULT_LENGTHS,title};
+window.PhaenomenonTechCore={ensure,autoPatch,evaluate,routeInfo,sortedPatch,clean,round,n:N,clamp,ID,TYPES,CONNECTORS,DEFAULT_LENGTHS,title};
 })();
