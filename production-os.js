@@ -224,7 +224,13 @@
   function publish(eventId,quiet){
     const e=events().find(x=>x.id===eventId);if(!e)return;
     const p=snapshot(e),old=org().published[eventId];
-    if(!quiet&&old&&!confirm('Publish a new installation revision? Changed instructions will require fresh installation checks. Previous revisions remain archived.'))return;
+    if(!quiet&&old){
+      if(!isChanged(e)){notice('The published pack already matches the current design.');return;}
+      const revised=changes(e),list=revised.slice(0,12).map(x=>'• '+x).join('\n');
+      if(!confirm('Review proposed revision '+(old.revision+1)+':\n\n'+list+
+        (revised.length>12?'\n… plus '+(revised.length-12)+' more changes':'')+
+        '\n\nChanged installation tasks will be reset. Previous revision will be archived. Publish?'))return;
+    }
     const rev=old?old.revision+1:1;
     const oldTasks=old?.tasks||[];
     const next=tasksFor(e,p).map(t=>{
@@ -266,7 +272,7 @@
   function pill(text,type){return '<span class="pill '+(type||'')+'">'+esc(text)+'</span>';}
   function stat(label,value,sub){return '<div class="stat"><small>'+esc(label)+'</small><strong>'+esc(value)+'</strong><small>'+esc(sub)+'</small></div>';}
   function changeNotice(e){
-    if(isChanged(e)){const d=revisionDiff(e);return '<div class="notice section"><strong>Unpublished design changes detected.</strong> The existing crew pack remains on revision '+published(e).revision+'. Proposed impact: <strong>'+d.added+' new</strong>, <strong>'+d.changed+' changed</strong>, <strong>'+d.removed+' removed</strong> tasks. Review the pending changes before distributing updated instructions. <button class="btn small" data-act="publish">Review &amp; publish revision</button></div>';}
+    if(isChanged(e)){const d=revisionDiff(e);return '<div class="notice section"><strong>Unpublished design changes detected.</strong> The existing crew pack remains on revision '+published(e).revision+'. Proposed impact: <strong>'+d.added+' new</strong>, <strong>'+d.changed+' changed</strong>, <strong>'+d.removed+' removed</strong> tasks. Review the pending changes before distributing updated instructions. <button class="btn small" data-act="review-changes">Review pending changes</button></div>';}
     if(!published(e))return '<div class="notice section">There is no published installation pack for this event. Design the event first, then publish instructions. <button class="btn small" data-act="publish">Publish first pack</button></div>';
     return '';
   }
@@ -518,6 +524,7 @@
     const action=el.dataset.act,id=el.dataset.id,e=current(),p=published(e);
     ev.preventDefault();
     if(action==='print'){window.print();return;}
+    if(action==='review-changes'){location.hash='#/design';route();return;}
     if(action==='profile'){navigateProfile(id);return;}
     if(action==='entity-back'||action==='entity-forward'){
       const next=ui.histIndex+(action==='entity-back'?-1:1);
