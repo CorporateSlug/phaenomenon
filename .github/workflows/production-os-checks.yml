@@ -7,6 +7,12 @@ on:
       - 'production.html'
       - 'production.css'
       - 'tests/production-os.test.mjs'
+      - 'tests/venue-workflow.test.mjs'
+      - 'venue-workflow.js'
+      - 'venue-workflow.css'
+      - 'app.js'
+      - 'space-planner.js'
+      - 'multi-space.js'
       - '.github/workflows/production-os-checks.yml'
   pull_request:
     paths:
@@ -14,6 +20,12 @@ on:
       - 'production.html'
       - 'production.css'
       - 'tests/production-os.test.mjs'
+      - 'tests/venue-workflow.test.mjs'
+      - 'venue-workflow.js'
+      - 'venue-workflow.css'
+      - 'app.js'
+      - 'space-planner.js'
+      - 'multi-space.js'
       - '.github/workflows/production-os-checks.yml'
 
 permissions:
@@ -30,5 +42,5 @@ jobs:
           node-version: '22'
       - name: Verify JavaScript syntax
         run: node --check production-os.js
-      - name: Run Production OS regression suite
-        run: node --test tests/production-os.test.mjs
+      - name: Run Production OS and venue workflow regression suites
+        run: node --test tests/production-os.test.mjs tests/venue-workflow.test.mjs
