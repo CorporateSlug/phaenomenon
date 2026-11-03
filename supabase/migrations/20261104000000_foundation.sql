@@ -105,8 +105,8 @@ create index if not exists ph_event_documents_date_idx
   on public.ph_event_documents(workspace_id,event_date);
 
 -- Publishing and installation require separate, later controls.
--- These rows are readable by members; only designers/admins may insert.
--- No browser UPDATE/DELETE grant means published history is immutable via Data API.
+-- Issued revision records are read-only to ALL browsers until a reviewed,
+-- authenticated server-side publication pipeline is implemented.
 create table if not exists public.ph_published_revisions (
   workspace_id uuid not null,
   event_source_id text not null,
@@ -140,7 +140,7 @@ grant select,insert,update,delete on public.ph_venues to authenticated;
 grant select,insert,update,delete on public.ph_spaces to authenticated;
 grant select,insert,update,delete on public.ph_equipment to authenticated;
 grant select,insert,update,delete on public.ph_event_documents to authenticated;
-grant select,insert on public.ph_published_revisions to authenticated;
+grant select on public.ph_published_revisions to authenticated;
 
 create policy ph_workspace_select on public.ph_workspaces for select to authenticated
 using ((select auth.uid())=owner_id or private.ph_role(id) is not null);
@@ -187,30 +187,29 @@ using (private.ph_role(workspace_id) in ('owner','admin'));
 create policy ph_equipment_select on public.ph_equipment for select to authenticated
 using (private.ph_role(workspace_id) is not null);
 create policy ph_equipment_insert on public.ph_equipment for insert to authenticated
-with check (private.ph_role(workspace_id) in ('owner','admin','designer','technician'));
+with check (private.ph_role(workspace_id) in ('owner','admin','designer'));
 create policy ph_equipment_update on public.ph_equipment for update to authenticated
-using (private.ph_role(workspace_id) in ('owner','admin','designer','technician'))
-with check (private.ph_role(workspace_id) in ('owner','admin','designer','technician'));
+using (private.ph_role(workspace_id) in ('owner','admin','designer'))
+with check (private.ph_role(workspace_id) in ('owner','admin','designer'));
 create policy ph_equipment_delete on public.ph_equipment for delete to authenticated
 using (private.ph_role(workspace_id) in ('owner','admin'));
 
 create policy ph_event_select on public.ph_event_documents for select to authenticated
 using (private.ph_role(workspace_id) is not null);
 create policy ph_event_insert on public.ph_event_documents for insert to authenticated
-with check (private.ph_role(workspace_id) in ('owner','admin','designer','technician') and
+with check (private.ph_role(workspace_id) in ('owner','admin','designer') and
   updated_by=(select auth.uid()));
 create policy ph_event_update on public.ph_event_documents for update to authenticated
-using (private.ph_role(workspace_id) in ('owner','admin','designer','technician'))
-with check (private.ph_role(workspace_id) in ('owner','admin','designer','technician') and
+using (private.ph_role(workspace_id) in ('owner','admin','designer'))
+with check (private.ph_role(workspace_id) in ('owner','admin','designer') and
   updated_by=(select auth.uid()));
 create policy ph_event_delete on public.ph_event_documents for delete to authenticated
 using (private.ph_role(workspace_id) in ('owner','admin'));
 
 create policy ph_revision_select on public.ph_published_revisions for select to authenticated
 using (private.ph_role(workspace_id) is not null);
-create policy ph_revision_insert on public.ph_published_revisions for insert to authenticated
-with check (private.ph_role(workspace_id) in ('owner','admin','designer') and
-  authored_by=(select auth.uid()));
+-- No browser insert/update/delete policy for issued revisions until an audited
+-- publishing endpoint and a compare-and-swap revision gate are implemented.
 
 comment on table public.ph_event_documents is
   'Future authenticated event storage. App currently remains browser-local; not wired to this table.';
