@@ -36,8 +36,8 @@ Phaenomenon is an interactive, browser-based proof of concept for a small event-
 ## The workflow
 
 1. **Clients:** Create a reusable customer record in **Clients**.
-2. **Events:** Choose the customer, event date, venue, event type, guest count, number of lighting zones, indoor/outdoor setting and production level.
-3. **Space planner:** Open **3D space planner** from an event. Select a saved venue (or create a new one), draw a custom floor boundary, choose indoor/outdoor and roof profiles, drag fixtures and other equipment into the 3D-style isometric scene, and adjust their exact X/Y/height coordinates. Create labelled power, network, DMX and audio cable connections to estimate lengths, then link placed items to the equipment catalogue and explicitly copy them into the event kit.
+2. **Events:** Select the customer, date, a **saved Venue**, and one or more **Spaces** within it. Use **+ Create venue** to create a missing Venue and its first Space in a pop-up without losing the event form. If the Venue already exists but a Space is missing, use **+ Create missing space** to add it to that Venue and then select it for the event. Lighting zones are separate kit-estimation inputs.
+3. **Space planner:** Open **3D space planner** from an event. Work with reusable Venue geometry and the Spaces assigned to that event, edit floor boundaries and roofs, position lighting, audio, video and technical equipment, and plan the corresponding power, network, DMX, audio and video connections. New Spaces created in the planner join the current event and remain reusable at that Venue.
 4. **Equipment:** View a **suggested starting kit** based on those parameters. Select **Apply suggestions**, then review and edit every quantity. You can update owned stock and hire prices in **Equipment**.
 5. **Availability and pricing:** The kit shows an indicative cost and flags when the assigned quantity exceeds owned stock after subtracting equipment allocated to other **confirmed events on that same date**.
 6. **Invoicing:** Choose **Draft invoice** from the event. Edit item descriptions, quantities and unit prices, select GST treatment, save, and use your browser's Print / Save as PDF function. Manually record whether an invoice was issued externally or paid.
@@ -71,7 +71,7 @@ The 3D planner now has a **fixture-family picker**: select **Lighting fixture** 
 
 The current calculation uses simple **illustrative heuristics** involving audience size, lighting zones, event type, indoor versus outdoor and complexity. It populates recommendations for LED washes, moving-head spots, uplights, outdoor-rated washes, a lighting controller, stands, power distribution and cable runs. Quantities can be overridden freely.
 
-These recommendations are **not a technical lighting design, an electrical load assessment, an inventory reservation system or a rigging safety assessment**. They require Aaron's real inventory, room/venue layouts, equipment specification, power supply, safe-work practices, crew plans and actual rules of thumb before they can be relied on commercially. Availability checks are same-date only; overlapping multi-day bookings, maintenance, transport and subcontracted equipment are not yet modelled.
+These recommendations are **not a technical lighting design, an electrical load assessment, an inventory reservation system or a rigging safety assessment**. They require verified inventory, Venue/Space layouts, equipment specifications, power infrastructure, safe-work practices and installation plans before commercial use. The simplified legacy booking availability estimate is same-date only; the Production workspace adds a provisional load-in/return window check.
 
 ## Billing: what works and what doesn't
 
@@ -133,6 +133,18 @@ The event, fixture positions, physical cable connections, DMX addresses, power a
 
 **Safety:** All figures are planning aids. The application does not establish safe loading, electrical compliance, structural/rigger certification or photometric accuracy. Verify the physical equipment specifications, power distribution, cable routing and local regulations with competent personnel before installation.
 
+## Reusable Venues and Spaces
+
+**Consistent terminology:** **Venue** is a reusable site or location. **Space** is a modelled room, hall, courtyard, stage area or other subdivision inside that Venue. **Event** selects a Venue and the Spaces it uses. Lighting **zones** remain separate equipment-planning inputs.
+
+The **Events** booking form now uses a Venue selector and a multi-select Space list, replacing free-text Venue entry. Choosing **+ Create venue** opens a pop-up to name the Venue and create its first Space, with dimensions and indoor/outdoor type. Choosing **+ Create missing space** opens a pop-up that adds a new Space to the existing Venue without duplicating it. These workflows are also available under **Event home → Venue & spaces** in Production.
+
+A Space saved to the Venue library can be added to other events later. Newly created Spaces are **not silently added to previously configured events**, and event-specific equipment stays separate from the reusable Venue model. If an event already has placed equipment, changing Venues requires confirmation and an explicit layout review before another crew pack is published. A Space containing placed equipment cannot be deselected until the items have been moved or removed.
+
+Venue, Space and Event entity profiles remain distinct. The event entity has typed **Uses space** links only to its selected Spaces.
+
+---
+
 ## Multi-space venues and Abbotsford Convent demo
 
 Open **3D Space Planner → Try two-stage demo** to load **Abbotsford Convent · Indoor + Outdoor demo**. This creates a sample event and reusable venue containing:
@@ -144,7 +156,7 @@ Open **3D Space Planner → Try two-stage demo** to load **Abbotsford Convent ·
 
 This demo uses **invented dimensions, relative positions, equipment choices, cable pathways and electrical planning assumptions**. It is **not** a surveyed representation of the Abbotsford Convent and does not contain Aaron's private supplier or event data. Real paths, accessibility, room geometry, approved power sources and cable protection must be verified on site.
 
-In **Review**, the Power + Data Map includes between-space Ethernet links as well as DMX and power topology. In **Export**, the install pack lists fixtures by room and flags an unsurveyed connection. Each venue space and its equipment link back to the same event.
+In **Review**, the Power + Data Map includes between-space network connections alongside DMX, power, audio and video topology. In **Export**, the install pack lists fixtures by Space and flags unsurveyed connections. Each Space is saved under its reusable Venue and can be linked to multiple events.
 
 Single-area venues still work unchanged; adding a second space is optional and does not erase existing placements.
 
