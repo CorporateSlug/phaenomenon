@@ -37,6 +37,23 @@ The web prototype remains for demonstration and planning, **not** live technical
 
 ---
 
+## Mobile experience (November 2026)
+
+The phone layout is a deliberate **task-first mobile view** of the same browser application, not a separate simplified product.
+
+- **Production phone dock:** **Build**, **3D**, **Tech**, **Crew**, **More**. The current event stays available in a compact top selector. **More** opens a full-height navigation sheet containing Production, Directory, event settings, the equipment and fixture libraries, and Studio management.
+- **Studio phone dock:** **Events**, **Build**, **3D**, **More**. The Events screen shows the selected event immediately with a compact **Choose event** control instead of forcing the user to scroll through every booking.
+- **Focused screens:** The Event Builder uses short touch-friendly steps and a prominent suggested next action; deeper settings remain available in context. Production tabs are horizontally swipeable on narrow screens and wide technical tables scroll inside their panels.
+- **Touch support:** Controls are sized for fingers; form text stays readable without iOS input-focus zoom; venue/event/cue dialogs open as bottom sheets; navigation and dialogs account for safe-area insets. The existing technical planner and multi-space editor retain all controls.
+- **Accessibility:** More menus support backdrop/Escape dismissal and show the selected navigation section. Reduced-motion users are not forced through drawer transitions.
+- **Limits:** The public site remains a local-first **website**. It does not yet sync or securely share work between phones and computers, save to a managed server, or guarantee recovery. Export JSON backups before relying on experimental changes. Opening it through another browser or a Home Screen shortcut may use a different local data store.
+
+Useful links: [Phone Event Builder](production.html#/builder) · [Studio/Bookings](index.html#/bookings) · [Mobile usability guide](USER_TESTING.md).
+
+Regression coverage: `node --test tests/mobile-ux.test.mjs` and `node --test tests/*.test.mjs`.
+
+---
+
 ## Simplified navigation and focused workspaces (November 2026)
 
 The classic Studio and Production views now use the same task-based information architecture. The main menus keep **Event workspace**, **Events** and **Studio overview** immediately accessible; specialised links sit in expandable groups:
