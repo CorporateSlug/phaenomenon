@@ -420,6 +420,11 @@
 
   // Event delegation means forms and controls continue working after rerenders.
   document.addEventListener('click',e=>{
+    const menuLink=e.target?.closest?.('#studio-navigation a[href]');
+    if(menuLink?.tagName==='A'){
+      document.getElementById('studio-sidebar')?.classList?.remove('is-expanded');
+      document.body?.classList?.remove('ph-studio-menu-open');
+    }
     const el=e.target.closest('[data-action]');if(!el)return;
     const action=el.dataset.action;
     if(action==='close-drawer-backdrop'&&e.target!==el)return;
@@ -568,12 +573,6 @@
   window.addEventListener('storage',event=>{if(event.key===STORE_KEY)refreshFromStorage();});
   window.addEventListener('focus',refreshFromStorage);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshFromStorage();});
-  document.addEventListener('click',event=>{
-    const link=event.target?.closest?.('#studio-navigation a[href]');
-    if(!link)return;
-    document.getElementById('studio-sidebar')?.classList?.remove('is-expanded');
-    document.body?.classList?.remove('ph-studio-menu-open');
-  });
   window.addEventListener('hashchange',renderRoute);
   if(!location.hash)location.hash='#/overview';
   renderRoute();
