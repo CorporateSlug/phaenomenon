@@ -4,27 +4,27 @@
 
 - **Classic studio:** [index.html](index.html) — event bookings, equipment and invoicing, plus the existing four-step **Design → Connect → Review → Export** 3D/technical planner.
 - **Connected event workspace:** [production.html](production.html) — task-oriented event homepage, role view presets, entity registry, crew installation and production operations.
-- **Published demo:** When GitHub Pages is configured for the repository's main branch, the relative route is \`/phaenomenon/production.html\`.
+- **Published demo:** When GitHub Pages is configured for the repository's main branch, the relative route is `/phaenomenon/production.html`.
 
 The production workspace is **additive**. It does not replace existing project data or overwrite the classic technical planner.
 
 ## Data model
 
-The prototype shares the existing \`localStorage\` key \`phaenomenon-demo-v1\`, with a namespaced \`productionOS\` object:
+The prototype shares the existing `localStorage` key `phaenomenon-demo-v1`, with a namespaced `productionOS` object:
 
 | Record | Purpose |
 | --- | --- |
-| \`productionOS.entities\` | Canonical people, organisations, venues, spaces and event profiles; aliases and notes; deterministic links to the existing clients, venues, areas and bookings. |
-| \`productionOS.relationships\` | Typed entity edges, including source-derived venue/space and event/venue links and user-defined relationships. |
-| \`productionOS.assignments\` | Event-specific person/organisation roles and area responsibilities. Identity is independent of the role on a particular event. |
-| \`productionOS.published[eventId]\` | A numbered immutable-by-convention snapshot of the current venue layout, connections and technical records; corresponding instruction tasks, their statuses and archived revisions. |
-| \`productionOS.issues\` | Reported discrepancies or problems tied to an event and optionally an installation task. |
-| \`productionOS.show[eventId]\` | Lightweight run-of-show activities and optional links to creative lighting looks. |
-| \`productionOS.looks[eventId]\` | Draft lighting looks with areas, colours, levels and effect concepts, not active console programming. |
+| `productionOS.entities` | Canonical people, organisations, venues, spaces and event profiles; aliases and notes; deterministic links to the existing clients, venues, areas and bookings. |
+| `productionOS.relationships` | Typed entity edges, including source-derived venue/space and event/venue links and user-defined relationships. |
+| `productionOS.assignments` | Event-specific person/organisation roles and area responsibilities. Identity is independent of the role on a particular event. |
+| `productionOS.published[eventId]` | A numbered immutable-by-convention snapshot of the current venue layout, connections and technical records; corresponding instruction tasks, their statuses and archived revisions. |
+| `productionOS.issues` | Reported discrepancies or problems tied to an event and optionally an installation task. |
+| `productionOS.show[eventId]` | Lightweight run-of-show activities and optional links to creative lighting looks. |
+| `productionOS.looks[eventId]` | Draft lighting looks with areas, colours, levels and effect concepts, not active console programming. |
 
-**Asset separation:** the existing equipment catalogue (\`equipment\`), actual equipment quantities/stock, and an event's placed equipment items (\`venuePlans[eventId].items\`) are not synonymous. A future serial-numbered inventory layer can add individual physical asset IDs and reservations.
+**Asset separation:** the existing equipment catalogue (`equipment`), actual equipment quantities/stock, and an event's placed equipment items (`venuePlans[eventId].items`) are not synonymous. A future serial-numbered inventory layer can add individual physical asset IDs and reservations.
 
-**Source data:** venues, clients, events and venue spaces are presented as canonical entities while the classic \`venues\`, \`clients\` and \`eventJobs\` records remain their sources. This avoids destructive migration of existing prototype data.
+**Source data:** venues, clients, events and venue spaces are presented as canonical entities while the classic `venues`, `clients` and `eventJobs` records remain their sources. This avoids destructive migration of existing prototype data.
 
 ## User experience
 
