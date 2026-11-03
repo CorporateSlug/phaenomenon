@@ -137,3 +137,17 @@
  .event-venue-body .section-head{align-items:flex-start;flex-direction:column}
  .event-overview-more>.grid{padding:10px}
 }
+
+
+/* Details-on-demand: advanced forms remain available but no longer crowd the workspace. */
+.workspace-disclosure{margin-top:15px;border:1px solid var(--edge);border-radius:11px;overflow:hidden;background:#141e26}
+.workspace-disclosure>summary{list-style:none;padding:12px 14px;cursor:pointer;color:var(--teal);font-size:12px;font-weight:700}
+.workspace-disclosure>summary:hover{background:#21323a}
+.workspace-disclosure>summary:focus-visible{outline:2px solid var(--teal);outline-offset:-2px}
+.workspace-disclosure>summary::-webkit-details-marker{display:none}
+.workspace-disclosure>summary::marker{content:""}
+.workspace-disclosure[open]>summary{border-bottom:1px solid var(--edge)}
+.workspace-disclosure .disclosure-body{padding:15px}
+.workspace-disclosure .form-grid{margin:0}
+.workspace-disclosure .disclosure-body>.muted{margin:0 0 12px}
+.workspace-disclosure .btn{margin-top:5px}
