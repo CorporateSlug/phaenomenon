@@ -416,7 +416,7 @@
       '<div class="rail-bottom"><strong>ONE EVENT · CONNECTED WORK</strong><p>Switch between tasks without switching your event.</p>'+
       '<p>Local prototype · Role views are not security permissions.</p></div></aside>'+
       '<button type="button" class="mobile-nav-backdrop" data-act="close-rail" aria-label="Close navigation"></button>'+
-      '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / Event</div><div class="header-title">'+viewName()+'</div></div>'+
+      '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / Event</div><div class="header-title"><span class="header-title-desktop">'+viewName()+'</span><span class="header-title-mobile">'+({builder:'Build',home:'Event',design:'Design',technical:'Tech',crew:'Crew',production:'Production',entities:'Directory'}[ui.view]||'Event')+'</span></div></div>'+
       '<div class="header-tools"><button type="button" class="btn primary" data-act="builder-new">+ New event</button><label class="event-header-select">ACTIVE EVENT<select id="event-picker">'+
       events().map(x=>'<option value="'+esc(x.id)+'" '+(x.id===e?.id?'selected':'')+'>'+esc(x.title)+'</option>').join('')+
       '</select></label><details class="header-more"><summary class="btn" aria-label="More workspace options">Options ▾</summary>'+
