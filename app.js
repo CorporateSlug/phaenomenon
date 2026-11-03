@@ -145,7 +145,7 @@
   function renderRoute(){const tokens=location.hash.replace(/^#\/?/,'').split('/').filter(Boolean);const allowed=['overview','bookings','spaces','invoices','equipment','projects','pipeline','schedule','fixtures','clients','settings','search'];ui.view=allowed.includes(tokens[0])?tokens[0]:'overview';ui.projectId=ui.view==='projects' && db.projects.some(p=>p.id===tokens[1])?tokens[1]:null; if(ui.view==='bookings'&&db.eventJobs.some(e=>e.id===tokens[1]))ui.eventId=tokens[1]; if(ui.view==='spaces'&&db.eventJobs.some(e=>e.id===tokens[1]))ui.eventId=tokens[1]; if(ui.view==='invoices'&&db.invoices.some(e=>e.id===tokens[1]))ui.invoiceId=tokens[1]; render();}
 
   const navLinks=[
-    ['overview','Studio home','grid'],
+    ['overview','Studio overview','grid'],
     ['bookings','Events','calendar'],
     ['spaces','3D planner','layers'],
     ['equipment','Equipment','layers'],
@@ -154,7 +154,7 @@
     ['projects','Projects','briefcase'],
     ['pipeline','Opportunities','chart'],
     ['schedule','Calendar','calendar'],
-    ['fixtures','Fixture profiles','bulb'],
+    ['fixtures','Fixture library','bulb'],
     ['settings','Settings','settings']
   ];
   const navItem=(key)=>{
