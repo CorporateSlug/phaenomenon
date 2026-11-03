@@ -84,7 +84,21 @@ class SceneViewer{
    for(let y=step;y<this.v.length;y+=step){let pts=[];for(let x=0;x<=this.v.width;x+=.4){const p={x,y};if(G.contains(fp,p))pts.push(this.point(x,y,.03));else if(pts.length>1){this.line(pts,0x8db2a8,.14);pts=[]}}if(pts.length>1)this.line(pts,0x8db2a8,.14)}
    if(this.v.geometry.roof.type!=='none')fp.forEach((a,i)=>{const b=fp[(i+1)%fp.length],ha=G.height(this.v,a),hb=G.height(this.v,b);this.line([this.point(a.x,a.y),this.point(a.x,a.y,ha)],0x9cbfba,.45);this.line([this.point(a.x,a.y,ha),this.point(b.x,b.y,hb)],0xb9d5cb,.7)});
    if(this.mode==='top'&&this.p.editOutline)fp.forEach((p,i)=>{const mesh=new T.Mesh(new T.SphereGeometry(.19,12,8),new T.MeshBasicMaterial({color:p.id===this.p.selectedVertex?0xf0bf78:0xc3e7db}));mesh.position.copy(this.point(p.x,p.y,.18));mesh.userData.vertexId=p.id;this.world.add(mesh);this.picks.push(mesh);this.label(''+(i+1),this.point(p.x,p.y,.49),'corner')});
-   if(this.showDims){const area=G.area(fp);fp.slice(0,10).forEach((a,i)=>{const b=fp[(i+1)%fp.length],m={x:(a.x+b.x)/2,y:(a.y+b.y)/2},dist=Math.hypot(a.x-b.x,a.y-b.y);if(dist>.5)this.label(dist.toFixed(1)+' m',this.point(m.x,m.y,.09),'measure')});}
+   if(this.showDims){
+    fp.slice(0,12).forEach((a,i)=>{
+     const b=fp[(i+1)%fp.length],dist=Math.hypot(a.x-b.x,a.y-b.y);
+     if(dist<.55)return;
+     const middle={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+     let nx=(b.y-a.y)/dist*.55,ny=-(b.x-a.x)/dist*.55;
+     if(G.contains(fp,{x:middle.x+nx*.7,y:middle.y+ny*.7})){nx=-nx;ny=-ny;}
+     const p1=this.point(a.x+nx,a.y+ny,.075),p2=this.point(b.x+nx,b.y+ny,.075);
+     this.line([p1,p2],0x8aafa6,.64);
+     const tx=(b.x-a.x)/dist*.14,ty=(b.y-a.y)/dist*.14;
+     this.line([this.point(a.x+nx+ty,a.y+ny-tx,.075),this.point(a.x+nx-ty,a.y+ny+tx,.075)],0x8aafa6,.7);
+     this.line([this.point(b.x+nx+ty,b.y+ny-tx,.075),this.point(b.x+nx-ty,b.y+ny+tx,.075)],0x8aafa6,.7);
+     this.label(dist.toFixed(1)+' m',this.point(middle.x+nx,middle.y+ny,.16),'measure');
+    });
+   }
   }
   if(this.p.showRuns){for(const cable of this.p.plan.runs){const r=this.p.route(cable);if(r){this.line(r.points.map(p=>this.point(p.x,p.y,Math.max(.05,p.z))),cableColors[cable.type]||0xd4e8e1,.9)}}}
   this.p.plan.items.forEach(o=>this.addItem(o));
@@ -110,7 +124,7 @@ class SceneViewer{
    group.add(new T.ArrowHelper(new T.Vector3(0,0,-1),new T.Vector3(0,.2,0),.9,0xffcb82,.15,.11))}
   this.label(o.name,group.position.clone().add(new T.Vector3(0,kind==='rigging'?1.7:.65,0)),selected?'selected':'item');
  }
- label(s,v,type){const d=document.createElement('span');d.className='sp3-label sp3-label-'+type;d.textContent=s;this.labels.append(d);this.labelRefs.push({d,v})}
+ label(s,v,type){const d=document.createElement('span');d.className='sp3-label sp3-label-'+type;d.textContent=s;this.labels.append(d);this.labelRefs.push({d,v,type})}
  decorateInspector(){
   const o=this.p.selectedItem(),el=this.p.root.querySelector('#sp-inspect-body');if(!o||!el||el.querySelector('.sp3-properties'))return;
   const node=document.createElement('div');node.className='sp3-properties';
@@ -134,6 +148,11 @@ class SceneViewer{
   if(this.disposed)return;this.renderer.render(this.scene,this.camera);
   const w=this.host.clientWidth,h=this.host.clientHeight;
   this.labelRefs.forEach(({d,v})=>{const x=v.clone().project(this.camera),px=(x.x*.5+.5)*w,py=(-x.y*.5+.5)*h;d.hidden=x.z< -1||x.z>1||px<0||px>w||py<0||py>h;if(!d.hidden)d.style.transform='translate3d('+Math.round(px)+'px,'+Math.round(py)+'px,0) translate(-50%,-125%)'});
+  const placed=[];this.labelRefs.filter(x=>!x.d.hidden).sort((a,b)=>({selected:0,corner:1,measure:2,item:3}[a.type]??4)-({selected:0,corner:1,measure:2,item:3}[b.type]??4)).forEach(({d,type})=>{
+   const rect=d.getBoundingClientRect();
+   const overlap=placed.some(b=>!(rect.right+5<b.left||rect.left-5>b.right||rect.bottom+4<b.top||rect.top-4>b.bottom));
+   if(overlap&&type==='item')d.hidden=true;else placed.push(rect);
+  });
   this.status.textContent=this.p.selected?(this.tool==='rotate'?'Rotate':'Move')+' · '+this.p.selectedItem()?.name:'Drag background to orbit · Shift-drag to pan';
  }
  setMode(mode){this.mode=mode;this.updateCamera();this.rebuild()}
