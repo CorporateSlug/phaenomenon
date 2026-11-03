@@ -160,6 +160,18 @@
         if(clientLink)clientLink.from=clientEntity.id;
         else o.relationships.push({id:clientLinkId,from:clientEntity.id,to:eventRecord.id,type:'Client for',notes:'Derived from booking',system:true});
       }else if(clientLink)o.relationships=o.relationships.filter(r=>r.id!==clientLinkId);
+      const prefix='rel-event-space-'+x.id+'-';
+      const chosen=new Set((x.spaceIds||[]).filter(id=>location?.spaces?.some(sp=>sp.id===id)));
+      const desired=new Set([...chosen].map(id=>prefix+id));
+      o.relationships=o.relationships.filter(rel=>!rel.id.startsWith(prefix)||desired.has(rel.id));
+      for(const spId of chosen){
+        const spaceEntity=o.entities.find(z=>z.legacyType==='space'&&z.legacyVenueId===location?.id&&z.legacySpaceId===spId);
+        if(!spaceEntity)continue;
+        const id=prefix+spId;
+        const rel=o.relationships.find(r=>r.id===id);
+        if(rel){rel.from=eventRecord.id;rel.to=spaceEntity.id;}
+        else o.relationships.push({id,from:eventRecord.id,to:spaceEntity.id,type:'Uses space',notes:'Derived from event space selection',system:true});
+      }
     });
     const example=org().entities.find(x=>x.id==='ent-demo-supplier');
     if(!example){org().entities.push(
@@ -187,7 +199,12 @@
   }
   function snapshot(e){
     if(!e)return null;
-    return {plan:jsonClone(plan(e)),venue:jsonClone(venue(e)||{}),spaceIds:jsonClone(e.spaceIds||[]),technical:jsonClone((db.technicalPlans||{})[e.id]||{})};
+    const v=jsonClone(venue(e)||{}),used=new Set(e.spaceIds||[]);
+    if(Array.isArray(v.spaces)&&used.size){
+      v.spaces=v.spaces.filter(sp=>used.has(sp.id));
+      if(Array.isArray(v.links))v.links=v.links.filter(link=>used.has(link.fromSpace)&&used.has(link.toSpace));
+    }
+    return {plan:jsonClone(plan(e)),venue:v,spaceIds:jsonClone(e.spaceIds||[]),technical:jsonClone((db.technicalPlans||{})[e.id]||{})};
   }
   function signature(s){
     if(!s)return '';
@@ -195,7 +212,7 @@
     return JSON.stringify({
       spaceIds:s.spaceIds||[],
       plan:{venueId:p.venueId,items:p.items||[],runs:p.runs||[]},
-      venue:{id:v.id,width:v.width,length:v.length,geometry:v.geometry,spaces:v.spaces,links:v.links},
+      venue:{id:v.id,spaces:v.spaces,links:v.links,siteGeometry:(!v.spaces?.length?v.geometry:null)},
       technical:{patch:t.patch,power:t.power,deviceSpecs:t.deviceSpecs,circuits:t.circuits,universeCount:t.universeCount}
     });
   }
