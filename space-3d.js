@@ -126,7 +126,7 @@ class SceneViewer{
   const group=new T.Group();group.position.copy(this.point(o.x,o.y,Math.max(.17,n(o.z))));group.rotation.y=-rad(n(o.rotation));this.world.add(group);this.meshes.set(o.id,group);
   const mat=this.mat(color),add=(mesh)=>{mesh.userData.itemId=o.id;group.add(mesh);this.picks.push(mesh);return mesh};
   if(kind==='light'){window.PhaenomenonFixtures?.build3D(T,o,group,add,this.showBeams);
-  }else if(kind==='stage'){const mesh=add(new T.Mesh(new T.BoxGeometry(1.8,.26,1.25),mat));mesh.position.y=.06}
+  }else if(kind==='stage'){const mesh=add(new T.Mesh(new T.BoxGeometry(clamp(n(o.width,1.8),.5,30),.26,clamp(n(o.depth,1.25),.5,30)),mat));mesh.position.y=.06}
   else if(kind==='rigging'){const mesh=add(new T.Mesh(new T.BoxGeometry(.2,1.5,.2),mat));mesh.position.y=.55}
   else if(kind==='audio'){add(new T.Mesh(new T.BoxGeometry(.52,.7,.38),mat))}
   else{add(new T.Mesh(new T.BoxGeometry(.46,.27,.42),mat))}
