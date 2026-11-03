@@ -1,0 +1,24 @@
+/* Reusable Venue → Space → Event selection shared by classic and production. */
+.venue-picker{border:1px solid rgba(126,163,155,.32);border-radius:13px;background:rgba(130,180,165,.055);padding:15px;display:grid;gap:10px}
+.venue-picker-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.venue-picker-top .field-label{margin:0}
+.venue-space-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px}
+.venue-space-option{display:flex;gap:10px;align-items:flex-start;border:1px solid rgba(134,160,173,.32);padding:11px;border-radius:10px;cursor:pointer;min-width:0}
+.venue-space-option:has(input:checked){border-color:#6ac2b3;background:rgba(98,191,177,.09)}
+.venue-space-option input{margin:3px 0 0;accent-color:#69ccbe}
+.venue-space-option span{display:grid;gap:3px;min-width:0}
+.venue-space-option strong{font-size:12px}
+.venue-space-option small{font-size:11px;color:#9daeb8}
+.venue-hint{font-size:12px;color:#a1b0b9;margin:4px 0;line-height:1.5}
+.venue-quick-backdrop{position:fixed;inset:0;background:rgba(3,9,13,.79);z-index:1500;display:grid;place-items:center;padding:20px;overflow-y:auto}
+.venue-quick-dialog{background:#19232d;color:#f2f6f7;border:1px solid #48605d;box-shadow:0 16px 60px rgba(0,0,0,.5);border-radius:17px;padding:22px;width:min(100%,570px);max-height:calc(100vh - 40px);overflow:auto}
+.venue-quick-dialog h2{margin:0;font-size:19px}
+.venue-quick-form{display:grid;gap:14px;margin-top:20px}
+.venue-quick-form label{display:grid;gap:6px;font-size:12px}
+.venue-quick-dialog input,.venue-quick-dialog select{color:#eef6f6;background:#101c24;border:1px solid #546570;border-radius:8px;padding:10px;max-width:100%;width:100%}
+.venue-quick-dialog .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.venue-quick-actions{display:flex;gap:9px;justify-content:flex-end;margin-top:8px}
+.venue-quick-dialog .button,.venue-quick-dialog .btn{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border-radius:9px;border:1px solid #56716e;background:#2a3942;color:#e4f6f3;padding:9px 14px;font-size:13px}
+.venue-quick-dialog .button.primary,.venue-quick-dialog .btn.primary{background:#83d9ca;color:#102220;font-weight:700}
+.venue-quick-dialog .venue-picker-top button{width:auto}
+@media(max-width:640px){.venue-quick-dialog{padding:15px}.venue-quick-dialog .form-grid,.venue-space-grid{grid-template-columns:1fr}.venue-picker{padding:11px}}
