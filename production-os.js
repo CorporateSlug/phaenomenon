@@ -25,8 +25,11 @@
     catch(e){return starter();}
   }
   const storedRaw=()=>{try{return localStorage.getItem(KEY);}catch(e){return null;}};
-  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'home',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',homeVenueOpen:false,builderFocus:'',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
-  try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.crewPerson=saved.crewPerson||'all';ui.role=saved.role||'lead';ui.productionTab=saved.productionTab||'team';}catch(e){}
+  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'home',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',homeVenueOpen:false,builderFocus:'',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,scheduleMode:'list',scheduleMonth:'',notice:''};
+  try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.crewPerson=saved.crewPerson||'all';ui.role=saved.role||'lead';ui.productionTab=saved.productionTab||'team';ui.scheduleMode=saved.scheduleMode==='calendar'?'calendar':'list';}catch(e){}
+  function savePreferences(){
+    try{localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,crewPerson:ui.crewPerson,role:ui.role,productionTab:ui.productionTab,scheduleMode:ui.scheduleMode}));}catch(e){}
+  }
   function store(){
     try{
       const remote=localStorage.getItem(KEY);
@@ -42,7 +45,7 @@
       storageBaseline=next;
       const indicator=document.getElementById('save-status');
       if(indicator)indicator.textContent='Saved in this browser · '+new Date().toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'});
-      localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,crewPerson:ui.crewPerson,role:ui.role,productionTab:ui.productionTab}));
+      savePreferences();
       return true;
     }catch(e){alert('Browser storage is full or unavailable. Export a JSON backup of your event information from the original app.');return false;}
   }
@@ -363,7 +366,7 @@
     return {all:t.length,installed:t.filter(x=>x.state!=='pending').length,verified:t.filter(x=>x.state==='verified').length,issues:org().issues.filter(x=>x.eventId===e?.id&&x.status!=='Resolved').length};
   }
   function notice(message){if(saveConflict){message='Another tab updated the event. Your latest edit was not saved. Please retry it.';saveConflict=false;}ui.notice=message;render();setTimeout(()=>{if(ui.notice===message){ui.notice='';document.querySelector('#message')?.remove();}},4200);}
-  function viewName(){return ({builder:'Event builder',home:'Event overview',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'Directory'}[ui.view]||'Event overview');}
+  function viewName(){return ({builder:'Event builder',home:'Event overview',events:'Events & schedule',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'Directory'}[ui.view]||'Event overview');}
   function render(){
     const e=current(),c=counts(e);
     const navItem=(href,label,glyph,active)=>'<a href="'+href+'" class="nav'+(active?' active':'')+'"'+(active?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+glyph+'</span><span>'+esc(label)+'</span></a>';
@@ -372,7 +375,8 @@
       '<div class="rail-subnav">'+rows.join('')+'</div></details>';
     const eventId=e?.id?encodeURIComponent(e.id):'';
     const navigation=
-      '<div class="rail-label">EVENT</div>'+
+      '<div class="rail-label">EVENTS</div>'+navItem('#/events','All events & schedule','▦',ui.view==='events')+
+      '<div class="rail-label">ACTIVE EVENT</div>'+
       navItem('#/builder/'+eventId,'Event builder','◈',ui.view==='builder')+
       navItem('#/home','Event overview','⌂',ui.view==='home'&&!ui.homeVenueOpen)+
       navItem('index.html#/bookings/'+eventId,'Event details','▤',false)+
@@ -402,7 +406,7 @@
       ],false);
     const mobileTab=(href,label,glyph,active)=>'<a class="mobile-tab'+(active?' is-active':'')+'" href="'+href+'" '+(active?'aria-current="page"':'')+'><span aria-hidden="true" class="mobile-tab-icon">'+glyph+'</span><span>'+label+'</span></a>';
     const mobileNavigation='<nav class="mobile-tabbar production-mobile-tabs" aria-label="Quick event navigation">'+
-      mobileTab('#/builder/'+eventId,'Build','◈',ui.view==='builder'||ui.view==='home')+
+      mobileTab('#/events','Events','▦',ui.view==='events')+
       mobileTab('index.html#/spaces/'+eventId,'3D','▧',false)+
       mobileTab('#/technical/'+eventId,'Tech','⚡',ui.view==='technical')+
       mobileTab('#/crew/'+eventId,'Crew','✓',ui.view==='crew')+
@@ -413,11 +417,11 @@
       '<button type="button" class="rail-mobile-toggle" data-act="toggle-rail" aria-expanded="false" aria-controls="production-navigation">☰ <span>Menu</span></button></div>'+
       '<button type="button" class="rail-quick-new" data-act="builder-new">+ New event</button>'+
       '<nav id="production-navigation" aria-label="Production navigation">'+navigation+'</nav>'+
-      '<div class="rail-bottom"><strong>ONE EVENT · CONNECTED WORK</strong><p>Switch between tasks without switching your event.</p>'+
+      '<div class="rail-bottom"><strong>ALL EVENTS · CONNECTED WORK</strong><p>Browse the schedule or switch events at any time.</p>'+
       '<p>Local prototype · Role views are not security permissions.</p></div></aside>'+
       '<button type="button" class="mobile-nav-backdrop" data-act="close-rail" aria-label="Close navigation"></button>'+
-      '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / Event</div><div class="header-title"><span class="header-title-desktop">'+viewName()+'</span><span class="header-title-mobile">'+({builder:'Build',home:'Event',design:'Design',technical:'Tech',crew:'Crew',production:'Production',entities:'Directory'}[ui.view]||'Event')+'</span></div></div>'+
-      '<div class="header-tools"><button type="button" class="btn primary" data-act="builder-new">+ New event</button><label class="event-header-select">ACTIVE EVENT<select id="event-picker">'+
+      '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / Event</div><div class="header-title"><span class="header-title-desktop">'+viewName()+'</span><span class="header-title-mobile">'+({builder:'Build',home:'Event',events:'Events',design:'Design',technical:'Tech',crew:'Crew',production:'Production',entities:'Directory'}[ui.view]||'Event')+'</span></div></div>'+
+      '<div class="header-tools"><a class="btn header-events-link" href="#/events">All events</a><button type="button" class="btn primary" data-act="builder-new">+ New event</button><label class="event-header-select">SWITCH EVENT<select id="event-picker" aria-label="Switch active event">'+
       events().map(x=>'<option value="'+esc(x.id)+'" '+(x.id===e?.id?'selected':'')+'>'+esc(x.title)+'</option>').join('')+
       '</select></label><details class="header-more"><summary class="btn" aria-label="More workspace options">Options ▾</summary>'+
       '<div class="header-more-menu"><label>Default starting view<select id="role-picker">'+
@@ -428,7 +432,7 @@
       '<a class="btn" href="index.html#/bookings/'+eventId+'">Edit event booking ↗</a></div></details>'+
       '<small id="save-status" class="save-status" title="This is local browser storage, not cloud sync.">Saved in this browser</small></div></header>'+
       '<div class="content">'+(ui.notice?'<div id="message" class="notice good section" role="status">'+esc(ui.notice)+'</div>':'')+
-      (ui.view==='builder'?builderPage(e,c):ui.view==='home'?home(e,c):ui.view==='design'?design(e,c):ui.view==='technical'?technical(e,c):ui.view==='crew'?crew(e,c):ui.view==='production'?production(e,c):entities(e))+
+      (ui.view==='events'?eventSchedule():ui.view==='builder'?builderPage(e,c):ui.view==='home'?home(e,c):ui.view==='design'?design(e,c):ui.view==='technical'?technical(e,c):ui.view==='crew'?crew(e,c):ui.view==='production'?production(e,c):entities(e))+
       '<p class="footnote">Phaenomenon prototype · Single-browser storage only · Data and technical calculations are provisional · Role views are not security permissions.</p></div></main></div>'+mobileNavigation;
     $.innerHTML=html;
     document.title=viewName()+' · Phaenomenon';
@@ -1090,16 +1094,25 @@
   function route(){
     document.body?.classList?.remove('ph-mobile-menu-open');
     const parts=location.hash.replace(/^#\/?/,'').split('/'),view=parts[0];
-    ui.view=['builder','home','design','technical','crew','production','entities'].includes(view)?view:'home';
+    ui.view=['events','builder','home','design','technical','crew','production','entities'].includes(view)?view:'home';
     ui.builderFocus=ui.view==='builder'&&['brief','spaces','design','equipment','connections','team','review'].includes(parts[2])?parts[2]:'';
     ui.homeVenueOpen=(ui.view==='home'&&parts[1]==='venue')||(ui.view==='builder'&&ui.builderFocus==='spaces');
-    const routeEvent=ui.view==='home'&&parts[1]==='venue'?parts[2]:ui.view==='production'&&['team','logistics','installation','show'].includes(parts[1])?parts[2]:ui.view==='entities'?null:parts[1];
+    const routeEvent=ui.view==='home'&&parts[1]==='venue'?parts[2]:ui.view==='production'&&['team','logistics','installation','show'].includes(parts[1])?parts[2]:['entities','events'].includes(ui.view)?null:parts[1];
     if(ui.view==='production'&&['team','logistics','installation','show'].includes(parts[1]))ui.productionTab=parts[1];
     if(routeEvent&&events().some(x=>x.id===decodeURIComponent(routeEvent)))ui.eventId=decodeURIComponent(routeEvent);
     if(ui.view==='entities'&&parts[1]&&entity(decodeURIComponent(parts[1]))){
       const id=decodeURIComponent(parts[1]);if(ui.entityId!==id){ui.entityId=id;if(ui.history[ui.histIndex]!==id){ui.history=ui.history.slice(0,ui.histIndex+1);ui.history.push(id);ui.histIndex=ui.history.length-1;}}
     }
-    render();
+    savePreferences();render();
+  }
+  function selectActiveEvent(id){
+    if(!events().some(x=>x.id===id))return;
+    ui.eventId=id;ui.area='all';ui.crewPerson='all';savePreferences();
+    const encoded=encodeURIComponent(id);
+    const target=ui.view==='builder'?'#/builder/'+encoded+(ui.builderFocus?'/'+ui.builderFocus:''):
+      ui.view==='home'&&ui.homeVenueOpen?'#/home/venue/'+encoded:
+      ['home','design','technical','crew','production'].includes(ui.view)?'#/'+ui.view+'/'+encoded:'#/builder/'+encoded;
+    location.hash=target;route();
   }
   document.addEventListener('click',ev=>{
     const menuLink=ev.target?.closest?.('#production-navigation a[href]');
@@ -1198,7 +1211,11 @@
       const next=ui.histIndex+(action==='entity-back'?-1:1);
       if(next>=0&&next<ui.history.length){ui.histIndex=next;navigateProfile(ui.history[next],true);}return;
     }
-    if(action==='select-event'){ui.eventId=id;ui.area='all';store();location.hash='#/home';render();return;}
+    if(action==='select-event'){selectActiveEvent(id);return;}
+    if(action==='schedule-mode'){ui.scheduleMode=id==='calendar'?'calendar':'list';savePreferences();render();return;}
+    if(action==='schedule-today'){ui.scheduleMonth=monthKey(new Date());render();return;}
+    if(action==='schedule-selected'){if(validEventDate(e?.date))ui.scheduleMonth=e.date.slice(0,7);render();return;}
+    if(action==='schedule-month'){const key=/^\d{4}-(0[1-9]|1[0-2])$/.test(ui.scheduleMonth)?ui.scheduleMonth:monthKey(new Date());const [y,m]=key.split('-').map(Number);ui.scheduleMonth=monthKey(new Date(y,m-1+(id==='-1'?-1:1),1));render();return;}
     if(action==='publish'){if(!plan(e).items?.length){notice('Add equipment in the 3D planner before publishing.');return;}publish(e.id,false);return;}
     if(action==='installed'){const t=p?.tasks.find(x=>x.id===id);if(!t)return;t.state=t.state==='pending'?'installed':'pending';t.installedAt=t.state==='installed'?now():null;t.verifiedAt=null;store();render();return;}
     if(action==='verify'){const t=p?.tasks.find(x=>x.id===id);if(!t||t.state!=='installed')return;t.state='verified';t.verifiedAt=now();store();notice('Task recorded as verified. This is not a safety certification.');return;}
@@ -1268,7 +1285,7 @@
       else renderVenuePicker(el.value);
       return;
     }
-    if(el.id==='event-picker'){ui.eventId=el.value;ui.area='all';ui.crewPerson='all';store();render();}
+    if(el.id==='event-picker'){selectActiveEvent(el.value);return;}
     if(el.id==='area-picker'){ui.area=el.value;store();render();}
     if(el.id==='crew-person-picker'){ui.crewPerson=el.value;store();render();}
     if(el.id==='entity-filter'){ui.entityType=el.value;render();}
