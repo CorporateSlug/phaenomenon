@@ -37,8 +37,11 @@
         return false;
       }
       const next=JSON.stringify(db);
+      if(remote&&remote!==next)window.PhaenomenonWorkspaceSafety?.checkpoint(localStorage,remote,'Before Production edit');
       localStorage.setItem(KEY,next);
       storageBaseline=next;
+      const indicator=document.getElementById('save-status');
+      if(indicator)indicator.textContent='Saved in this browser · '+new Date().toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'});
       localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,crewPerson:ui.crewPerson,role:ui.role,productionTab:ui.productionTab}));
       return true;
     }catch(e){alert('Browser storage is full or unavailable. Export a JSON backup of your event information from the original app.');return false;}
@@ -55,6 +58,39 @@
     render();
     return true;
   }
+  function recoveryPoints(){
+    const points=window.PhaenomenonWorkspaceSafety?.list(localStorage)||[];
+    return '<details class="header-recovery"><summary class="btn">Local recovery points ('+points.length+')</summary><div class="header-recovery-list">'+
+      (points.length?points.map(x=>'<div class="linkrow"><div><strong>'+new Date(x.at).toLocaleString('en-AU')+'</strong><div class="detail">'+esc(x.reason)+'</div></div>'+
+        '<button type="button" class="btn small" data-act="restore-point" data-id="'+esc(x.id)+'">Restore</button></div>').join(''):
+      '<p class="muted">No local recovery points yet. They are created during editing where browser storage permits.</p>')+
+      '<p class="form-note">Recovery points are kept in this browser only and may be cleared with browser data. Export a JSON backup for a separate copy.</p></div></details>';
+  }
+  function replaceWorkspace(value,label){
+    const checked=window.PhaenomenonWorkspaceSafety?.inspect(value);
+    if(!checked?.valid){alert(checked?.error||'Not a valid workspace backup.');return false;}
+    if(storedRaw()!==storageBaseline){refreshFromStorage();alert('Another tab updated the workspace. The current page was refreshed. Please review and retry the restore.');return false;}
+    const previous=db,raw=storageBaseline;
+    try{
+      window.PhaenomenonWorkspaceSafety?.checkpoint(localStorage,raw,'Before '+label,true);
+      db=value;
+      ensure();
+      const serialized=JSON.stringify(db);
+      localStorage.setItem(KEY,serialized);
+      storageBaseline=serialized;
+      ui.eventId=events()[0]?.id||DEMO;ui.entityId=null;ui.area='all';ui.crewPerson='all';
+      localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,role:ui.role,productionTab:ui.productionTab,area:'all',crewPerson:'all'}));
+      location.hash='#/builder/'+encodeURIComponent(ui.eventId);
+      route();
+      notice('Workspace restored from '+label+'. All data is still stored only in this browser.');
+      return true;
+    }catch(error){
+      db=previous;storageBaseline=storedRaw();
+      alert('Restore failed: '+error.message);
+      return false;
+    }
+  }
+
   function org(){return db.productionOS;}
   function venues(){return db.venues||[];}
   function events(){return db.eventJobs||[];}
@@ -366,7 +402,9 @@
       '<div class="header-more-menu"><label>Default starting view<select id="role-picker">'+
       [['lead','Designer / lead'],['tech','Lighting technician'],['crew','Installation crew'],['manager','Production manager']].map(x=>'<option value="'+x[0]+'" '+(ui.role===x[0]?'selected':'')+'>'+x[1]+'</option>').join('')+
       '</select></label><button type="button" class="btn" data-act="export-backup">Export JSON backup</button>'+
-      '<a class="btn" href="index.html#/bookings/'+eventId+'">Edit event booking ↗</a></div></details></div></header>'+
+      '<button type="button" class="btn" data-act="import-backup">Import JSON backup</button>'+recoveryPoints()+
+      '<a class="btn" href="index.html#/bookings/'+eventId+'">Edit event booking ↗</a></div></details>'+
+      '<small id="save-status" class="save-status" title="This is local browser storage, not cloud sync.">Saved in this browser</small></div></header>'+
       '<div class="content">'+(ui.notice?'<div id="message" class="notice good section" role="status">'+esc(ui.notice)+'</div>':'')+
       (ui.view==='builder'?builderPage(e,c):ui.view==='home'?home(e,c):ui.view==='design'?design(e,c):ui.view==='technical'?technical(e,c):ui.view==='crew'?crew(e,c):ui.view==='production'?production(e,c):entities(e))+
       '<p class="footnote">Phaenomenon prototype · Single-browser storage only · Data and technical calculations are provisional · Role views are not security permissions.</p></div></main></div>';
@@ -993,6 +1031,20 @@
       return;
     }
     if(action==='print'){window.print();return;}
+    if(action==='import-backup'){
+      document.getElementById('production-import-file')?.click();
+      return;
+    }
+    if(action==='restore-point'){
+      const point=window.PhaenomenonWorkspaceSafety?.readPoint(localStorage,id);
+      if(!point||point.error){notice(point?.error||'No local recovery point found.');return;}
+      const summary=point.checked?.summary||{};
+      if(confirm('Restore the local recovery point from '+new Date(point.at).toLocaleString('en-AU')+'?\n\n'+
+        summary.events+' events · '+summary.venues+' venues · '+summary.clients+' clients\n\n'+
+        'This replaces the current workspace on this browser. Export a JSON backup first if needed.')){
+        replaceWorkspace(point.workspace,'the selected recovery point');
+      }return;
+    }
     if(action==='export-backup'){
       try{
         const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
@@ -1057,7 +1109,30 @@
     if(action==='rename'){const x=entity(id);if(!x)return;const v=clean(prompt('Entity display name:',x.name)).slice(0,140);if(v){x.name=v;x.customName=true;store();render();}return;}
   });
   document.addEventListener('change',ev=>{
-    const el=ev.target;if(!$.contains(el))return;
+    const el=ev.target;
+    if(el.id==='production-import-file'){
+      const file=el.files?.[0];if(!file)return;
+      if(file.size>5000000){alert('The workspace JSON file is too large for this browser import.');el.value='';return;}
+      const reader=new FileReader();
+      reader.onload=()=>{
+        try{
+          const parsed=JSON.parse(String(reader.result||''));
+          const check=window.PhaenomenonWorkspaceSafety?.inspect(parsed);
+          if(!check?.valid)throw Error(check?.error||'Invalid Phaenomenon backup');
+          const summary=check.summary;
+          const warnings=check.warnings?.length?'\n\nReferences to review:\n'+check.warnings.slice(0,5).join('\n'):'';
+          if(confirm('Import '+summary.events+' events, '+summary.venues+' venues, '+summary.clients+' clients and '+summary.equipment+' equipment records?'+
+            '\n\nThis replaces the workspace in this browser. Keep a separate JSON backup if needed.'+warnings)){
+            replaceWorkspace(parsed,'the JSON file');
+          }
+        }catch(err){alert('Cannot import workspace: '+err.message);}
+        el.value='';
+      };
+      reader.onerror=()=>{alert('The file could not be read.');el.value='';};
+      reader.readAsText(file);
+      return;
+    }
+    if(!$.contains(el))return;
     if(el.id==='role-picker'){ui.role=el.value;store();location.hash='#/'+({lead:'home',tech:'technical',crew:'crew',manager:'production'}[ui.role]||'home');route();}
     if(el.id==='production-venue-select'){
       if(el.value==='__create__'){el.value=el.dataset.currentVenue||'';productionQuickOpen('venue');}
