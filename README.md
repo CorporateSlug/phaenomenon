@@ -23,7 +23,7 @@ The existing **Design → Connect → Review → Export** stage lighting planner
 
 The new Production header includes **Export backup** for the entire local workspace. Keep a copy somewhere secure. This prototype does not create an automatic cloud backup.
 
-To run regression tests with a recent Node.js installation: `node --test tests/production-os.test.mjs`.
+To run the regression suites (Production, Venue/Space data, and Event booking pop-ups) with a recent Node.js installation: `node --test tests/*.test.mjs`.
 
 ---
 
