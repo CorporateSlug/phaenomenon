@@ -20,7 +20,7 @@
       if(M?.convert)M.convert(venue);
       else venue.spaces=[{id:id('space'),name:'Main space',kind:venue.geometry?.kind||'indoor',x:0,y:0,width:venue.width||16,length:venue.length||12,height:venue.height||4}];
     }
-    venue.spaces.forEach(sp=>{if(!sp.id)sp.id=id('space');if(!sp.name)sp.name='Unnamed space';G?.normalize(sp);});
+    venue.spaces.forEach(sp=>{if(!sp.id)sp.id=id('space');if(!sp.name)sp.name='Unnamed space';const hadGeometry=!!sp.geometry;G?.normalize(sp);if(!hadGeometry&&sp.kind){sp.geometry.kind=sp.kind;if(sp.kind==='outdoor')sp.geometry.roof.type='none';}});
     if(!Array.isArray(venue.links))venue.links=[];
     return venue.spaces;
   }
