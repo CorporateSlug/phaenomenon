@@ -250,3 +250,30 @@
  #space-planner-root .tech-substeps{gap:3px;padding:3px}
  #space-planner-root .tech-content .tech-substeps button{flex-direction:column;gap:3px;font-size:10px;padding:5px;min-height:50px}
 }
+
+
+/* PH MOBILE UX • technical workflow: keep the four stages, remove cramped forms. */
+@media(max-width:840px){
+  #space-planner-root .tech-root{min-width:0;width:100%;margin:0 0 12px}
+  #space-planner-root .tech-content{padding:12px;min-width:0}
+  #space-planner-root .tech-heading{display:flex;align-items:flex-start;flex-direction:column;gap:7px;padding-bottom:13px}
+  #space-planner-root .tech-heading h2{font-size:19px}
+  #space-planner-root .tech-heading-side{white-space:normal}
+  #space-planner-root .tech-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+  #space-planner-root .tech-summary-grid>div{padding:10px}
+  #space-planner-root .tech-two-cols{grid-template-columns:1fr;gap:10px;margin:12px 0}
+  #space-planner-root .tech-circuit-grid{grid-template-columns:1fr}
+  #space-planner-root .tech-tabs.tech-flow-steps{padding:4px;gap:5px}
+  #space-planner-root .tech-flow-track{width:100%;max-width:100%}
+  #space-planner-root .tech-flow-step{min-height:50px;white-space:normal}
+  #space-planner-root .tech-substeps{display:flex;overflow-x:auto;flex-wrap:nowrap;max-width:100%;overscroll-behavior-x:contain;scrollbar-width:thin}
+  #space-planner-root .tech-substeps button{flex:1 0 auto;min-height:48px;padding:7px 9px;white-space:normal}
+  #space-planner-root .tech-actions{display:flex;flex-direction:column;align-items:stretch;gap:9px}
+  #space-planner-root .tech-actions label,#space-planner-root .tech-actions button{width:100%;max-width:100%}
+  #space-planner-root .tech-content input:not([type=checkbox]),#space-planner-root .tech-content select{min-height:44px;font-size:16px}
+  #space-planner-root .tech-table-wrap{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+  #space-planner-root .tech-table{min-width:570px}
+  #space-planner-root .tech-graph-scroll{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+  #space-planner-root .tech-flow-guide{padding:12px}
+  #space-planner-root .tech-flow-footer button{min-height:43px;white-space:normal}
+}
