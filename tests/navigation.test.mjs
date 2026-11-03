@@ -79,7 +79,7 @@ test('Studio sidebar groups advanced destinations without hiding Events and Stud
   assert.match(html,/Plan &amp; design/);
   assert.match(html,/Equipment library/);
   assert.match(html,/Studio management/);
-  assert.match(html,/Event workspace/);
+  assert.match(html,/Event builder/);
   assert.match(html,/production\.html#\/technical\//);
   assert.match(html,/Studio overview/);
   assert.match(html,/data-action="toggle-sidebar"/);
@@ -92,7 +92,7 @@ test('Event bookings use focused tabs and switching does not re-render unsaved f
   assert.match(before,/data-tab="details"/);
   assert.match(before,/data-tab="equipment"/);
   assert.match(before,/class="bookings-metrics"/);
-  assert.match(before,/production.html#\/home\//);
+  assert.match(before,/production.html#\/builder\//);
   h.click('booking-tab',{tab:'equipment'});
   assert.equal(h.root.innerHTML,before);
   assert.equal(h.window.__test.ui.bookingTab,'equipment');
@@ -156,4 +156,21 @@ test('Production tab labels stay task-focused and retain internal stable IDs',()
   for(const id of ['team','logistics','installation','show']){
     assert.match(h.root.innerHTML,new RegExp('id="production-'+id+'"'));
   }
+});
+
+
+test('Event Builder is a non-blocking seven-step flow with focused editing',()=>{
+  const h=production();
+  h.navigate('#/builder');
+  assert.match(h.root.innerHTML,/GUIDED EVENT BUILDER/);
+  assert.equal((h.root.innerHTML.match(/class="builder-step /g)||[]).length,7);
+  assert.match(h.root.innerHTML,/Suggested next/i);
+  assert.match(h.root.innerHTML,/Add person or supplier|Resolve|Bring kit up|Configure|Not started|Needs attention/i);
+  const eventId=h.window.__test?.current?.()?.id||'ev-abbotsford-two-stage-demo';
+  h.navigate('#/builder/'+eventId+'/brief');
+  assert.match(h.root.innerHTML,/id="builder-basics-form"/);
+  h.navigate('#/builder/'+eventId+'/spaces');
+  assert.match(h.root.innerHTML,/id="event-venue-settings" open/);
+  h.navigate('#/builder/'+eventId+'/equipment');
+  assert.match(h.root.innerHTML,/id="operations-form"/);
 });
