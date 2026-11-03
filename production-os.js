@@ -84,7 +84,14 @@
         notes:'Hypothetical layout only, not a surveyed venue plan or validated infrastructure.',
         spaces:[{id:'ab-indoor',name:'Indoor stage',x:3,y:4,width:19,length:15,height:6.2,kind:'indoor'},
                 {id:'ab-outdoor',name:'Outdoor stage',x:29,y:5,width:18,length:17,height:4.5,kind:'outdoor'}],
-        links:[{id:'ab-site-crossing',name:'Unverified site passage',fromSpace:'ab-indoor',toSpace:'ab-outdoor',verified:false,allowedTypes:['network','power','audio','video','dmx']}]});
+        links:[{id:'ab-site-crossing',name:'Unverified site passage',fromSpace:'ab-indoor',toSpace:'ab-outdoor',from:{x:21,y:12,z:0},to:{x:30,y:12,z:0},via:[{x:25.5,y:12,z:0}],extraMeters:2,verified:false,allowedTypes:['network','power','audio','video','dmx'],notes:'Illustrative passage only. No approval for cable crossing or power infrastructure is implied.'}]});
+    }
+    const demoVenue=db.venues.find(x=>x.id===VENUE);
+    // Repair the early prototype's schematic crossing, without touching any surveyed/non-demo venue.
+    const sampleLink=demoVenue?.demo&&demoVenue.links?.find(x=>x.id==='ab-site-crossing');
+    if(sampleLink&&(!sampleLink.from||!sampleLink.to)){
+      sampleLink.from={x:21,y:12,z:0};sampleLink.to={x:30,y:12,z:0};sampleLink.via=[{x:25.5,y:12,z:0}];
+      sampleLink.extraMeters=2;sampleLink.verified=false;sampleLink.notes='Hypothetical passage requiring site approval';
     }
     if(!db.eventJobs.some(e=>e.id===DEMO)){
       db.eventJobs.push({id:DEMO,title:'Abbotsford Convent · Indoor + Outdoor demo',date:'2026-12-05',venue:'Abbotsford Convent · concept',venueId:VENUE,
