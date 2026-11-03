@@ -100,3 +100,153 @@
 #space-planner-root .tech-checklist label small{color:#879c8b;font-size:10px}
 @media(max-width:1200px){#space-planner-root .tech-two-cols{grid-template-columns:1fr}#space-planner-root .tech-report-grid{grid-template-columns:1fr}#space-planner-root .tech-health{flex-basis:100%;justify-content:flex-end}}
 @media(max-width:650px){#space-planner-root .tech-tabs{gap:2px}#space-planner-root .tech-tabs>button{font-size:10px;padding:9px 8px}#space-planner-root .tech-content{padding:13px}#space-planner-root .tech-heading{align-items:flex-start;flex-direction:column;gap:6px}#space-planner-root .tech-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#space-planner-root .tech-cable-builder{grid-template-columns:1fr 1fr}#space-planner-root .tech-cable-builder .tech-primary{grid-column:1/-1}#space-planner-root .tech-checklist label{align-items:flex-start;flex-wrap:wrap}#space-planner-root .tech-checklist label small{margin-left:25px}}
+
+
+/* Guided workflow: one primary action at a time, preserving every technical editor. */
+#space-planner-root .tech-tabs.tech-flow-steps{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ background:#fff;border:1px solid #dde8e2;border-radius:13px;
+ padding:8px 12px;margin-bottom:10px;
+ box-shadow:0 2px 12px rgba(24,62,47,.035);
+}
+#space-planner-root .tech-flow-track{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));flex:1;min-width:0;
+ max-width:700px;gap:5px;position:relative;
+}
+#space-planner-root .tech-tabs .tech-flow-step{
+ display:flex;align-items:center;justify-content:center;gap:8px;
+ appearance:none;min-width:0;min-height:40px;padding:7px 10px;
+ font:750 12px 'DM Sans',system-ui,sans-serif;
+ color:#7b8c86;background:transparent;border:1px solid transparent;
+ border-radius:8px;white-space:nowrap;cursor:pointer;
+ transition:background-color .15s ease,color .15s ease,border-color .15s ease;
+}
+#space-planner-root .tech-tabs .tech-flow-step:hover{
+ background:#eff6f2;color:#315d50;
+}
+#space-planner-root .tech-tabs .tech-flow-step.active{
+ background:#e6f1eb;color:#2d614e;border-color:#cde4d6;
+}
+#space-planner-root .tech-flow-index{
+ width:24px;height:24px;border-radius:50%;
+ display:inline-grid;place-items:center;flex:none;
+ font:800 11px 'Manrope',system-ui,sans-serif;
+ color:#789087;background:#f0f3f1;border:1px solid #dfe7e1;
+}
+#space-planner-root .tech-flow-step.active .tech-flow-index{
+ color:#fff;background:#315d55;border-color:#315d55;
+}
+#space-planner-root .tech-flow-label{overflow:hidden;text-overflow:ellipsis}
+#space-planner-root .tech-flow-status{
+ display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;
+ flex:none;
+}
+#space-planner-root .tech-flow-status>span{
+ display:inline-block;border-radius:20px;font-size:10px;font-weight:750;
+ padding:6px 10px;line-height:1.2;
+}
+#space-planner-root .tech-flow-guide{
+ background:#f8faf8;border:1px solid #e2ebe4;border-radius:11px;
+ padding:14px 18px;display:flex;align-items:center;justify-content:space-between;
+ gap:16px;margin-bottom:14px;
+}
+#space-planner-root .tech-flow-guide-copy{flex:1;min-width:0}
+#space-planner-root .tech-flow-eyebrow{
+ color:#7a9b84;font-size:10px;font-weight:800;letter-spacing:.05em;
+ text-transform:uppercase;
+}
+#space-planner-root .tech-flow-guide h2{
+ color:#2e5145;font:800 16px 'Manrope',system-ui,sans-serif;letter-spacing:-.025em;
+ margin:4px 0 2px;
+}
+#space-planner-root .tech-flow-guide p{
+ color:#81948b;font-size:11px;line-height:1.55;margin:4px 0 0;
+}
+#space-planner-root .tech-flow-forward{
+ appearance:none;border:1px solid #315d55;background:#315d55;color:#fff;
+ border-radius:9px;padding:10px 13px;display:inline-flex;gap:9px;align-items:center;
+ justify-content:center;min-height:37px;min-width:0;
+ font:750 11px 'DM Sans',system-ui,sans-serif;white-space:nowrap;
+ cursor:pointer;transition:background-color .15s,border-color .15s;
+}
+#space-planner-root .tech-flow-forward:hover{background:#264e45;border-color:#264e45}
+#space-planner-root .tech-flow-back{
+ appearance:none;border:1px solid #d8e6dd;background:#fff;color:#436b5b;
+ border-radius:9px;padding:10px 12px;display:inline-flex;gap:8px;align-items:center;
+ font:750 11px 'DM Sans',system-ui,sans-serif;cursor:pointer;white-space:nowrap;
+}
+#space-planner-root .tech-flow-back:hover{background:#edf6f1}
+#space-planner-root .tech-flow-layout-footer{
+ display:flex;justify-content:space-between;align-items:center;gap:12px;
+ margin:-4px 0 18px;border-radius:11px;padding:13px 16px;
+ background:#f6faf7;border:1px solid #e5ede7;
+}
+#space-planner-root .tech-flow-layout-footer[hidden]{display:none!important}
+#space-planner-root .tech-flow-layout-footer>span{font-size:11px;color:#84978a;line-height:1.5}
+#space-planner-root .tech-substeps{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:7px;padding:5px;border:1px solid #dfe9e3;background:#f2f7f3;
+ border-radius:10px;margin:0 0 16px;
+}
+#space-planner-root .tech-content .tech-substeps button{
+ display:flex;align-items:center;justify-content:center;gap:8px;
+ background:transparent;color:#718b7c;border:1px solid transparent;
+ border-radius:8px;min-height:39px;font-size:11px;
+}
+#space-planner-root .tech-content .tech-substeps button:hover{background:#e7f0e9}
+#space-planner-root .tech-content .tech-substeps button.active{
+ color:#2d5e4e;background:#fff;border-color:#d9e6dc;
+ box-shadow:0 1px 4px rgba(23,56,39,.04);
+}
+#space-planner-root .tech-substeps button>span{
+ display:inline-grid;place-items:center;width:21px;height:21px;
+ flex:none;border-radius:50%;background:#e2ebe4;color:#6d8274;
+ font-size:10px;font-weight:850;
+}
+#space-planner-root .tech-substeps button.active>span{
+ color:#fff;background:#3f7862;
+}
+#space-planner-root .tech-flow-fixes{
+ display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+ padding:11px 12px;margin:4px 0 15px;border:1px solid #dce9e1;
+ border-radius:9px;background:#f8fbf8;
+}
+#space-planner-root .tech-flow-fixes>span{font:700 11px 'DM Sans',system-ui,sans-serif;color:#648271;margin-right:auto}
+#space-planner-root .tech-content .tech-flow-fixes button{
+ background:#fff;color:#487764;border-color:#e1eae3;min-height:30px;font-size:10px;
+}
+#space-planner-root .tech-flow-footer{
+ display:flex;align-items:center;justify-content:space-between;
+ padding-top:16px;margin-top:20px;border-top:1px solid #e4ede5;gap:12px;
+}
+#space-planner-root .tech-content .tech-flow-footer .tech-flow-forward{
+ background:#315d55;color:#fff;border-color:#315d55;min-height:39px;
+}
+#space-planner-root .tech-content .tech-flow-footer .tech-flow-back{
+ background:#fff;color:#426d5d;border-color:#d9e5db;min-height:39px;
+}
+#space-planner-root .tech-content .tech-flow-footer .tech-flow-forward:hover{
+ background:#264e45;
+}
+@media(max-width:1020px){
+ #space-planner-root .tech-tabs.tech-flow-steps{align-items:stretch;flex-direction:column}
+ #space-planner-root .tech-flow-track{width:100%;max-width:none}
+ #space-planner-root .tech-flow-status{align-self:flex-end}
+}
+@media(max-width:680px){
+ #space-planner-root .tech-tabs.tech-flow-steps{gap:6px;padding:6px}
+ #space-planner-root .tech-flow-track{gap:2px}
+ #space-planner-root .tech-tabs .tech-flow-step{
+   flex-direction:column;gap:4px;min-height:52px;padding:5px 3px;font-size:10px
+ }
+ #space-planner-root .tech-flow-index{height:21px;width:21px;font-size:10px}
+ #space-planner-root .tech-flow-guide{padding:12px;align-items:stretch;flex-direction:column;gap:10px}
+ #space-planner-root .tech-flow-guide h2{font-size:15px}
+ #space-planner-root .tech-flow-guide .tech-flow-forward{align-self:stretch}
+ #space-planner-root .tech-flow-layout-footer{flex-direction:column;align-items:stretch}
+ #space-planner-root .tech-flow-layout-footer .tech-flow-forward{align-self:stretch}
+ #space-planner-root .tech-flow-footer{align-items:stretch}
+ #space-planner-root .tech-flow-footer>button{font-size:10px;padding:9px 10px;white-space:normal}
+ #space-planner-root .tech-substeps{gap:3px;padding:3px}
+ #space-planner-root .tech-content .tech-substeps button{flex-direction:column;gap:3px;font-size:10px;padding:5px;min-height:50px}
+}
