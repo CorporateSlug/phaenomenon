@@ -1,3 +1,26 @@
+# Phaenomenon: unified event production
+
+## Current direction: connected event production (November 2026)
+
+Phaenomenon is now being developed as an **event-centred technical and creative production workspace**, not only a lighting calculator or a studio admin app. Preserve the existing 3D planner and its guided **Design → Connect → Review → Export** workflow as the specialist technical foundation.
+
+**Core product principles**
+
+1. **One connected event model:** Event, venue, spaces, actual equipment, reusable catalogue models, signals, power, crew, suppliers, creative looks and schedule are separate but linked records. Do not duplicate an entity because it plays a different role at another event.
+2. **Role determines the starting experience, task determines the interface, permissions determine what can change.** Designer, lighting technician, crew member and production manager access the same event through focused views. In the current prototype, role controls are only view presets, not permissions.
+3. **Publish installation instructions deliberately.** Live layout changes must create an explicit pending revision, with a human-reviewed impact summary. Previous crew packs remain stable. Installation completion, technical verification and formal safety approval are different concepts.
+4. **Build a complete project pathway:** Booking and brief → venue/3D design → power, patch and cabling → creative show looks and run-of-show → staff/equipment allocation → installation → review and handover.
+5. **Retain interoperability:** Investigate GDTF/MVR scene and fixture exchange, verified manufacturer data and optional integration with TouchDesigner, lighting consoles and other stage/video/audio tools. Avoid attempting to duplicate entire professional applications.
+6. **Make it work for different scales:** A one-room DJ night should be quick to plan; a two-stage festival should support independent areas, shared infrastructure and cross-area connections.
+
+**Implementation status:** The additive [Production OS workspace](production.html) and [technical architecture notes](PRODUCTION_OS.md) demonstrate entity navigation, role-aware starting views, crew task assignment, published revisions, issue reporting, production assignments and draft show planning. The original studio booking, equipment and invoicing tools remain available. Test using `node --test tests/production-os.test.mjs`.
+
+**Next engineering boundary:** Real shared use requires an authenticated backend, per-project access control, event/organisation membership, identity-attributed audit history, conflict handling, backups and privacy review. These cannot be achieved through frontend role presets or localStorage. Technical safety and regulatory compliance require independent qualified review; prototype calculations and invented venue infrastructure are not sufficient.
+
+---
+
+## Earlier roadmap (retained for reference)
+
 # Phaenomenon: event lighting operations first
 
 **Updated product direction:** Aaron primarily works with repeat customers on events. The immediate product is not a generic architectural lighting-design workflow. It should help him book recurring events, translate a compact event brief into a practical draft equipment kit, check owned stock, produce event costing, and then prepare invoice drafts.
