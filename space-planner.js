@@ -1,154 +1,446 @@
-(function spacePlannerModule() {
+/* Phaenomenon venue and event space planner.
+   Lightweight 3D/isometric canvas, no external dependencies.
+   Geometry and cable totals are indicative, not engineering or electrical design. */
+(() => {
   'use strict';
-  const E = s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const num=(v,d=0)=>Number.isFinite(+v)?+v:d;
-  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-  const newid=p=>p+Math.random().toString(36).slice(2,9);
-  const kinds={light:['Lighting fixture','#f0b765'],audio:['Speaker / audio','#a99bdf'],power:['Power source','#f09b67'],network:['Network point','#63c9d0'],control:['Lighting control','#c6a8ee'],rigging:['Truss / stand','#8eacb5'],stage:['Stage','#8fa9a0'],other:['Other','#adbebc']};
-  const cableTypes={power:['Power','#eea368'],network:['Ethernet / network','#61c7d0'],dmx:['DMX','#b7a2ed'],audio:['Audio','#89b7f3']};
-  const style=document.createElement('style');
-  style.textContent=`
-  .sp-wrap [hidden]{display:none!important}
-  .sp-wrap{color:#32484b}.sp-card{background:#fff;border:1px solid #e4ebea;border-radius:13px;padding:18px;margin:0 0 16px;min-width:0}
-  .sp-grid{display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:16px}.sp-row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
-  .sp-flex{flex:1;min-width:140px}.sp-wrap label{font:600 11px system-ui;color:#607579;display:grid;gap:6px}
-  .sp-wrap input,.sp-wrap select{padding:10px;border:1px solid #dce5e3;border-radius:8px;background:#fff;width:100%;min-width:0;color:#344b4e}
-  .sp-wrap button{border:1px solid #dbe5e2;background:#f6faf9;border-radius:8px;padding:9px 12px;color:#344b4e;cursor:pointer;font:600 11px system-ui}
-  .sp-wrap button:hover{background:#e5f1ee}.sp-wrap button.sp-primary{background:#315c55;color:white;border-color:#315c55}
-  .sp-wrap h3{font-size:14px;color:#385157;margin:0 0 10px}.sp-wrap p{font-size:11px;line-height:1.6;color:#7c9296}
-  .sp-stage{position:relative;background:#182a30;border-radius:10px;overflow:hidden;height:460px}.sp-stage canvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
-  .sp-label{font-size:10px;color:#9eb5bb;position:absolute;bottom:12px;left:14px;pointer-events:none}
-  .sp-tools{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0 5px}.sp-tools button{display:flex;align-items:center;gap:7px}
-  .sp-tools b{width:8px;height:8px;border-radius:3px;display:inline-block}
-  .sp-side{display:grid;gap:12px;align-content:start}.sp-selected{padding:12px;background:#f6f9f8;border-radius:9px}
-  .sp-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  .sp-items{max-height:220px;overflow:auto}.sp-item{display:flex;width:100%;justify-content:space-between;gap:8px;text-align:left;margin:3px 0}
-  .sp-item.active{background:#e1f1ec;border-color:#9bc4b6}.sp-item span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .sp-cables{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) 86px auto;gap:9px;align-items:end;margin:14px 0}
-  .sp-runs{overflow:auto}.sp-runs table{width:100%;border-collapse:collapse;font-size:11px;min-width:570px}.sp-runs td,.sp-runs th{padding:9px 8px;text-align:left;border-bottom:1px solid #e8eeec}
-  .sp-stats{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.sp-stat{background:#f1f8f5;border-radius:8px;padding:10px;font-size:10px;color:#4e6a67}
-  .sp-stat strong{display:block;font-size:17px;color:#2b5852;margin-top:5px}
-  .sp-note{background:#fffbf4;border:1px solid #ebdfc7;border-radius:8px;padding:12px;color:#897655;font-size:11px;line-height:1.6}
-  @media(max-width:1050px){.sp-grid{grid-template-columns:1fr}.sp-cables{grid-template-columns:repeat(2,minmax(0,1fr))}.sp-cables>button{justify-self:start}}
-  @media(max-width:600px){.sp-card{padding:12px}.sp-stage{height:350px}.sp-row>*{min-width:100px}.sp-cables{grid-template-columns:1fr 1fr}}
-  `;
-  document.head.appendChild(style);
+  const G=window.PhaenomenonGeometry;
+  if(!G)throw new Error('Venue geometry module did not load');
+  const n = (x,fallback=0) => Number.isFinite(Number(x)) ? Number(x) : fallback;
+  const clamp = (x,min,max) => Math.max(min,Math.min(max,x));
+  const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const uid = prefix => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,7)}`;
+  const r1 = x => Math.round(x*10)/10;
+  const palette = {
+    light:'#eeb96b', audio:'#a58ce0', power:'#e29a5c', network:'#62c4cf', control:'#c1a6ec', rigging:'#91a8b3', stage:'#728d89', other:'#cad2d0'
+  };
+  const TYPES = [
+    ['light','Lighting fixture'],['audio','Audio / speaker'],['power','Power / distribution'],
+    ['network','Network / data'],['control','Control desk'],['rigging','Rigging / truss'],
+    ['stage','Stage / structure'],['other','Other equipment']
+  ];
+  const CABLES = {power:{label:'Power',color:'#e4a568'},network:{label:'Ethernet / network',color:'#67cfd7'},dmx:{label:'DMX / control',color:'#bba3ff'},audio:{label:'Audio',color:'#8bb9ef'}};
+  const defaults = ()=>[
+    {id:'ven-harbour',name:'Harbour Hall',width:20,length:14,height:5.5,notes:'Fictional repeat venue. Dimensions are placeholders.'},
+    {id:'ven-arts',name:'Arts Warehouse',width:25,length:17,height:7,notes:'Fictional multi-purpose venue.'},
+    {id:'ven-court',name:'Northside Courtyard',width:18,length:12,height:4,notes:'Outdoor footprint placeholder. Height represents indicative rigging limit.'}
+  ];
+  function createDemoPlan(){
+    return {
+      venueId:'ven-harbour',items:[
+        {id:'obj-stage',name:'Presentation stage',kind:'stage',x:10,y:12,z:0,watts:0,eqId:''},
+        {id:'obj-power',name:'Power distribution',kind:'power',x:2,y:11,z:0,watts:0,eqId:'eq-distro'},
+        {id:'obj-control',name:'Lighting console',kind:'control',x:9,y:2,z:0,watts:80,eqId:'eq-control'},
+        {id:'obj-net',name:'Network / data point',kind:'network',x:3,y:2,z:0,watts:0,eqId:''},
+        {id:'obj-l1',name:'LED wash A',kind:'light',x:5,y:10.5,z:3.2,watts:180,eqId:'eq-wash'},
+        {id:'obj-l2',name:'LED wash B',kind:'light',x:15,y:10.5,z:3.2,watts:180,eqId:'eq-wash'},
+        {id:'obj-l3',name:'LED wash C',kind:'light',x:10,y:7,z:2.8,watts:180,eqId:'eq-wash'},
+        {id:'obj-audio',name:'PA speaker',kind:'audio',x:17,y:11,z:1.5,watts:300,eqId:''}
+      ],runs:[
+        {id:'run-1',from:'obj-power',to:'obj-l1',type:'power',slack:15},
+        {id:'run-2',from:'obj-power',to:'obj-l2',type:'power',slack:15},
+        {id:'run-3',from:'obj-control',to:'obj-l3',type:'dmx',slack:15},
+        {id:'run-4',from:'obj-net',to:'obj-control',type:'network',slack:15},
+      ]
+    };
+  }
+  const blankPlan = venueId=>({venueId,items:[],runs:[]});
   function ensure(db){
-    if(!Array.isArray(db.venues))db.venues=[
-      {id:'venue-demo-1',name:'Harbour Hall (demo)',width:20,length:14,height:5},
-      {id:'venue-demo-2',name:'Warehouse (demo)',width:25,length:17,height:7}
-    ];
-    if(!db.venuePlans||typeof db.venuePlans!=='object')db.venuePlans={};
-    if(db.eventJobs?.length && !db.venuePlans[db.eventJobs[0].id]){
-      db.venuePlans[db.eventJobs[0].id]={venueId:db.venues[0].id,items:[
-        {id:'obj-a',name:'Lighting control',kind:'control',x:8,y:2,z:0,watts:80,eqId:''},
-        {id:'obj-b',name:'LED wash left',kind:'light',x:5,y:10,z:3,watts:160,eqId:''},
-        {id:'obj-c',name:'LED wash right',kind:'light',x:15,y:10,z:3,watts:160,eqId:''},
-        {id:'obj-d',name:'Power distribution',kind:'power',x:2,y:11,z:0,watts:0,eqId:''},
-        {id:'obj-e',name:'Network port',kind:'network',x:3,y:2,z:0,watts:0,eqId:''}
-      ],runs:[{id:'run-a',from:'obj-d',to:'obj-b',type:'power',slack:15},{id:'run-b',from:'obj-d',to:'obj-c',type:'power',slack:15},{id:'run-c',from:'obj-a',to:'obj-b',type:'dmx',slack:15}]};
+    if(!Array.isArray(db.venues))db.venues=defaults();
+    db.venues.forEach(v=>G.normalize(v));
+    if(!db.venuePlans||typeof db.venuePlans!=='object'||Array.isArray(db.venuePlans))db.venuePlans={};
+    for(const e of db.eventJobs||[]){
+      if(!e.venueId){const match=db.venues.find(v=>v.name.toLowerCase()===(e.venue||'').trim().toLowerCase());if(match)e.venueId=match.id;}
     }
+    // Seed a useful example only if there is no already-existing event plan.
+    if(!db.venuePlans['ev-01'] && (db.eventJobs||[]).some(e=>e.id==='ev-01'))db.venuePlans['ev-01']=createDemoPlan();
   }
-  function mount(root,db,save,flash,startEvent){
-    if(!root)return;ensure(db);
-    let eventId=db.eventJobs?.some(e=>e.id===startEvent)?startEvent:db.eventJobs?.[0]?.id;
-    if(!eventId){root.innerHTML='<div class="sp-card">Create an event first to plan its layout.</div>';return;}
-    let chosen=null,top=false,zoom=1,yaw=-Math.PI/4,canvas,ctx,hits=[],drag=null;
-    const event=()=>db.eventJobs.find(e=>e.id===eventId);
-    const plan=()=>{if(!db.venuePlans[eventId])db.venuePlans[eventId]={venueId:db.venues[0].id,items:[],runs:[]};return db.venuePlans[eventId];};
-    const venue=()=>db.venues.find(v=>v.id===plan().venueId)||db.venues[0];
-    const item=id=>plan().items.find(i=>i.id===id);
-    const persist=()=>{save();};
-    const options=(list,selected)=>list.map(([id,name])=>`<option value="${E(id)}" ${id===selected?'selected':''}>${E(name)}</option>`).join('');
-    function summary(){
-      const route=plan().runs.reduce((acc,r)=>{acc[r.type]=(acc[r.type]||0)+distance(r);return acc;},{});
-      root.querySelector('#sp-summary').innerHTML='<span class="sp-stat">Items<strong>'+plan().items.length+'</strong></span>'+Object.entries(cableTypes).map(([type,[name]])=>'<span class="sp-stat">'+E(name)+' cable<strong>'+Math.ceil(route[type]||0)+'m</strong></span>').join('');
+  class Planner {
+    constructor(root,db,onSave,onNotify,initialEventId){
+      this.root=root;this.db=db;this.save=onSave;this.notify=onNotify;
+      this.eventId=(db.eventJobs||[]).some(e=>e.id===initialEventId)?initialEventId:(db.eventJobs||[])[0]?.id;
+      this.mode='three';this.yaw=-.65;this.tilt=.54;this.zoom=1;this.selected=null;this.drag=null;
+      this.creatingVenue=false;this.showRuns=true;this.geometry=null;this.editOutline=false;this.selectedVertex=null;
+      this.ensureActive();this.build();
     }
-    function distance(r){const a=item(r.from),b=item(r.to);return a&&b?(Math.abs(a.x-b.x)+Math.abs(a.y-b.y)+Math.abs(a.z-b.z))*(1+clamp(num(r.slack,15),0,100)/100):0;}
-    function field(label,key,val,min,max){return `<label>${label}<input data-edit="${key}" type="number" step="0.1" min="${min}" max="${max}" value="${E(val)}"></label>`;}
-    function draw(){
-      if(!canvas)return;const dpr=window.devicePixelRatio||1;const rect=canvas.getBoundingClientRect();
-      canvas.width=Math.max(1,Math.round(rect.width*dpr));canvas.height=Math.max(1,Math.round(rect.height*dpr));ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
-      const w=rect.width,h=rect.height;ctx.clearRect(0,0,w,h);
-      const v=venue(),span=top?Math.max(v.width,v.length):v.width+v.length;
-      const s=Math.min(w*.78/span,h*.69/(top?span:span*.42+v.height*.85))*zoom;
-      const px=(x,y,z=0)=>{
-        const xx=x-v.width/2,yy=y-v.length/2;
-        if(top)return {x:w/2+xx*s,y:h/2+yy*s};
-        const u=xx*Math.cos(yaw)-yy*Math.sin(yaw),vv=xx*Math.sin(yaw)+yy*Math.cos(yaw);
-        return {x:w/2+u*s,y:h*.58+vv*s*.48-z*s*.80};
-      };
-      function poly(coords,fill,stroke){ctx.beginPath();coords.forEach((p,i)=>{if(i)ctx.lineTo(p.x,p.y);else ctx.moveTo(p.x,p.y);});ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=1.3;ctx.stroke();}
-      const f=[[0,0],[v.width,0],[v.width,v.length],[0,v.length]].map(([x,y])=>px(x,y));
-      poly(f,'#294349','#52716f');
-      if(!top){for(let k=0;k<4;k++){let [a,b]=[[0,0],[v.width,0],[v.width,v.length],[0,v.length]][k];const p=px(a,b),q=px(a,b,v.height);ctx.strokeStyle='#547b83';ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke();}}
-      ctx.strokeStyle='#3d5960';ctx.lineWidth=.7;
-      for(let x=1;x<v.width;x++){let a=px(x,0),b=px(x,v.length);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
-      for(let y=1;y<v.length;y++){let a=px(0,y),b=px(v.width,y);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
-      for(const r of plan().runs){const a=item(r.from),b=item(r.to);if(!a||!b)continue;const p=px(a.x,a.y,a.z),q=px(b.x,b.y,b.z);ctx.strokeStyle=cableTypes[r.type]?.[1]||'#ddd';ctx.lineWidth=2;ctx.setLineDash([7,4]);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke();ctx.setLineDash([]);}
-      hits=[];
-      for(const o of [...plan().items].sort((a,b)=>(a.y+a.x)-(b.y+b.x))){const p=px(o.x,o.y,o.z);hits.push({id:o.id,p});const c=kinds[o.kind]?.[1]||'#aaa';
-        ctx.fillStyle=c;ctx.strokeStyle=chosen===o.id?'#fff':'#243c41';ctx.lineWidth=chosen===o.id?3:2;ctx.beginPath();ctx.arc(p.x,p.y,chosen===o.id?12:9,0,Math.PI*2);ctx.fill();ctx.stroke();
-        ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillStyle='#eff9f6';ctx.fillText(o.name,p.x,p.y-17);
-        if(o.z>0&&!top){const q=px(o.x,o.y,0);ctx.strokeStyle='#b6d3d07a';ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke();}
+    get event(){return this.db.eventJobs.find(e=>e.id===this.eventId);}
+    get plan(){return this.db.venuePlans[this.eventId];}
+    get venue(){return this.db.venues.find(v=>v.id===this.plan.venueId)||this.db.venues[0];}
+    ensureActive(){
+      if(!this.event)return;
+      if(!this.db.venuePlans[this.eventId])this.db.venuePlans[this.eventId]=blankPlan(this.event.venueId||this.db.venues[0]?.id);
+      const p=this.plan;
+      if(!this.db.venues.some(v=>v.id===p.venueId))p.venueId=this.db.venues[0]?.id;
+      if(!Array.isArray(p.items))p.items=[];
+      if(!Array.isArray(p.runs))p.runs=[];
+      if(!this.event.venueId)this.event.venueId=p.venueId;
+    }
+    persist(){this.save();this.updateSummary();this.draw();}
+    build(){
+      this.resizeObserver?.disconnect();
+      if(!this.event){this.root.innerHTML='<p>Create an event booking first to attach a venue plan.</p>';return;}
+      const v=this.venue;
+      this.root.innerHTML=`<div class="sp-toolbar panel">
+        <div class="sp-controls"><label class="sp-label">Event booking<select id="sp-event" class="form-select">${this.db.eventJobs.map(e=>`<option value="${esc(e.id)}" ${e.id===this.eventId?'selected':''}>${esc(e.title)} · ${esc(e.date)}</option>`).join('')}</select></label>
+        <label class="sp-label">Saved venue<select id="sp-venue" class="form-select">${this.db.venues.map(venue=>`<option value="${esc(venue.id)}" ${venue.id===v.id?'selected':''}>${esc(venue.name)}</option>`).join('')}</select></label>
+        <button id="sp-new-venue" class="button">+ New venue</button>
+        <a class="button" href="#/bookings/${encodeURIComponent(this.eventId)}">Open event brief</a></div>
+        <div id="sp-venue-new" class="sp-newvenue" hidden><label>Name <input id="sp-newname" class="field" maxlength="90" placeholder="e.g. Civic Ballroom"></label><label>Width (m) <input id="sp-neww" class="field" type="number" min="2" max="200" step="0.5" value="16"></label><label>Length (m) <input id="sp-newl" class="field" type="number" min="2" max="200" step="0.5" value="12"></label><label>Reference height (m) <input id="sp-newh" class="field" type="number" min="0.5" max="40" step="0.5" value="4"></label><label>Environment<select id="sp-newkind" class="form-select"><option value="indoor">Indoor / enclosed</option><option value="outdoor">Outdoor / open</option></select></label><button id="sp-create-venue" class="button primary">Create venue</button></div>
+        <div class="sp-dimensions">${[['Site width','width'],['Site length','length'],['Reference height','height']].map(([label,key])=>`<label class="sp-label">${label} (m)<input class="field sp-dim" id="sp-${key}" type="number" step="0.1" min="2" max="200" value="${n(v[key])}"></label>`).join('')}<button id="sp-save-venue" class="button">Save dimensions</button><span class="sp-caption">Shared site measurements. Resizing scales the perimeter across bookings.</span></div>
+      </div>
+      <section class="sp-geometry-panel panel" aria-label="Venue geometry editor">
+        <div class="sp-geometry-title"><div><h2>Venue geometry</h2><p>Draw an irregular footprint, choose a roof profile or keep the sky open. Saved venue changes apply to all associated events.</p></div><span class="sp-geometry-tag">Reusable venue</span></div>
+        <div class="sp-geometry-columns">
+          <div class="sp-geometry-section">
+            <h3>Floorplan outline</h3>
+            <div class="sp-geometry-controls"><label>Starting shape<select id="sp-shape" class="form-select"><option value="rectangle">Rectangle</option><option value="L">L-shaped</option><option value="U">U / courtyard</option><option value="angled">Angled polygon</option></select></label><button id="sp-apply-shape" class="button small">Use shape</button><button id="sp-edit-outline" class="button small">Edit corners on plan</button></div>
+            <p class="sp-geometry-note">In top view, drag the numbered corners. Add corners to an edge for custom shapes, or enter exact coordinates below.</p>
+            <div class="sp-geometry-controls"><button id="sp-add-corner" class="button small">+ Add corner</button><button id="sp-remove-corner" class="button small" disabled>Remove selected</button><span id="sp-area" class="sp-area"></span></div>
+            <details class="sp-geometry-details"><summary>Corner coordinates <span id="sp-corner-count"></span></summary><div id="sp-corners"></div></details>
+          </div>
+          <div class="sp-geometry-section">
+            <h3>Roof & environment</h3>
+            <div class="sp-roof-form"><label>Space type<select id="sp-kind" class="form-select"><option value="indoor">Indoor / enclosed</option><option value="outdoor">Outdoor / open-air</option></select></label><label>Roof profile<select id="sp-roof-type" class="form-select"><option value="none">No roof (open sky)</option><option value="flat">Flat roof</option><option value="mono">Single slope</option><option value="gable">Pitched / gable</option><option value="custom">Custom corner heights</option></select></label><label>Eave / base (m)<input id="sp-eave" class="field" type="number" min="0.5" max="40" step="0.1"></label><label>High point (m)<input id="sp-peak" class="field" type="number" min="0.5" max="50" step="0.1"></label><label>Slope direction<select id="sp-roof-axis" class="form-select"><option value="x">Across site width</option><option value="y">Along site length</option></select></label></div>
+            <div id="sp-roof-corners" class="sp-custom-roof"></div>
+            <p class="sp-geometry-note">Outdoor venues can have no roof. Roof shapes are schematic and do not establish safe mounting points or load capacities.</p>
+          </div>
+        </div>
+      </section>
+      <div class="sp-summary" id="sp-summary" aria-live="polite"></div>
+      <div class="sp-workspace">
+        <section class="sp-scene-shell panel"><div class="sp-scene-head"><div><h2>Interactive space layout</h2><p>Drag equipment or orbit in 3D. Switch to top view to drag boundary corners.</p></div><div class="sp-view-controls"><button id="sp-view-three" class="button small primary">3D view</button><button id="sp-view-top" class="button small">Top view</button><button id="sp-zoom-out" class="button small" aria-label="Zoom out">−</button><button id="sp-zoom-in" class="button small" aria-label="Zoom in">+</button><button id="sp-fit" class="button small">Fit</button></div></div>
+          <div class="sp-canvas-wrap"><canvas id="sp-canvas" role="img" aria-label="Interactive, dimensioned event layout. Select objects on the canvas or use the editable equipment list."></canvas><div class="sp-canvas-corner"><span>METRES · NOT TO SCALE FOR CONSTRUCTION</span></div></div>
+          <div class="sp-floor-tools"><strong>Add to layout</strong><div class="sp-palette">${TYPES.map(([kind,label])=>`<button class="sp-add" data-kind="${kind}" type="button"><i style="background:${palette[kind]}"></i>${esc(label)}</button>`).join('')}</div></div>
+          <div class="sp-hint"><span class="sp-dot" style="background:${CABLES.power.color}"></span> Power <span class="sp-dot" style="background:${CABLES.network.color}"></span> Network <span class="sp-dot" style="background:${CABLES.dmx.color}"></span> DMX <span class="sp-dot" style="background:${CABLES.audio.color}"></span> Audio <label><input id="sp-show-runs" type="checkbox" checked> Show cables</label></div>
+        </section>
+        <aside class="sp-inspector panel"><div class="sp-inspector-head"><h2>Selection & equipment</h2><p id="sp-inspect-help">Select a fixture to edit its exact location, height and inventory mapping.</p></div><div id="sp-inspect-body"></div>
+          <div class="sp-placement-list"><h3>Placed equipment <span id="sp-count"></span></h3><div id="sp-placed"></div></div>
+        </aside>
+      </div>
+      <section class="panel sp-cable-panel"><div class="sp-cable-head"><div><h2>Power, data & cable routing</h2><p>Estimate floor-level cable paths within the mapped boundary, then add vertical drops and slack. Connections are editable.</p></div><button id="sp-sync" class="button primary">Copy placed equipment to event kit</button></div>
+        <form id="sp-cable-form" class="sp-cable-form"><label>From<select id="sp-from" class="form-select" required></select></label><label>To<select id="sp-to" class="form-select" required></select></label><label>Cable type<select id="sp-type" class="form-select">${Object.entries(CABLES).map(([k,t])=>`<option value="${k}">${esc(t.label)}</option>`).join('')}</select></label><label>Slack %<input id="sp-slack" class="field" type="number" min="0" max="100" value="15" step="5"></label><button type="submit" class="button primary">Add route</button></form>
+        <div class="sp-table-scroll"><table class="table sp-cable-table"><thead><tr><th>Connection</th><th>Type</th><th>Estimated route</th><th>Suggested single length</th><th></th></tr></thead><tbody id="sp-runs"></tbody></table></div>
+        <div id="sp-totals" class="sp-cable-totals"></div>
+        <p class="sp-safety"><strong>Planning estimate only.</strong> Routes follow approximate unobstructed ground-level paths inside the drawn perimeter, with vertical drops and the specified slack. They do not detect walls, furniture, elevation changes, doors, exclusion zones, actual cable containment, connectors, voltage drop, circuit capacities, power factor, network performance, rigging loads or electrical compliance. Confirm dimensions, routes, gear suitability and installation with qualified personnel. Never use these totals as an electrical safety approval.</p>
+      </section>`;
+      this.canvas=this.root.querySelector('#sp-canvas');this.ctx=this.canvas.getContext('2d');
+      this.bind();this.updateGeometry();this.updateAll();
+      this.resizeObserver=typeof ResizeObserver!=='undefined'?new ResizeObserver(()=>this.resize()):null;
+      this.resizeObserver?.observe(this.canvas.parentElement);
+      this.resize();
+    }
+    bind(){
+      const $=s=>this.root.querySelector(s);
+      $('#sp-event').addEventListener('change',e=>{this.eventId=e.target.value;this.selected=null;this.ensureActive();this.save();this.build();});
+      $('#sp-venue').addEventListener('change',e=>{
+        if(e.target.value===this.plan.venueId)return;
+        if(this.plan.items.length && !confirm('Change venue for this event? Equipment coordinates will be kept and clamped inside the new room.')){e.target.value=this.plan.venueId;return;}
+        this.plan.venueId=e.target.value;this.event.venueId=e.target.value;this.event.venue=this.venue.name;
+        this.plan.items.forEach(o=>this.constrainItem(o));
+        this.save();this.selected=null;this.build();
+      });
+      $('#sp-new-venue').addEventListener('click',()=>{const panel=$('#sp-venue-new');panel.hidden=!panel.hidden;});
+      $('#sp-create-venue').addEventListener('click',()=>{
+        const name=$('#sp-newname').value.trim();if(!name){alert('Enter a venue name.');return;}
+        const v={id:uid('ven'),name:name.slice(0,90),width:clamp(n($('#sp-neww').value,16),2,200),length:clamp(n($('#sp-newl').value,12),2,200),height:clamp(n($('#sp-newh').value,4),.5,40)};G.normalize(v);v.geometry.kind=$('#sp-newkind').value;if(v.geometry.kind==='outdoor')v.geometry.roof.type='none';
+        this.db.venues.push(v);this.plan.venueId=v.id;this.event.venueId=v.id;this.event.venue=v.name;
+        this.plan.items.forEach(o=>this.constrainItem(o));this.selected=null;this.save();this.build();this.notify('Venue added to the reusable library. Existing event placements were retained.');
+      });
+      $('#sp-save-venue').addEventListener('click',()=>{
+        const v=this.venue;const w=n($('#sp-width').value),l=n($('#sp-length').value),h=n($('#sp-height').value);
+        if(w<2||w>200||l<2||l>200||h<.5||h>40){alert('Use site dimensions 2–200m and reference height 0.5–40m.');return;}
+        const oldW=v.width,oldL=v.length;
+        for(const pt of v.geometry.footprint){pt.x=G.round(pt.x*w/oldW);pt.y=G.round(pt.y*l/oldL);}
+        Object.assign(v,{width:w,length:l,height:h});v.geometry.roof.eave=h;
+        this.rehomeAll();this.persist();this.updateGeometry();this.updateInspector();this.notify('Shared venue dimensions and footprint scaled across bookings.');
+      });
+      this.bindGeometry();
+      $('#sp-view-three').addEventListener('click',()=>this.setView('three'));
+      $('#sp-view-top').addEventListener('click',()=>this.setView('top'));
+      $('#sp-fit').addEventListener('click',()=>{this.zoom=1;this.yaw=-.65;this.tilt=.54;this.draw();});
+      $('#sp-zoom-in').addEventListener('click',()=>{this.zoom=clamp(this.zoom*1.2,.55,2.7);this.draw();});
+      $('#sp-zoom-out').addEventListener('click',()=>{this.zoom=clamp(this.zoom/1.2,.55,2.7);this.draw();});
+      $('#sp-show-runs').addEventListener('change',e=>{this.showRuns=e.target.checked;this.draw();});
+      this.root.querySelectorAll('.sp-add').forEach(btn=>btn.addEventListener('click',()=>this.add(btn.dataset.kind)));
+      $('#sp-inspect-body').addEventListener('change',e=>this.editItem(e));
+      $('#sp-inspect-body').addEventListener('click',e=>{
+        const cmd=e.target.closest('[data-cmd]')?.dataset.cmd;
+        if(cmd==='remove')this.deleteSelected();
+        if(cmd==='duplicate')this.duplicateSelected();
+      });
+      $('#sp-placed').addEventListener('click',e=>{const id=e.target.closest('[data-id]')?.dataset.id;if(id){this.selected=id;this.updateInspector();this.draw();}});
+      $('#sp-cable-form').addEventListener('submit',e=>{e.preventDefault();const from=$('#sp-from').value,to=$('#sp-to').value,type=$('#sp-type').value;const slack=clamp(n($('#sp-slack').value,15),0,100);if(!from||!to||from===to){alert('Select two different placed items.');return;}
+        this.plan.runs.push({id:uid('run'),from,to,type,slack});this.persist();this.updateRoutes();this.updateSummary();});
+      $('#sp-runs').addEventListener('click',e=>{const id=e.target.closest('[data-remove-run]')?.dataset.removeRun;if(id){this.plan.runs=this.plan.runs.filter(r=>r.id!==id);this.persist();this.updateRoutes();}});
+      $('#sp-sync').addEventListener('click',()=>this.syncKit());
+      this.canvas.addEventListener('pointerdown',e=>this.pointerDown(e));
+      this.canvas.addEventListener('pointermove',e=>this.pointerMove(e));
+      this.canvas.addEventListener('pointerup',()=>this.pointerUp());
+      this.canvas.addEventListener('pointercancel',()=>this.pointerUp());
+      this.canvas.addEventListener('wheel',e=>{e.preventDefault();this.zoom=clamp(this.zoom*(e.deltaY>0?.91:1.1),.55,2.7);this.draw();},{passive:false});
+    }
+    constrainItem(o){
+      const v=this.venue,poly=v.geometry.footprint;
+      const p={x:clamp(n(o.x),0,v.width),y:clamp(n(o.y),0,v.length)};
+      const inside=G.insidePosition(poly,p);o.x=inside.x;o.y=inside.y;o.z=clamp(n(o.z),0,Math.max(v.height,G.peakHeight(v)));
+    }
+    rehomeAll(){
+      const v=this.venue;
+      for(const plan of Object.values(this.db.venuePlans))if(plan.venueId===v.id)for(const o of plan.items||[])this.constrainItem(o);
+    }
+    bindGeometry(){
+      const $=s=>this.root.querySelector(s);
+      $('#sp-apply-shape').addEventListener('click',()=>{
+        const type=$('#sp-shape').value;
+        if(!confirm(`Replace the shared venue outline with an ${type==='rectangle'?'rectangular':type} starting shape? Existing equipment positions will be kept where possible.`))return;
+        this.venue.geometry.footprint=G.template(type,this.venue.width,this.venue.length);
+        this.selectedVertex=null;this.rehomeAll();this.save();this.updateAll();this.updateGeometry();
+        this.notify('Venue outline updated. Check equipment placements and cable routes.');
+      });
+      $('#sp-edit-outline').addEventListener('click',()=>{
+        this.editOutline=!this.editOutline;
+        if(this.editOutline)this.setView('top');
+        this.updateGeometry();this.draw();
+      });
+      $('#sp-add-corner').addEventListener('click',()=>{
+        const pts=this.venue.geometry.footprint;
+        if(pts.length>=30){this.notify('A venue may have up to 30 corners.');return;}
+        let index=0,max=-1;pts.forEach((p,i)=>{const q=pts[(i+1)%pts.length],dist=Math.hypot(p.x-q.x,p.y-q.y);if(dist>max){max=dist;index=i;}});
+        if(max<.41){this.notify('All edges are too short to split.');return;}
+        const a=pts[index],b=pts[(index+1)%pts.length];const vertex=G.point((a.x+b.x)/2,(a.y+b.y)/2);
+        pts.splice(index+1,0,vertex);this.selectedVertex=vertex.id;this.editOutline=true;this.setView('top');this.save();this.updateAll();this.updateGeometry();
+      });
+      $('#sp-remove-corner').addEventListener('click',()=>{
+        const pts=this.venue.geometry.footprint,idx=pts.findIndex(p=>p.id===this.selectedVertex);
+        if(idx<0||pts.length<=3)return;
+        const trial=pts.filter((_,i)=>i!==idx);const problem=G.valid(trial,this.venue.width,this.venue.length);
+        if(problem){this.notify(problem);return;}
+        pts.splice(idx,1);this.selectedVertex=null;this.rehomeAll();this.save();this.updateAll();this.updateGeometry();
+      });
+      $('#sp-corners').addEventListener('change',e=>{
+        const el=e.target.closest('[data-vertex-id][data-axis]');if(!el)return;
+        const pts=this.venue.geometry.footprint,p=pts.find(p=>p.id===el.dataset.vertexId),axis=el.dataset.axis;
+        if(!p||!['x','y'].includes(axis))return;
+        const prev=p[axis];p[axis]=G.round(Number(el.value));
+        const problem=G.valid(pts,this.venue.width,this.venue.length);
+        if(problem){p[axis]=prev;el.value=prev;this.notify(problem);return;}
+        this.selectedVertex=p.id;this.rehomeAll();this.save();this.updateAll();this.updateGeometry();
+      });
+      $('#sp-kind').addEventListener('change',e=>{
+        const g=this.venue.geometry;g.kind=e.target.value==='outdoor'?'outdoor':'indoor';
+        if(g.kind==='outdoor')g.roof.type='none';
+        else if(g.roof.type==='none')g.roof.type='flat';
+        this.save();this.updateGeometry();this.updateAll();
+      });
+      for(const [id,key] of [['sp-roof-type','type'],['sp-roof-axis','axis'],['sp-eave','eave'],['sp-peak','peak']]){
+        $('#'+id).addEventListener('change',e=>{
+          const r=this.venue.geometry.roof,value=e.target.value;
+          if(key==='type'&&!['none','flat','mono','gable','custom'].includes(value))return;
+          if(key==='axis'&&!['x','y'].includes(value))return;
+          if(key==='eave'||key==='peak'){
+            const measured=Number(value),limit=key==='eave'?40:50;
+            if(!Number.isFinite(measured)||measured<.5||measured>limit){this.notify(`Enter a ${key} height from 0.5 to ${limit} metres.`);this.updateGeometry();return;}
+            r[key]=G.round(measured);
+            if(key==='eave')this.venue.height=r.eave;
+          }else r[key]=value;
+          this.save();this.updateGeometry();this.updateAll();
+        });
       }
-      ctx.font='12px system-ui';ctx.fillStyle='#b7d1d1';ctx.textAlign='left';ctx.fillText(v.width+'m × '+v.length+'m  ·  height '+v.height+'m',15,22);
+      $('#sp-roof-corners').addEventListener('change',e=>{
+        const el=e.target.closest('[data-roof-vertex]');if(!el)return;
+        const value=Number(el.value);
+        if(!Number.isFinite(value)||value<.5||value>50){this.notify('Corner heights must be 0.5–50m.');this.updateGeometry();return;}
+        this.venue.geometry.roof.heights[el.dataset.roofVertex]=G.round(value);
+        this.save();this.updateAll();this.updateGeometry();
+      });
     }
-    function inspector(){
-      const o=item(chosen);
-      root.querySelector('#sp-inspector').innerHTML=!o?'<p>Click a placed item to edit its name, position, mounting height or inventory link.</p>':
-      `<div class="sp-selected"><label>Item name<input data-edit="name" value="${E(o.name)}"></label><div class="sp-cols">${field('X (m)','x',o.x,0,venue().width)}${field('Y (m)','y',o.y,0,venue().length)}${field('Height (m)','z',o.z,0,venue().height)}${field('Power (W)','watts',o.watts||0,0,100000)}</div><label>Inventory item<select data-edit="eqId"><option value="">Unlinked</option>${options((db.equipment||[]).map(g=>[g.id,g.name]),o.eqId||'')}</select></label><div class="sp-row"><button data-action="duplicate">Duplicate</button><button data-action="delete">Remove</button></div></div>`;
-      root.querySelector('#sp-item-list').innerHTML=plan().items.map(i=>`<button class="sp-item ${chosen===i.id?'active':''}" data-select="${E(i.id)}"><span>${E(i.name)}</span><span>${i.x.toFixed(1)}, ${i.y.toFixed(1)}</span></button>`).join('')||'<p>No equipment placed yet.</p>';
+    updateGeometry(){
+      const v=this.venue,g=G.normalize(v),r=g.roof;
+      const $=s=>this.root.querySelector(s);
+      $('#sp-kind').value=g.kind;$('#sp-roof-type').value=r.type;$('#sp-roof-axis').value=r.axis;$('#sp-eave').value=r.eave;$('#sp-peak').value=r.peak;
+      $('#sp-area').textContent=`${G.area(g.footprint).toFixed(1)} m² mapped`;
+      $('#sp-corner-count').textContent=`· ${g.footprint.length} corners`;
+      $('#sp-remove-corner').disabled=!this.selectedVertex||g.footprint.length<=3;
+      $('#sp-edit-outline').classList.toggle('primary',this.editOutline);
+      $('#sp-edit-outline').textContent=this.editOutline?'✓ Editing in top view':'Edit corners on plan';
+      const corners=$('#sp-corners');
+      corners.innerHTML=`<div class="sp-corner-head"><span>Point</span><span>X (m)</span><span>Y (m)</span><span></span></div>`+g.footprint.map((p,i)=>`<div class="sp-corner-row ${p.id===this.selectedVertex?'active':''}"><button type="button" data-focus-vertex="${esc(p.id)}">${i+1}</button><input type="number" min="0" max="${v.width}" step="0.1" aria-label="Corner ${i+1} X" data-vertex-id="${esc(p.id)}" data-axis="x" class="field" value="${p.x}"><input type="number" min="0" max="${v.length}" step="0.1" aria-label="Corner ${i+1} Y" data-vertex-id="${esc(p.id)}" data-axis="y" class="field" value="${p.y}"><span>m</span></div>`).join('');
+      corners.querySelectorAll('[data-focus-vertex]').forEach(b=>b.addEventListener('click',()=>{this.selectedVertex=b.dataset.focusVertex;this.editOutline=true;this.setView('top');this.updateGeometry();this.draw();}));
+      $('#sp-peak').disabled=['none','flat'].includes(r.type);
+      $('#sp-roof-axis').disabled=!['mono','gable'].includes(r.type);
+      $('#sp-eave').disabled=r.type==='none';
+      $('#sp-roof-corners').innerHTML=r.type==='custom'?`<p class="sp-geometry-note">Set a different elevation at each perimeter corner:</p><div class="sp-custom-grid">${g.footprint.map((p,i)=>`<label>Corner ${i+1}<input type="number" data-roof-vertex="${esc(p.id)}" class="field" min="0.5" max="50" step="0.1" value="${G.round(Number.isFinite(Number(r.heights[p.id]))?Number(r.heights[p.id]):r.eave)}"></label>`).join('')}</div>`:'';
+      const edit=$('#sp-edit-outline');edit.setAttribute('aria-pressed',String(this.editOutline));
     }
-    function routes(){
-      const els=plan().items.map(i=>[i.id,i.name]),selA=root.querySelector('#sp-from'),selB=root.querySelector('#sp-to');
-      if(selA){const a=selA.value,b=selB.value;selA.innerHTML=options(els,a);selB.innerHTML=options(els,b);if(!b&&els.length>1)selB.value=els[1][0];}
-      root.querySelector('#sp-routes').innerHTML=plan().runs.length?'<table><tr><th>Connection</th><th>Type</th><th>Est. length</th><th></th></tr>'+plan().runs.map(r=>`<tr><td>${E(item(r.from)?.name||'?')} → ${E(item(r.to)?.name||'?')}</td><td>${E(cableTypes[r.type]?.[0]||r.type)}</td><td>${distance(r).toFixed(1)}m</td><td><button data-remove="${E(r.id)}">×</button></td></tr>`).join('')+'</table>':'<p>Add cable routes between placed equipment.</p>';
+    setView(mode){this.mode=mode;this.root.querySelector('#sp-view-three').classList.toggle('primary',mode==='three');this.root.querySelector('#sp-view-top').classList.toggle('primary',mode==='top');this.draw();}
+    selectedItem(){return this.plan.items.find(x=>x.id===this.selected);}
+    kindForGear(g){const s=(g?.category||'').toLowerCase();return s.includes('light')?'light':s.includes('audio')?'audio':s.includes('power')?'power':s.includes('control')?'control':s.includes('rig')?'rigging':s.includes('network')?'network':'other';}
+    add(kind){const v=this.venue,items=this.plan.items;const proposed={x:r1(clamp(v.width/2+(items.length%4-1.5)*1.2,0,v.width)),y:r1(clamp(v.length/2+Math.floor(items.length/4)*1.1,0,v.length))};const {x,y}=G.insidePosition(v.geometry.footprint,proposed);const obj={id:uid('obj'),kind,name:TYPES.find(t=>t[0]===kind)?.[1]||'Equipment',x,y,z:kind==='light'?Math.min(2.5,G.peakHeight(v)):0,watts:0,eqId:''};items.push(obj);this.selected=obj.id;this.persist();this.updateAll();}
+    editItem(e){const item=this.selectedItem();if(!item)return;const key=e.target.dataset.key;if(!key)return;const v=this.venue;
+      if(['x','y','z','watts'].includes(key)){const max=key==='x'?v.width:key==='y'?v.length:key==='z'?Math.max(v.height,G.peakHeight(v)):100000;const min=0;item[key]=r1(clamp(n(e.target.value),min,max));if(key==='x'||key==='y'){const loc=G.insidePosition(v.geometry.footprint,{x:item.x,y:item.y});item.x=loc.x;item.y=loc.y;}}
+      else if(key==='kind'){if(palette[e.target.value])item.kind=e.target.value;}
+      else if(key==='name')item.name=e.target.value.slice(0,100).trim()||'Equipment';
+      else if(key==='eqId'){const gear=this.db.equipment.find(g=>g.id===e.target.value);item.eqId=gear?.id||'';if(gear){item.name=gear.name;item.kind=this.kindForGear(gear);item.watts=n(gear.watts);}}
+      this.persist();this.updateAll();
     }
-    function refresh(){inspector();routes();summary();draw();}
-    function build(){
-      const v=venue();
-      root.innerHTML=`<div class="sp-wrap"><div class="sp-card"><div class="sp-row"><label class="sp-flex">Event<select id="sp-event">${options(db.eventJobs.map(e=>[e.id,e.title]),eventId)}</select></label><label class="sp-flex">Venue<select id="sp-venue">${options(db.venues.map(v=>[v.id,v.name]),v.id)}</select></label><label>Width (m)<input id="sp-width" type="number" min="2" max="200" value="${v.width}"></label><label>Length (m)<input id="sp-length" type="number" min="2" max="200" value="${v.length}"></label><label>Height (m)<input id="sp-height" type="number" min="2" max="30" value="${v.height}"></label><button id="sp-save-dims" class="sp-primary">Save dimensions</button><button id="sp-new-venue">New venue</button></div><p>Venue dimensions are reusable; equipment positions and cable routes belong to the selected event.</p><div id="sp-new-form" class="sp-row" hidden><label>Name<input id="sp-new-name" placeholder="Venue name"></label><label>Width<input id="sp-new-width" type="number" value="15"></label><label>Length<input id="sp-new-length" type="number" value="10"></label><label>Height<input id="sp-new-height" type="number" value="4"></label><button id="sp-create-venue" class="sp-primary">Create venue</button></div></div>
-      <div id="sp-summary" class="sp-stats"></div><div class="sp-grid">
-      <div class="sp-card"><div class="sp-row" style="justify-content:space-between"><h3>Interactive venue layout</h3><div class="sp-row"><button id="sp-three" class="sp-primary">3D view</button><button id="sp-top">Top view</button><button id="sp-rotate">Rotate</button><button id="sp-zoom-in">+</button><button id="sp-zoom-out">−</button></div></div><div class="sp-stage"><canvas id="sp-canvas"></canvas><span class="sp-label">Drag objects to reposition · Estimated geometry</span></div><h3 style="margin-top:16px">Add equipment</h3><div class="sp-tools">${Object.entries(kinds).map(([id,[name,color]])=>`<button data-add="${id}"><b style="background:${color}"></b>${E(name)}</button>`).join('')}</div></div>
-      <div class="sp-card"><h3>Equipment inspector</h3><div id="sp-inspector"></div><h3 style="margin-top:18px">Placed objects</h3><div class="sp-items" id="sp-item-list"></div><button id="sp-sync" class="sp-primary" style="margin-top:12px">Copy linked equipment into event kit</button><p>Review quantities and availability before issuing a quote.</p></div></div>
-      <div class="sp-card"><h3>Power, network and control cables</h3><p>Assign approximate routes between equipment. Estimates use an orthogonal path plus slack, not measured on-site routing.</p><div class="sp-cables"><label>From<select id="sp-from"></select></label><label>To<select id="sp-to"></select></label><label>Cable type<select id="sp-type">${options(Object.entries(cableTypes).map(([id,[name]])=>[id,name]),'power')}</select></label><label>Slack %<input id="sp-slack" type="number" min="0" max="100" value="15"></label><button id="sp-add-route" class="sp-primary">Add cable</button></div><div id="sp-routes" class="sp-runs"></div><div class="sp-note" style="margin-top:15px">Indicative design aid only. Power loading, connector ratings, cable ratings, voltage drop, networking capacity, rigging and electrical compliance require qualified review.</div></div></div>`;
-      canvas=root.querySelector('#sp-canvas');
-      root.querySelector('#sp-event').onchange=e=>{eventId=e.target.value;chosen=null;plan();build();};
-      root.querySelector('#sp-venue').onchange=e=>{plan().venueId=e.target.value;chosen=null;persist();build();};
-      root.querySelector('#sp-save-dims').onclick=()=>{const w=num(root.querySelector('#sp-width').value),l=num(root.querySelector('#sp-length').value),h=num(root.querySelector('#sp-height').value);if(w<2||l<2||h<2){alert('Dimensions must be at least 2m.');return;}Object.assign(v,{width:clamp(w,2,200),length:clamp(l,2,200),height:clamp(h,2,30)});persist();refresh();};
-      root.querySelector('#sp-new-venue').onclick=()=>root.querySelector('#sp-new-form').hidden=false;
-      root.querySelector('#sp-create-venue').onclick=()=>{const name=root.querySelector('#sp-new-name').value.trim();if(!name){alert('Enter a venue name.');return;}const nv={id:newid('ven-'),name,width:clamp(num(root.querySelector('#sp-new-width').value,15),2,200),length:clamp(num(root.querySelector('#sp-new-length').value,10),2,200),height:clamp(num(root.querySelector('#sp-new-height').value,4),2,30)};db.venues.push(nv);plan().venueId=nv.id;persist();build();};
-      root.querySelector('#sp-three').onclick=()=>{top=false;root.querySelector('#sp-three').classList.add('sp-primary');root.querySelector('#sp-top').classList.remove('sp-primary');draw();};
-      root.querySelector('#sp-top').onclick=()=>{top=true;root.querySelector('#sp-top').classList.add('sp-primary');root.querySelector('#sp-three').classList.remove('sp-primary');draw();};
-      root.querySelector('#sp-rotate').onclick=()=>{yaw+=.3;draw();};
-      root.querySelector('#sp-zoom-in').onclick=()=>{zoom=clamp(zoom*1.2,.5,2.8);draw();};
-      root.querySelector('#sp-zoom-out').onclick=()=>{zoom=clamp(zoom/1.2,.5,2.8);draw();};
-      root.querySelector('#sp-add-route').onclick=()=>{const from=root.querySelector('#sp-from').value,to=root.querySelector('#sp-to').value;if(!from||!to||from===to){alert('Choose two different placed objects.');return;}plan().runs.push({id:newid('run-'),from,to,type:root.querySelector('#sp-type').value,slack:clamp(num(root.querySelector('#sp-slack').value,15),0,100)});persist();refresh();};
-      root.querySelector('#sp-sync').onclick=()=>{const counts={};plan().items.forEach(o=>{if(o.eqId)counts[o.eqId]=(counts[o.eqId]||0)+1;});if(!Object.keys(counts).length){flash('Link placed equipment to the inventory first.');return;}event().kit=Object.entries(counts).map(([id,qty])=>({id,qty}));persist();flash('Event kit updated. Review the equipment list.');};
-      if(!root.dataset.spBound){root.addEventListener('click',click);root.addEventListener('change',change);root.dataset.spBound='1';}
-      canvas.addEventListener('pointerdown',pointerDown);
-      canvas.addEventListener('pointermove',pointerMove);
-      canvas.addEventListener('pointerup',pointerUp);
-      canvas.addEventListener('pointercancel',pointerUp);
-      requestAnimationFrame(draw);
-      refresh();
+    deleteSelected(){if(!this.selectedItem())return;this.plan.items=this.plan.items.filter(o=>o.id!==this.selected);this.plan.runs=this.plan.runs.filter(r=>r.from!==this.selected&&r.to!==this.selected);this.selected=null;this.persist();this.updateAll();}
+    duplicateSelected(){const o=this.selectedItem();if(!o)return;const v=this.venue,p=G.insidePosition(v.geometry.footprint,{x:r1(clamp(o.x+1,0,v.width)),y:r1(clamp(o.y+1,0,v.length))}),clone={...o,id:uid('obj'),name:o.name+' copy',x:p.x,y:p.y};this.plan.items.push(clone);this.selected=clone.id;this.persist();this.updateAll();}
+    syncKit(){
+      const ev=this.event,items=this.plan.items.filter(o=>o.eqId&&this.db.equipment.some(g=>g.id===o.eqId));
+      if(!items.length){alert('Link at least one placed item to an equipment catalogue entry in the inspector first.');return;}
+      const counts={};items.forEach(o=>counts[o.eqId]=(counts[o.eqId]||0)+1);
+      if((ev.kit||[]).length&&!confirm('Replace the assigned event kit with the catalogue-linked items placed in this layout? Unplaced items in the kit will be removed.'))return;
+      ev.kit=Object.entries(counts).map(([id,qty])=>({id,qty}));this.save();this.notify('Placed equipment copied into the event kit. Review additional cables, stands and stock before invoicing.');
     }
-    function click(e){const add=e.target.closest('[data-add]');if(add){const kind=add.dataset.add;const o={id:newid('obj-'),kind,name:kinds[kind][0],x:Math.round(venue().width/2),y:Math.round(venue().length/2),z:kind==='light'?Math.min(3,venue().height):0,watts:0,eqId:''};plan().items.push(o);chosen=o.id;persist();refresh();return;}
-      const s=e.target.closest('[data-select]');if(s){chosen=s.dataset.select;refresh();return;}
-      const rem=e.target.closest('[data-remove]');if(rem){plan().runs=plan().runs.filter(r=>r.id!==rem.dataset.remove);persist();refresh();return;}
-      const action=e.target.closest('[data-action]')?.dataset.action,o=item(chosen);if(!o)return;
-      if(action==='duplicate'){plan().items.push({...o,id:newid('obj-'),name:o.name+' copy',x:clamp(o.x+1,0,venue().width)});chosen=plan().items.at(-1).id;persist();refresh();}
-      if(action==='delete'){plan().items=plan().items.filter(i=>i.id!==o.id);plan().runs=plan().runs.filter(r=>r.from!==o.id&&r.to!==o.id);chosen=null;persist();refresh();}
+    updateAll(){this.updateInspector();this.updateRoutes();this.updateSummary();this.draw();}
+    updateInspector(){
+      const el=this.root.querySelector('#sp-inspect-body'),item=this.selectedItem();this.root.querySelector('#sp-count').textContent=`${this.plan.items.length}`;
+      this.root.querySelector('#sp-placed').innerHTML=this.plan.items.length?this.plan.items.map(o=>`<button type="button" data-id="${esc(o.id)}" class="sp-object-row ${this.selected===o.id?'active':''}"><i style="background:${palette[o.kind]||palette.other}"></i><span>${esc(o.name)}</span><small>${r1(o.x)}m, ${r1(o.y)}m</small></button>`).join(''):'<p class="sp-muted">Add some equipment using the palette.</p>';
+      if(!item){el.innerHTML='<div class="sp-empty"><span>◎</span><strong>Nothing selected</strong><p>Click a model object or choose one from the equipment list. Its coordinates and height will appear here.</p></div>';return;}
+      const field=(label,key,value,max)=>`<label>${label}<input data-key="${key}" class="field" type="number" step="0.1" min="0" max="${max}" value="${r1(value)}"></label>`;
+      el.innerHTML=`<label class="sp-inspect-full">Item name<input data-key="name" class="field" maxlength="100" value="${esc(item.name)}"></label><label class="sp-inspect-full">Equipment type<select data-key="kind" class="form-select">${TYPES.map(([k,label])=>`<option value="${k}" ${item.kind===k?'selected':''}>${label}</option>`).join('')}</select></label>
+      <label class="sp-inspect-full">Link to equipment inventory<select data-key="eqId" class="form-select"><option value="">Not linked (visual only)</option>${this.db.equipment.map(g=>`<option value="${esc(g.id)}" ${item.eqId===g.id?'selected':''}>${esc(g.name)}</option>`).join('')}</select></label>
+      <div class="sp-coordinates">${field('X · metres','x',item.x,this.venue.width)}${field('Y · metres','y',item.y,this.venue.length)}${field('Height · m','z',item.z,G.peakHeight(this.venue))}${field('Watts (estimate)','watts',item.watts,100000)}</div>
+      <div class="sp-inspect-actions"><button type="button" class="button small" data-cmd="duplicate">Duplicate</button><button type="button" class="button small" data-cmd="remove">Remove</button></div>`;
     }
-    function change(e){const key=e.target.dataset.edit,o=item(chosen);if(!key||!o)return;if(['x','y','z','watts'].includes(key)){const max=key==='x'?venue().width:key==='y'?venue().length:key==='z'?venue().height:100000;o[key]=clamp(num(e.target.value),0,max);}else{o[key]=e.target.value;if(key==='eqId'){const g=db.equipment?.find(g=>g.id===o.eqId);if(g){o.name=g.name;o.watts=num(g.watts);}}}persist();refresh();}
-    function pointerDown(e){const r=canvas.getBoundingClientRect();const x=e.clientX-r.left,y=e.clientY-r.top;const found=hits.slice().reverse().find(h=>Math.hypot(h.p.x-x,h.p.y-y)<22);if(found){chosen=found.id;drag={id:found.id};refresh();canvas.setPointerCapture(e.pointerId);}}
-    function pointerMove(e){if(!drag)return;const o=item(drag.id),v=venue(),r=canvas.getBoundingClientRect(),w=r.width,h=r.height;const span=top?Math.max(v.width,v.length):v.width+v.length,s=Math.min(w*.78/span,h*.69/(top?span:span*.42+v.height*.85))*zoom;const xx=e.clientX-r.left,yy=e.clientY-r.top;
-      if(top){o.x=clamp(Math.round((v.width/2+(xx-w/2)/s)*10)/10,0,v.width);o.y=clamp(Math.round((v.length/2+(yy-h/2)/s)*10)/10,0,v.length);}
-      else{const u=(xx-w/2)/s, vv=(yy-h*.58+o.z*s*.8)/(s*.48);const dx=u*Math.cos(yaw)+vv*Math.sin(yaw),dy=-u*Math.sin(yaw)+vv*Math.cos(yaw);o.x=clamp(Math.round((dx+v.width/2)*10)/10,0,v.width);o.y=clamp(Math.round((dy+v.length/2)*10)/10,0,v.length);}
-      draw();}
-    function pointerUp(){if(drag){drag=null;persist();refresh();}}
-    build();
+    route(r){
+      const a=this.plan.items.find(x=>x.id===r.from),b=this.plan.items.find(x=>x.id===r.to);if(!a||!b)return null;
+      const floorPath=G.shortest(this.venue.geometry.footprint,{x:a.x,y:a.y},{x:b.x,y:b.y});
+      if(!floorPath)return null;
+      const points=[{x:a.x,y:a.y,z:a.z},...floorPath.map(p=>({x:p.x,y:p.y,z:0})),{x:b.x,y:b.y,z:b.z}];
+      let base=0;for(let i=1;i<points.length;i++)base+=Math.hypot(points[i].x-points[i-1].x,points[i].y-points[i-1].y,points[i].z-points[i-1].z);
+      const length=r1(base*(1+clamp(n(r.slack),0,100)/100));
+      const options=[3,5,10,15,20,25,30,50,100];const suggested=options.find(x=>x>=length);
+      return {a,b,points,length,suggested:suggested?`${suggested} m`:`Custom (>${100} m)`};
+    }
+    updateRoutes(){
+      const opts=this.plan.items.map(o=>`<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');
+      for(const key of ['from','to']){const sel=this.root.querySelector('#sp-'+key);const current=sel.value;sel.innerHTML=opts;if(this.plan.items.some(o=>o.id===current))sel.value=current;}
+      if(this.root.querySelector('#sp-from').value===this.root.querySelector('#sp-to').value&&this.plan.items.length>1)this.root.querySelector('#sp-to').selectedIndex=1;
+      const body=this.root.querySelector('#sp-runs');const rows=this.plan.runs.map(run=>({run,calc:this.route(run)})).filter(o=>o.calc);
+      body.innerHTML=rows.length?rows.map(({run,calc})=>`<tr><td>${esc(calc.a.name)} <span class="sp-arrow">→</span> ${esc(calc.b.name)}</td><td><span class="sp-dot" style="background:${CABLES[run.type]?.color||'#aaa'}"></span>${esc(CABLES[run.type]?.label||run.type)}</td><td><strong>${calc.length.toFixed(1)} m</strong> <small>incl. ${clamp(n(run.slack),0,100)}% slack</small></td><td>${calc.suggested}</td><td><button type="button" class="sp-remove" data-remove-run="${esc(run.id)}" aria-label="Remove route">×</button></td></tr>`).join(''):'<tr><td colspan="5" class="sp-muted">Connect two objects above to see cable route estimates.</td></tr>';
+      const totals={};for(const {run,calc} of rows)totals[run.type]=(totals[run.type]||0)+calc.length;
+      this.root.querySelector('#sp-totals').innerHTML=Object.entries(CABLES).map(([kind,{label,color}])=>`<span><i style="background:${color}"></i>${esc(label)} <strong>${r1(totals[kind]||0).toFixed(1)} m</strong></span>`).join('');
+    }
+    updateSummary(){
+      const v=this.venue,items=this.plan.items,watts=items.reduce((a,o)=>a+n(o.watts),0),length=this.plan.runs.reduce((a,r)=>a+(this.route(r)?.length||0),0);
+      this.root.querySelector('#sp-summary').innerHTML=`<div class="sp-stat"><span>Venue footprint</span><strong>${G.area(v.geometry.footprint).toFixed(1)} m²</strong><small>${v.geometry.kind==='outdoor'?'Open-air site': 'Enclosed / covered'} · ${r1(v.width)} × ${r1(v.length)} m bounds</small></div><div class="sp-stat"><span>Placed items</span><strong>${items.length}</strong><small>${items.filter(o=>o.eqId).length} inventory-linked</small></div><div class="sp-stat"><span>Connected cable</span><strong>${r1(length).toFixed(1)} m</strong><small>${this.plan.runs.length} routed connections</small></div><div class="sp-stat"><span>Indicative connected load</span><strong>${r1(watts).toLocaleString()} W</strong><small>Fixture ratings only, not load approval</small></div>`;
+    }
+    resize(){if(!this.canvas)return;const rect=this.canvas.getBoundingClientRect();if(rect.width<=0)return;const dpr=clamp(window.devicePixelRatio||1,1,2);this.canvas.width=Math.round(rect.width*dpr);this.canvas.height=Math.round(rect.height*dpr);this.ctx.setTransform(dpr,0,0,dpr,0,0);this.draw();}
+    computeCamera(){
+      const w=this.canvas.clientWidth||900,h=this.canvas.clientHeight||550,v=this.venue;
+      const angle=this.mode==='top'?0:this.yaw,c=Math.cos(angle),s=Math.sin(angle);const horiz=Math.abs(v.width*c)+Math.abs(v.length*s);const depth=Math.abs(v.width*s)+Math.abs(v.length*c);
+      const viewHeight=G.peakHeight(v);const extentY=this.mode==='top'?depth:(depth*Math.sin(this.tilt)+viewHeight*Math.cos(this.tilt));
+      const scale=clamp(Math.min((w-90)/(horiz||1),(h-110)/(extentY||1))*this.zoom,6,120);
+      const centerX=w/2,centerY=this.mode==='top'?h/2:(h/2 + viewHeight*.23*scale);
+      this.geometry={w,h,scale,angle,c,s,centerX,centerY,tilt:this.mode==='top'?Math.PI/2:this.tilt};
+    }
+    project(o){const g=this.geometry,v=this.venue,dx=o.x-v.width/2,dy=o.y-v.length/2;
+      const u=dx*g.c-dy*g.s,d=dx*g.s+dy*g.c;
+      return {x:g.centerX+u*g.scale,y:g.centerY+(d*Math.sin(g.tilt)-o.z*Math.cos(g.tilt))*g.scale};
+    }
+    unproject(x,y,z){const g=this.geometry,v=this.venue;const u=(x-g.centerX)/g.scale;
+      const d=((y-g.centerY)/g.scale+z*Math.cos(g.tilt))/Math.max(.08,Math.sin(g.tilt));
+      return {x:clamp(r1(u*g.c+d*g.s+v.width/2),0,v.width),y:clamp(r1(-u*g.s+d*g.c+v.length/2),0,v.length)};
+    }
+    path(points,stroke,fill,width=1,dash=[]){const c=this.ctx;c.save();c.beginPath();points.forEach((o,i)=>{const p=this.project(o);if(i)c.lineTo(p.x,p.y);else c.moveTo(p.x,p.y);});if(fill){c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.lineWidth=width;c.setLineDash(dash);c.stroke();}c.restore();}
+    draw(){
+      if(!this.canvas||!this.canvas.clientWidth)return;this.computeCamera();const c=this.ctx,g=this.geometry,v=this.venue;
+      c.clearRect(0,0,g.w,g.h);c.fillStyle='#18292d';c.fillRect(0,0,g.w,g.h);
+      // ambient accent
+      const grad=c.createRadialGradient(g.w*.65,g.h*.2,5,g.w*.65,g.h*.2,g.w*.9);grad.addColorStop(0,'#30474a');grad.addColorStop(1,'#18292d');c.fillStyle=grad;c.fillRect(0,0,g.w,g.h);
+      const floor=v.geometry.footprint.map(p=>({...p,z:0}));
+      this.path(floor,'#7da6a0',v.geometry.kind==='outdoor'?'#325345':'#254144',2.5);
+      // Grid clipped to the actual site footprint rather than its bounding rectangle.
+      c.save();c.beginPath();floor.forEach((p,i)=>{const pt=this.project(p);if(i)c.lineTo(pt.x,pt.y);else c.moveTo(pt.x,pt.y);});c.closePath();c.clip();
+      const step=Math.max(1,Math.ceil(Math.max(v.width,v.length)/30));
+      for(let x=0;x<=v.width;x+=step)this.path([{x,y:0,z:0},{x,y:v.length,z:0}],'#86a5a433',null,1);
+      for(let y=0;y<=v.length;y+=step)this.path([{x:0,y,z:0},{x:v.width,y,z:0}],'#86a5a433',null,1);
+      c.restore();
+      const r=v.geometry.roof;
+      if(this.mode==='three'&&r.type!=='none'){
+        // A lightweight, semi-transparent envelope preserves visibility of event equipment.
+        for(let i=0;i<floor.length;i++){
+          const a=floor[i],b=floor[(i+1)%floor.length],ha=G.height(v,a),hb=G.height(v,b);
+          this.path([a,b,{...b,z:hb},{...a,z:ha}],null,i%2===0?'#77a8a120':'#90bbb417');
+          this.path([a,{...a,z:ha}], '#8bb3b18a',null,1.2,[4,5]);
+          this.path([{...a,z:ha},{...b,z:hb}], '#b6d1c397',null,1.6);
+        }
+        // Sample the gable ridge in the roof interior, including for concave footprints.
+        if(r.type==='gable'){
+          let chain=[];const samples=65;
+          for(let i=0;i<=samples;i++){
+            const t=i/samples,pt=r.axis==='x'?{x:v.width/2,y:t*v.length}:{x:t*v.width,y:v.length/2};
+            if(G.contains(v.geometry.footprint,pt))chain.push({...pt,z:G.height(v,pt)});
+            else if(chain.length){if(chain.length>1)this.path(chain,'#e9bf7ca9',null,1.7,[5,3]);chain=[];}
+          }
+          if(chain.length>1)this.path(chain,'#e9bf7ca9',null,1.7,[5,3]);
+        }
+        if(r.type==='mono'){
+          const hi=r.axis==='x'?{x:v.width*.75,y:v.length*.5}:{x:v.width*.5,y:v.length*.75};
+          const low=r.axis==='x'?{x:v.width*.25,y:v.length*.5}:{x:v.width*.5,y:v.length*.25};
+          if(G.contains(v.geometry.footprint,hi)&&G.contains(v.geometry.footprint,low))this.path([{...low,z:G.height(v,low)},{...hi,z:G.height(v,hi)}],'#e9bf7ca9',null,1.6,[4,4]);
+        }
+        if(r.type==='custom'){
+          const central=G.insidePosition(v.geometry.footprint,{x:v.width*.5,y:v.length*.5});
+          for(const p of floor){if(G.segmentInside(v.geometry.footprint,central,p))this.path([{...central,z:G.height(v,central)},{...p,z:G.height(v,p)}],'#c9b3e75e',null,1,[5,5]);}
+        }
+      }
+      if(this.mode==='top' || this.editOutline){
+        for(let i=0;i<floor.length;i++){
+          const a=floor[i],b=floor[(i+1)%floor.length],aa=this.project(a),bb=this.project(b);
+          const mx=(aa.x+bb.x)/2,my=(aa.y+bb.y)/2;
+          c.save();c.fillStyle='#d8ede8';c.textAlign='center';c.font='10px system-ui';
+          c.fillText(`${Math.hypot(a.x-b.x,a.y-b.y).toFixed(1)}m`,mx,my-7);c.restore();
+        }
+      }
+      if(this.editOutline && this.mode==='top'){
+        for(let i=0;i<floor.length;i++){
+          const p=this.project(floor[i]),selected=floor[i].id===this.selectedVertex;
+          c.save();c.beginPath();c.arc(p.x,p.y,selected?11:9,0,Math.PI*2);
+          c.fillStyle=selected?'#f1b864':'#d8ede7';c.fill();c.strokeStyle='#253d3b';c.lineWidth=2;c.stroke();
+          c.font='bold 11px system-ui';c.fillStyle='#273e3c';c.textAlign='center';c.textBaseline='middle';c.fillText(String(i+1),p.x,p.y);c.restore();
+        }
+      }
+      c.fillStyle='#c3d6d1';c.font='12px system-ui';c.textAlign='left';
+      const origin=this.project({x:0,y:0,z:0});c.fillText('0,0',origin.x+7,origin.y-8);
+      const wtext=this.project({x:v.width/2,y:v.length,z:0});c.fillText(`${r1(v.width)}m wide`,wtext.x+8,wtext.y+19);
+      const ltext=this.project({x:v.width,y:v.length/2,z:0});c.fillText(`${r1(v.length)}m long`,ltext.x+8,ltext.y+4);
+      if(this.mode==='three'&&v.geometry.roof.type!=='none'){const ht=this.project({x:0,y:0,z:G.height(v,{x:0,y:0})});c.fillText(`${v.geometry.roof.type} roof`,ht.x+8,ht.y-9);}
+      if(this.showRuns)for(const run of this.plan.runs){const rt=this.route(run);if(!rt)continue;this.path(rt.points,CABLES[run.type]?.color||'#e5ecec',null,2.5,[7,4]);}
+      // Draw raised item stems and floor shadows first.
+      for(const o of this.plan.items){if(o.z>.05&&this.mode==='three'){
+        const base=this.project({...o,z:0}),pos=this.project(o);c.strokeStyle='#a6c3bc55';c.lineWidth=1.4;c.setLineDash([3,3]);c.beginPath();c.moveTo(base.x,base.y);c.lineTo(pos.x,pos.y);c.stroke();c.setLineDash([]);
+      }}
+      const nodes=this.plan.items.map(o=>({o,p:this.project(o)})).sort((a,b)=>a.p.y-b.p.y);
+      for(const {o,p} of nodes){const color=palette[o.kind]||palette.other,active=o.id===this.selected,rr=active?13:10;
+        c.save();c.shadowBlur=active?24:12;c.shadowColor=color+'aa';c.fillStyle=color;c.strokeStyle=active?'#fff9db':'#203037';c.lineWidth=active?3:2;
+        if(o.kind==='stage'){c.fillRect(p.x-15,p.y-9,30,18);c.strokeRect(p.x-15,p.y-9,30,18);}
+        else if(o.kind==='network'||o.kind==='control'){c.beginPath();c.roundRect(p.x-rr,p.y-rr,rr*2,rr*2,3);c.fill();c.stroke();}
+        else if(o.kind==='rigging'){c.beginPath();c.moveTo(p.x,p.y-rr-3);c.lineTo(p.x+rr+2,p.y+rr);c.lineTo(p.x-rr-2,p.y+rr);c.closePath();c.fill();c.stroke();}
+        else {c.beginPath();c.arc(p.x,p.y,rr,0,Math.PI*2);c.fill();c.stroke();}
+        if(active){c.strokeStyle='#f7f3df99';c.setLineDash([3,3]);c.beginPath();c.arc(p.x,p.y,19,0,Math.PI*2);c.stroke();}
+        c.shadowBlur=0;c.font=active?'600 12px system-ui':'11px system-ui';c.fillStyle=active?'#ffffff':'#e4edeb';c.textAlign='center';c.strokeStyle='#142528';c.lineWidth=3;c.lineJoin='round';c.strokeText(o.name,p.x,p.y-rr-10);c.fillText(o.name,p.x,p.y-rr-10);c.restore();
+      }
+      this.hitNodes=nodes.slice().reverse();
+      c.font='11px system-ui';c.fillStyle='#b5ccc7aa';c.textAlign='left';c.fillText(this.mode==='top'?'TOP PLAN · EDITABLE VENUE OUTLINE':'3D CONCEPT VIEW · ELEVATION REPRESENTED',17,25);
+    }
+    coord(e){const r=this.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
+    pointerDown(e){if(e.button!==0)return;const pos=this.coord(e);
+      if(this.editOutline&&this.mode==='top'){const vertex=this.venue.geometry.footprint.find(p=>{const screen=this.project({...p,z:0});return Math.hypot(screen.x-pos.x,screen.y-pos.y)<17;});
+        if(vertex){this.selectedVertex=vertex.id;this.updateGeometry();this.draw();this.drag={mode:'vertex',last:pos,changed:false};this.canvas.setPointerCapture(e.pointerId);return;}}
+      const hit=(this.hitNodes||[]).find(({p})=>Math.hypot(p.x-pos.x,p.y-pos.y)<23);
+      if(hit){this.selected=hit.o.id;this.updateInspector();this.draw();this.drag={mode:'object',last:pos,changed:false};}
+      else this.drag={mode:'orbit',last:pos};this.canvas.setPointerCapture(e.pointerId);
+    }
+    pointerMove(e){if(!this.drag)return;const p=this.coord(e),d=this.drag,dx=p.x-d.last.x,dy=p.y-d.last.y;
+      if(d.mode==='vertex'){const pts=this.venue.geometry.footprint,v=this.venue,vertex=pts.find(q=>q.id===this.selectedVertex);if(vertex){const loc=this.unproject(p.x,p.y,0),prev={x:vertex.x,y:vertex.y};vertex.x=loc.x;vertex.y=loc.y;const problem=G.valid(pts,v.width,v.length);if(problem){vertex.x=prev.x;vertex.y=prev.y;}else{d.changed=true;this.draw();}}}
+      else if(d.mode==='object'){const o=this.selectedItem();if(o){const loc=this.unproject(p.x,p.y,o.z);const inside=G.contains(this.venue.geometry.footprint,loc)?loc:G.insidePosition(this.venue.geometry.footprint,loc);if(o.x!==inside.x||o.y!==inside.y){o.x=inside.x;o.y=inside.y;d.changed=true;this.draw();this.updateSummary();this.updateRoutes();}}}
+      else if(this.mode==='three'){this.yaw+=dx*.008;this.tilt=clamp(this.tilt+dy*.004,.21,1.26);this.draw();}
+      d.last=p;
+    }
+    pointerUp(){if(this.drag?.mode==='vertex'&&this.drag.changed){this.rehomeAll();this.save();this.updateGeometry();this.updateAll();}
+      else if(this.drag?.mode==='object'&&this.drag.changed){this.save();this.updateInspector();this.updateRoutes();this.updateSummary();}this.drag=null;}
   }
+  function mount(root,db,onSave,onNotify,eventId){if(!root)return;ensure(db);if(window.__phaenomenonActivePlanner?.resizeObserver)window.__phaenomenonActivePlanner.resizeObserver.disconnect();window.__phaenomenonActivePlanner=new Planner(root,db,onSave,onNotify,eventId);}
   window.PhaenomenonSpacePlanner={ensure,mount};
 })();
