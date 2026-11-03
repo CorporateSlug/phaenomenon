@@ -60,7 +60,7 @@ class SceneViewer{
    else if(d.kind==='pan'){const v=Math.max(this.v.width,this.v.length)/Math.max(1,c.clientHeight)/this.zoom*1.9;const right=new T.Vector3().setFromMatrixColumn(this.camera.matrix,0),up=new T.Vector3().setFromMatrixColumn(this.camera.matrix,1);this.target.addScaledVector(right,-dx*v).addScaledVector(up,dy*v);this.updateCamera();this.render()}
    else if(d.kind==='rotate'){const o=this.p.plan.items.find(x=>x.id===d.id);if(o){o.rotation=(n(o.rotation)+dx*.7+3600)%360;if(e.shiftKey)o.rotation=Math.round(o.rotation/15)*15;const mesh=this.meshes.get(o.id);if(mesh)mesh.rotation.y=-rad(o.rotation);this.render()}}
    else if(d.kind==='move'||d.kind==='vertex'){const o=this.p.plan.items.find(x=>x.id===d.id),h=d.kind==='move'?Math.max(.15,n(o?.z)):.2,world=this.intersect(e,h);if(world){const x=clamp(world.x+this.v.width/2,0,this.v.width),y=clamp(world.z+this.v.length/2,0,this.v.length);
-     if(d.kind==='move'&&o){const pos=G.insidePosition(this.v.geometry.footprint,{x,y});o.x=pos.x;o.y=pos.y;const mesh=this.meshes.get(o.id);mesh?.position.set(o.x-this.v.width/2,h,o.y-this.v.length/2);this.render()}
+     if(d.kind==='move'&&o){const pos=G.insidePosition(this.v.geometry.footprint,{x,y});o.x=pos.x;o.y=pos.y;this.p.constrainItem(o);const mesh=this.meshes.get(o.id);mesh?.position.set(o.x-this.v.width/2,h,o.y-this.v.length/2);this.render()}
      else{const corner=this.v.geometry.footprint.find(p=>p.id===d.id);if(corner){const before={x:corner.x,y:corner.y};corner.x=Math.round(x*10)/10;corner.y=Math.round(y*10)/10;if(G.valid(this.v.geometry.footprint,this.v.width,this.v.length))Object.assign(corner,before);else this.rebuild()}}}}
    d.x=e.clientX;d.y=e.clientY;e.preventDefault()};
   this.up=()=>{if(!this.drag)return;const d=this.drag;this.drag=null;if(d.moved&&['move','rotate','vertex'].includes(d.kind)){if(d.kind==='vertex'){this.p.rehomeAll();this.p.updateGeometry()}this.p.save();this.p.updateInspector();this.p.updateRoutes();this.p.updateSummary();this.rebuild()}};
@@ -74,6 +74,9 @@ class SceneViewer{
  intersect(e,h){this.pointer(e);const result=new T.Vector3();return this.raycaster.ray.intersectPlane(new T.Plane(new T.Vector3(0,1,0),-h),result)?result:null}
  rebuild(){
   if(this.disposed)return;this.v=this.p.venue;this.meshes.clear();this.picks=[];this.labelRefs=[];this.labels.replaceChildren();clearObjects(this.world);
+  const M=window.PhaenomenonMultiSpace;
+  if(M?.hasAreas(this.v))M.draw3D(T,this);
+  else {
   const fp=this.v.geometry.footprint||[];
   if(fp.length>2){
    const shape=new T.Shape();fp.forEach((p,i)=>i?shape.lineTo(p.x,p.y):shape.moveTo(p.x,p.y));shape.closePath();
@@ -110,6 +113,7 @@ class SceneViewer{
      this.label(dist.toFixed(1)+' m',this.point(middle.x+nx,middle.y+ny,.16),'measure');
     });
    }
+  }
   }
   if(this.p.showRuns){for(const cable of this.p.plan.runs){const r=this.p.route(cable);if(r){this.line(r.points.map(p=>this.point(p.x,p.y,Math.max(.05,p.z))),cableColors[cable.type]||0xd4e8e1,.9)}}}
   let migrated=false;
