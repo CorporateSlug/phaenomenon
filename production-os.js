@@ -357,6 +357,7 @@
       '<section class="panel"><h2>Installed equipment verification</h2><p class="muted">Technicians can mark completed installation tasks verified. Verification here is an audit status, not a certification of electrical or rigging safety.</p>'+taskList(e,{verify:true})+'</section>';
   }
   function taskOwner(e,taskId){return org().taskAssignments?.[e.id]?.[taskId]||'';}
+  function taskOwnerAreaOK(e,t){const owner=taskOwner(e,t.id);return !owner||org().assignments.some(a=>a.eventId===e.id&&a.entityId===owner&&(a.areaId==='all'||a.areaId===t.areaId));}
   function crewMembers(e){const ids=[...new Set(org().assignments.filter(a=>a.eventId===e.id&&entity(a.entityId)?.kind==='Person').map(a=>a.entityId))];return ids.map(entity).filter(Boolean);}
   function crewSelector(e){
     const members=crewMembers(e);return '<label style="min-width:195px">CREW MEMBER<select id="crew-person-picker"><option value="all">All crew tasks</option>'+members.map(x=>'<option value="'+esc(x.id)+'" '+(ui.crewPerson===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label>';
@@ -377,7 +378,7 @@
         '<button class="btn small" data-act="report" data-id="'+esc(t.id)+'">Report issue</button>';
       return '<div class="task-row"><input class="task-check" type="checkbox" data-act="installed" data-id="'+esc(t.id)+'" aria-label="Mark installed: '+esc(t.title)+'" '+(t.state!=='pending'?'checked':'')+(opt.verify?' disabled':'')+'>'+
         '<div class="task-main"><strong>'+esc(t.title)+'</strong> '+(t.state==='verified'?pill('Verified','good'):t.state==='installed'?pill('Installed','good'):pill('To do'))+(bad?' '+pill('Issue open','bad'):'')+
-        '<p>'+esc(t.details)+'</p><div class="form-note">'+esc(areaName(e,t.areaId,pub.snapshot))+' · '+esc(t.kind)+' · revision '+pub.revision+(taskOwner(e,t.id)?' · Assigned to '+esc(aname(taskOwner(e,t.id))):' · Unassigned')+'</div></div>'+
+        '<p>'+esc(t.details)+'</p><div class="form-note">'+esc(areaName(e,t.areaId,pub.snapshot))+' · '+esc(t.kind)+' · revision '+pub.revision+(taskOwner(e,t.id)?' · Assigned to '+esc(aname(taskOwner(e,t.id))):' · Unassigned')+(taskOwnerAreaOK(e,t)?'':' · Check assignment: different work area')+'</div></div>'+
         '<div class="task-actions">'+buttons+'</div></div>';
     }).join('');
   }
@@ -405,12 +406,13 @@
     return '<div class="section"><h3>'+esc(area.name)+'</h3>'+svg+'<div class="chiprow">'+items.map((i,n)=>'<span class="tag">'+(n+1)+'. '+esc(i.name)+'</span>').join('')+'</div></div>';
   }
   function crew(e,c){
+    if(ui.crewPerson!=='all'&&!crewMembers(e).some(x=>x.id===ui.crewPerson))ui.crewPerson='all';
     const pub=published(e),total=(pub?.tasks||[]).filter(t=>matchesCrew(e,t)),done=total.filter(t=>t.state!=='pending').length;
     return hero('CREW WORKSPACE','Install the event','Simple, area-specific instructions from a versioned crew pack. Track installation separately from technical verification.',
       areaPicker(e)+crewSelector(e))+
       changeNotice(e)+
       (!pub?'<div class="empty">Publish a crew pack from Design to begin.</div>':
-      '<div class="row between section no-print"><button class="btn" data-act="print">Print area crew pack / Save as PDF</button><span class="form-note">Select one area for a concise handout.</span></div><div class="notice info section">Crew pack revision <strong>'+pub.revision+'</strong> · issued '+new Date(pub.at).toLocaleString('en-AU')+'. <button class="btn small no-print" data-act="print-crew">Print crew pack</button> '+
+      '<div class="row between section no-print"><button class="btn" data-act="print">Print area crew pack / Save as PDF</button><span class="form-note">Select one area for a concise handout.</span></div><div class="notice info section">Crew pack revision <strong>'+pub.revision+'</strong> · issued '+new Date(pub.at).toLocaleString('en-AU')+'. '+
       (isChanged(e)?' A newer design has not been published. Do not use unreviewed new instructions.':' Instructions reflect the currently published plan.')+'</div>'+
       '<div class="stats" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+stat('Assigned tasks',total.length,'In chosen area')+stat('Installed',done,'Marked by crew')+stat('Verified',total.filter(x=>x.state==='verified').length,'Technical sign-off status')+'</div>'+
       '<div class="grid cols2"><section class="panel"><h2>Installation instructions</h2><div class="row between section"><span class="muted">'+done+' of '+total.length+' installed</span>'+pill((total.length?Math.round(done/total.length*100):0)+'%')+'</div>'+
@@ -421,9 +423,9 @@
   function taskOwnership(e){
     const tasks=published(e)?.tasks||[],members=crewMembers(e);
     return '<section class="panel section"><div class="section-head"><h2>Assign installation tasks</h2>'+pill(tasks.filter(t=>taskOwner(e,t.id)).length+' / '+tasks.length+' assigned')+'</div>'+
-      '<p class="muted">Assign each published instruction to a named team member. These are organisational assignments only; they do not grant access or certify safe completion.</p>'+
+      '<p class="muted">Assign each published instruction to a named team member. If someone is assigned outside their event area, a warning will appear. These are organisational assignments only; they do not grant access or certify safe completion.</p>'+
       (members.length?'<div class="table-scroll"><table><thead><tr><th>Task</th><th>Area</th><th>State</th><th>Assigned person</th></tr></thead><tbody>'+
-      tasks.map(t=>'<tr><td>'+esc(t.title)+'</td><td>'+esc(areaName(e,t.areaId,published(e).snapshot))+'</td><td>'+esc(t.state)+'</td><td><select aria-label="Assign '+esc(t.title)+'" data-act="task-owner" data-id="'+esc(t.id)+'"><option value="">Unassigned</option>'+members.map(m=>'<option value="'+esc(m.id)+'" '+(taskOwner(e,t.id)===m.id?'selected':'')+'>'+esc(m.name)+'</option>').join('')+'</select></td></tr>').join('')+
+      tasks.map(t=>'<tr><td>'+esc(t.title)+(taskOwnerAreaOK(e,t)?'':' '+pill('Check assigned area','warn'))+'</td><td>'+esc(areaName(e,t.areaId,published(e).snapshot))+'</td><td>'+esc(t.state)+'</td><td><select aria-label="Assign '+esc(t.title)+'" data-act="task-owner" data-id="'+esc(t.id)+'"><option value="">Unassigned</option>'+members.map(m=>'<option value="'+esc(m.id)+'" '+(taskOwner(e,t.id)===m.id?'selected':'')+'>'+esc(m.name)+'</option>').join('')+'</select></td></tr>').join('')+
       '</tbody></table></div>':'<div class="empty">Add a person to the event team above before assigning tasks.</div>')+
       '</section>';
   }
@@ -531,7 +533,6 @@
       if(next>=0&&next<ui.history.length){ui.histIndex=next;navigateProfile(ui.history[next],true);}return;
     }
     if(action==='select-event'){ui.eventId=id;ui.area='all';store();location.hash='#/home';render();return;}
-    if(action==='print-crew'){window.print();return;}
     if(action==='publish'){if(!plan(e).items?.length){notice('Add equipment in the 3D planner before publishing.');return;}publish(e.id,false);return;}
     if(action==='installed'){const t=p?.tasks.find(x=>x.id===id);if(!t)return;t.state=t.state==='pending'?'installed':'pending';t.installedAt=t.state==='installed'?now():null;t.verifiedAt=null;store();render();return;}
     if(action==='verify'){const t=p?.tasks.find(x=>x.id===id);if(!t||t.state!=='installed')return;t.state='verified';t.verifiedAt=now();store();notice('Task recorded as verified. This is not a safety certification.');return;}
