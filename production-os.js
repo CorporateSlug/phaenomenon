@@ -84,7 +84,7 @@
         notes:'Hypothetical layout only, not a surveyed venue plan or validated infrastructure.',
         spaces:[{id:'ab-indoor',name:'Indoor stage',x:3,y:4,width:19,length:15,height:6.2,kind:'indoor'},
                 {id:'ab-outdoor',name:'Outdoor stage',x:29,y:5,width:18,length:17,height:4.5,kind:'outdoor'}],
-        links:[{id:'ab-site-crossing',name:'Unverified site passage',fromSpace:'ab-indoor',toSpace:'ab-outdoor',verified:false,allowedTypes:['network','power','audio','dmx']}]});
+        links:[{id:'ab-site-crossing',name:'Unverified site passage',fromSpace:'ab-indoor',toSpace:'ab-outdoor',verified:false,allowedTypes:['network','power','audio','video','dmx']}]});
     }
     if(!db.eventJobs.some(e=>e.id===DEMO)){
       db.eventJobs.push({id:DEMO,title:'Abbotsford Convent · Indoor + Outdoor demo',date:'2026-12-05',venue:'Abbotsford Convent · concept',venueId:VENUE,
@@ -104,12 +104,15 @@
         item('demo-power-out','Outdoor power distro','power','ab-outdoor',31,9,0,0),
         item('demo-light-o1','Outdoor wash 1','light','ab-outdoor',33,17,3,160),
         item('demo-light-o2','Outdoor wash 2','light','ab-outdoor',39,17,3,160),
-        item('demo-light-o3','Outdoor wash 3','light','ab-outdoor',44,17,3,160)],
+        item('demo-light-o3','Outdoor wash 3','light','ab-outdoor',44,17,3,160),
+        item('demo-i-media','Indoor media server','video','ab-indoor',9,8,.7,150),
+        item('demo-o-screen','Outdoor projection/screen (illustrative)','video','ab-outdoor',40,20,1.8,300)],
         runs:[
           {id:'demo-net',cableId:'NET-01',from:'demo-node-in',to:'demo-node-out',type:'network',cableLength:30,connector:'RJ45 / Cat6'},
           {id:'demo-dmx1',cableId:'DMX-01',from:'demo-node-out',to:'demo-light-o1',type:'dmx',cableLength:15,connector:'5-pin XLR'},
           {id:'demo-dmx2',cableId:'DMX-02',from:'demo-light-o1',to:'demo-light-o2',type:'dmx',cableLength:15,connector:'5-pin XLR'},
-          {id:'demo-dmx3',cableId:'DMX-03',from:'demo-light-o2',to:'demo-light-o3',type:'dmx',cableLength:15,connector:'5-pin XLR'}]};
+          {id:'demo-dmx3',cableId:'DMX-03',from:'demo-light-o2',to:'demo-light-o3',type:'dmx',cableLength:15,connector:'5-pin XLR'},
+          {id:'demo-video',cableId:'VID-01',from:'demo-i-media',to:'demo-o-screen',type:'video',cableLength:50,connector:'3G-SDI / BNC'}]};
     }
   }
   function ensure(){
