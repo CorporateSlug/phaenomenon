@@ -98,3 +98,42 @@
  .header>.header-tools{justify-content:space-between}
 }
 @media print{.rail-mobile-toggle,.header-more{display:none!important}}
+
+
+/* Progressive event overview: show the next action before configuration details. */
+.event-venue-details{padding:0!important;overflow:hidden}
+.event-venue-details>summary{list-style:none;cursor:pointer}
+.event-venue-details>summary::-webkit-details-marker{display:none}
+.event-venue-details>summary::marker{content:""}
+.event-venue-summary{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:16px 20px}
+.event-venue-summary:hover,.event-venue-summary:focus-visible{background:#202d35}
+.event-venue-summary>span:first-child{display:grid;gap:5px}
+.event-venue-summary strong{font-size:14px}
+.event-venue-summary small{font-size:11px;font-weight:400;color:var(--muted)}
+.detail-toggle{color:var(--teal);font-size:11px;white-space:nowrap}
+.event-venue-details[open] .detail-toggle{font-size:0}
+.event-venue-details[open] .detail-toggle::after{content:"Close ▴";font-size:11px}
+.event-venue-body{padding:5px 20px 20px;border-top:1px solid var(--edge)}
+.event-venue-body .section-head{margin:8px 0 13px}
+.event-venue-body .section-head p{max-width:550px}
+.event-overview-more{border:1px solid var(--edge);border-radius:13px;padding:0;overflow:hidden}
+.event-overview-more>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;padding:13px 17px;color:#bfced3;cursor:pointer;font-size:12px;font-weight:650}
+.event-overview-more>summary:hover{background:#1f2b34}
+.event-overview-more>summary::-webkit-details-marker{display:none}
+.event-overview-more>summary::marker{content:""}
+.event-overview-more[open]>summary span{transform:rotate(180deg)}
+.event-overview-more>.grid{padding:15px}
+.event-overview-more .panel{background:#121a23}
+.event-overview-more .panel h2{font-size:14px}
+.event-venue-details:focus-within,.event-overview-more:focus-within{border-color:#5b807b}
+/* Small, predictable event entry cards (avoid tall colourful sections competing with the task). */
+.work-card{min-height:132px;padding:17px;gap:7px}
+.work-card .symbol{font-size:22px;line-height:1.3}
+.work-card strong{font-size:14px}
+.work-card p{font-size:11px;line-height:1.55}
+@media(max-width:750px){
+ .event-venue-summary{padding:14px}
+ .event-venue-body{padding:12px 14px 16px}
+ .event-venue-body .section-head{align-items:flex-start;flex-direction:column}
+ .event-overview-more>.grid{padding:10px}
+}
