@@ -21,6 +21,8 @@ The existing **Design → Connect → Review → Export** stage lighting planner
 
 **Prototype limitation:** The new roles are UI presets, not security permissions. Data is stored in the same browser's local storage as the classic demo; other tabs on the same origin refresh changes, but there are no accounts, cross-device synchronisation or safety approvals. The Abbotsford Convent two-stage example and named demo crew are fictional/illustrative.
 
+The new Production header includes **Export backup** for the entire local workspace. Keep a copy somewhere secure. This prototype does not create an automatic cloud backup.
+
 To run regression tests with a recent Node.js installation: `node --test tests/production-os.test.mjs`.
 
 ---
