@@ -42,7 +42,8 @@ function harness(state) {
     handlers.submit({target:{id,values},preventDefault:()=>{}});
   };
   const navigate=route=>{location.hash=route;handlers['window.hashchange']();};
-  return {storage,ui,read,click,submit,navigate,get printed(){return printed;}};
+  const change=target=>handlers.change({target});
+  return {storage,ui,read,click,submit,navigate,change,get printed(){return printed;}};
 }
 
 test('migrates and connects canonical venue, stage and event records',()=>{
@@ -127,4 +128,30 @@ test('reports a discrepancy without treating it as verification',()=>{
   h.click('report','task-place-demo-light-o1');
   assert.equal(h.read().productionOS.issues.filter(x=>x.eventId===e&&x.status==='Open').length,1);
   assert.equal(h.read().productionOS.published[e].tasks.find(x=>x.id==='task-place-demo-light-o1').state,'pending');
+});
+
+test('production task ownership filters crew instructions without changing identities',()=>{
+  const h=harness(),e='ev-abbotsford-two-stage-demo';
+  const task=h.read().productionOS.published[e].tasks.find(x=>x.kind==='place'&&x.sourceId==='demo-light-o1');
+  assert.ok(task);
+  const personId='ent-demo-hand',before=h.read().productionOS.entities.length;
+  h.navigate('#/production');
+  assert.match(h.ui.innerHTML,/Assign installation tasks/);
+  h.change({id:'',dataset:{act:'task-owner',id:task.id},value:personId});
+  assert.equal(h.read().productionOS.taskAssignments[e][task.id],personId);
+  assert.equal(h.read().productionOS.entities.length,before);
+  h.navigate('#/crew');
+  h.change({id:'crew-person-picker',dataset:{},value:personId});
+  assert.match(h.ui.innerHTML,/Outdoor wash 1/);
+  assert.equal((h.ui.innerHTML.match(/class="task-row"/g)||[]).length,1);
+  const restored=harness(h.storage);
+  restored.navigate('#/crew');
+  assert.match(restored.ui.innerHTML,/Assigned to Sam/);
+});
+
+test('stage structures are included in published crew pack',()=>{
+  const h=harness(),e='ev-abbotsford-two-stage-demo';
+  const tasks=h.read().productionOS.published[e].tasks;
+  assert.ok(tasks.some(t=>t.sourceId==='demo-stage-in'&&t.title.includes('Indoor stage')));
+  assert.ok(tasks.some(t=>t.sourceId==='demo-stage-out'&&t.title.includes('Outdoor stage')));
 });
