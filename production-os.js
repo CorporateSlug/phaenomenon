@@ -408,7 +408,7 @@
     if(!e)return '<div class="empty">Create an event in the original workspace to begin.</div>';
     return hero('YOUR EVENT WORKSPACE',e.title, date(e.date)+' · '+(venue(e)?.name||e.venue||'Venue not set'),pill(e.status||'Enquiry')+' '+pill('Crew pack r'+(published(e)?.revision||0)))+
       changeNotice(e)+venueSettings(e)+
-      '<div class="stats">'+stat('Areas',areas(e).length,'Spaces in venue')+stat('Placed equipment',(plan(e).items||[]).length,'All equipment and structures')+
+      '<div class="stats">'+stat('Spaces',areas(e).length,'Selected for this event')+stat('Placed equipment',(plan(e).items||[]).length,'All equipment and structures')+
       stat('Installation',c.installed+' / '+c.all,'Tasks marked installed')+stat('Open issues',c.issues,'Awaiting resolution')+'</div>'+
       '<div class="section-head"><h2>What are you working on?</h2><span class="muted">Choose a task, not an expertise level</span></div>'+
       '<div class="grid cols3 section">'+[
@@ -420,7 +420,7 @@
       ].map(x=>'<a class="work-card" href="#/'+x[0]+'"><span class="symbol">'+x[1]+'</span><strong>'+x[2]+'</strong><p>'+x[3]+'</p></a>').join('')+'</div>'+
       '<div class="grid cols2">'+
       '<section class="panel"><h2>Spaces in this event</h2><div class="stack">'+areas(e).map(a=>'<div class="area-card"><div class="row between"><strong>'+esc(a.name)+'</strong>'+pill(a.kind||'Stage')+'</div><p class="muted">'+(plan(e).items||[]).filter(i=>groupArea(e,i)===a.id).length+' placed items · '+(plan(e).runs||[]).filter(r=>{const to=(plan(e).items||[]).find(i=>i.id===r.to);return to&&groupArea(e,to)===a.id;}).length+' incoming/local cable records</p></div>').join('')+'</div></section>'+
-      '<section class="panel"><h2>Current state</h2><p class="muted">The event record connects a reusable venue, its areas, equipment placements, technical connections, named assignments and a published crew revision.</p>'+
+      '<section class="panel"><h2>Current state</h2><p class="muted">The event record connects a reusable venue, its selected spaces, equipment placements, technical connections, named assignments and a published crew revision.</p>'+
       '<div class="sep"></div><div class="row between"><span>Installed</span><strong>'+c.installed+' / '+c.all+'</strong></div><div class="progress" style="margin:12px 0"><div style="width:'+(c.all?100*c.installed/c.all:0)+'%"></div></div>'+
       '<p class="muted">'+c.verified+' independently marked verified · '+c.issues+' open issue(s)</p>'+
       '<a class="btn" href="#/production">Open production overview →</a></section></div>';
@@ -433,7 +433,7 @@
       '<div class="notice info section">The existing 3D editor is preserved in the classic workspace. Use Open 3D planner above to continue in the existing four-step Design → Connect → Review → Export workflow. Return here to review and publish installation instructions. This is the same browser data, reloaded between workspaces.</div>'+
       '<div class="grid cols2 section"><section class="panel"><h2>Physical venue model</h2>'+
       '<p class="muted">'+esc(v?.name||'Unassigned venue')+'</p>'+
-      '<div class="stack">'+areas(e).map(a=>'<div class="linkrow"><div><strong>'+esc(a.name)+'</strong><div class="detail">'+esc(a.kind||'Area')+' · '+num(a.width)+' × '+num(a.length)+' m (illustrative until verified)</div></div>'+pill((p.items||[]).filter(i=>groupArea(e,i)===a.id).length+' items')+'</div>').join('')+'</div></section>'+
+      '<div class="stack">'+areas(e).map(a=>'<div class="linkrow"><div><strong>'+esc(a.name)+'</strong><div class="detail">'+esc(a.kind||'Space')+' · '+num(a.width)+' × '+num(a.length)+' m (illustrative until verified)</div></div>'+pill((p.items||[]).filter(i=>groupArea(e,i)===a.id).length+' items')+'</div>').join('')+'</div></section>'+
       '<section class="panel"><h2>Connected model</h2><p class="muted">Equipment exists once in the event plan, with its location and its relationships to cable runs and patching.</p>'+
       '<div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))">'+stat('Equipment',p.items?.length||0,'Positioned objects')+stat('Connections',p.runs?.length||0,'Signal and power lines')+'</div>'+
       '<button class="btn" data-act="publish">Publish current install pack</button><p class="form-note">Publishing snapshots a revision. Only changed tasks are reset.</p></section></div>'+
@@ -451,7 +451,7 @@
         '<p class="muted">'+esc(areaName(e,x.areaId))+' · '+esc(x.intensity)+'% · '+esc(x.effect)+'</p><p class="form-note">'+esc(x.notes||'')+'</p></div>'
       ).join(''):'<div class="empty">No looks defined yet. Add a creative idea below.</div>')+'</div>'+
       '<form id="look-form" class="form-grid"><label>Look name<input class="input" name="name" required maxlength="100" placeholder="e.g. Sunset wash"></label>'+
-      '<label>Stage / area<select name="areaId">'+areas(e).map(a=>'<option value="'+esc(a.id)+'">'+esc(a.name)+'</option>').join('')+'</select></label>'+
+      '<label>Space<select name="areaId">'+areas(e).map(a=>'<option value="'+esc(a.id)+'">'+esc(a.name)+'</option>').join('')+'</select></label>'+
       '<label>Colour<input class="input" type="color" name="color" value="#8cddcf"></label>'+
       '<label>Intensity (%)<input class="input" type="number" min="0" max="100" step="1" name="intensity" value="75"></label>'+
       '<label>Effect concept<select name="effect"><option>Static</option><option>Slow fade</option><option>Pulse</option><option>Chase</option><option>Audio-reactive (concept)</option><option>Other</option></select></label>'+
@@ -511,7 +511,7 @@
     }).join('');
   }
   function areaPicker(e){
-    return '<label style="min-width:210px">STAGE / WORK AREA<select id="area-picker"><option value="all" '+(ui.area==='all'?'selected':'')+'>All areas</option>'+
+    return '<label style="min-width:210px">SPACE / WORK AREA<select id="area-picker"><option value="all" '+(ui.area==='all'?'selected':'')+'>All spaces</option>'+
       areas(e,published(e)?.snapshot).map(a=>'<option value="'+esc(a.id)+'" '+(ui.area===a.id?'selected':'')+'>'+esc(a.name)+'</option>').join('')+'</select></label>';
   }
   function diagram(e){
