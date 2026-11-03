@@ -15,7 +15,7 @@
   --ph-list-height: clamp(240px, 54dvh, 560px);
   --ph-table-height: clamp(260px, 58dvh, 620px);
 }
-@media (min-width: 841px) and (screen) {
+@media screen and (min-width: 841px) {
   html, body { height:100%; overflow:hidden; }
   body:has(#production-app) .shell,
   body:has(#app) .app-shell {
