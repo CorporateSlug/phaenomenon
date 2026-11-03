@@ -24,9 +24,9 @@
     try{const raw=localStorage.getItem(KEY);const obj=raw?JSON.parse(raw):starter();return obj&&typeof obj==='object'&&!Array.isArray(obj)?obj:starter();}
     catch(e){return starter();}
   }
-  let db=load(), ui={view:'home',eventId:'',area:'all',role:'lead',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
-  try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.role=saved.role||'lead';}catch(e){}
-  function store(){try{localStorage.setItem(KEY,JSON.stringify(db));localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,role:ui.role}));}catch(e){alert('Browser storage is full or unavailable. Export your event information from the original app.');}}
+  let db=load(), ui={view:'home',eventId:'',area:'all',crewPerson:'all',role:'lead',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,notice:''};
+  try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.crewPerson=saved.crewPerson||'all';ui.role=saved.role||'lead';}catch(e){}
+  function store(){try{localStorage.setItem(KEY,JSON.stringify(db));localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,crewPerson:ui.crewPerson,role:ui.role}));}catch(e){alert('Browser storage is full or unavailable. Export your event information from the original app.');}}
   function org(){return db.productionOS;}
   function venues(){return db.venues||[];}
   function events(){return db.eventJobs||[];}
@@ -90,7 +90,7 @@
     if(!db.productionOS||typeof db.productionOS!=='object')db.productionOS={};
     const o=org();o.version=1;
     for(const [key] of [['entities'],['relationships'],['assignments'],['issues']])if(!Array.isArray(o[key]))o[key]=[];
-    for(const key of ['published','show','looks'])if(!o[key]||typeof o[key]!=='object'||Array.isArray(o[key]))o[key]={};
+    for(const key of ['published','show','looks','taskAssignments'])if(!o[key]||typeof o[key]!=='object'||Array.isArray(o[key]))o[key]={};
     db.clients.forEach(x=>savedByKind('client','client',x.id,x.name,{demo:!!x.demo||x.name.toLowerCase().includes('demo')}));
     db.venues.forEach(x=>{
       const parent=savedByKind('venue','venue',x.id,x.name,{demo:!!x.demo});
@@ -350,12 +350,18 @@
       '</tbody></table></div></section>'+
       '<section class="panel"><h2>Installed equipment verification</h2><p class="muted">Technicians can mark completed installation tasks verified. Verification here is an audit status, not a certification of electrical or rigging safety.</p>'+taskList(e,{verify:true})+'</section>';
   }
+  function taskOwner(e,taskId){return org().taskAssignments?.[e.id]?.[taskId]||'';}
+  function crewMembers(e){const ids=[...new Set(org().assignments.filter(a=>a.eventId===e.id&&entity(a.entityId)?.kind==='Person').map(a=>a.entityId))];return ids.map(entity).filter(Boolean);}
+  function crewSelector(e){
+    const members=crewMembers(e);return '<label style="min-width:195px">CREW MEMBER<select id="crew-person-picker"><option value="all">All crew tasks</option>'+members.map(x=>'<option value="'+esc(x.id)+'" '+(ui.crewPerson===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label>';
+  }
+  function matchesCrew(e,t){return (ui.area==='all'||t.areaId===ui.area)&&(ui.crewPerson==='all'||taskOwner(e,t.id)===ui.crewPerson);}
   function taskList(e,opt){
     opt=opt||{};
     const pub=published(e);
     if(!pub)return '<div class="empty">No published pack yet.</div>';
     const all=pub.tasks||[];
-    const filtered=all.filter(t=>(ui.area==='all'||t.areaId===ui.area)&&(!opt.verify||t.state==='installed'||t.state==='verified'));
+    const filtered=all.filter(t=>(ui.area==='all'||t.areaId===ui.area)&&(opt.verify||ui.crewPerson==='all'||taskOwner(e,t.id)===ui.crewPerson)&&(!opt.verify||t.state==='installed'||t.state==='verified'));
     if(!filtered.length)return '<div class="empty">No matching tasks.</div>';
     return filtered.map(t=>{
       const locked=isChanged(e);
@@ -365,7 +371,7 @@
         '<button class="btn small" data-act="report" data-id="'+esc(t.id)+'">Report issue</button>';
       return '<div class="task-row"><input class="task-check" type="checkbox" data-act="installed" data-id="'+esc(t.id)+'" aria-label="Mark installed: '+esc(t.title)+'" '+(t.state!=='pending'?'checked':'')+(opt.verify?' disabled':'')+'>'+
         '<div class="task-main"><strong>'+esc(t.title)+'</strong> '+(t.state==='verified'?pill('Verified','good'):t.state==='installed'?pill('Installed','good'):pill('To do'))+(bad?' '+pill('Issue open','bad'):'')+
-        '<p>'+esc(t.details)+'</p><div class="form-note">'+esc(areaName(e,t.areaId,pub.snapshot))+' · '+esc(t.kind)+' · revision '+pub.revision+'</div></div>'+
+        '<p>'+esc(t.details)+'</p><div class="form-note">'+esc(areaName(e,t.areaId,pub.snapshot))+' · '+esc(t.kind)+' · revision '+pub.revision+(taskOwner(e,t.id)?' · Assigned to '+esc(aname(taskOwner(e,t.id))):' · Unassigned')+'</div></div>'+
         '<div class="task-actions">'+buttons+'</div></div>';
     }).join('');
   }
@@ -393,9 +399,9 @@
     return '<div class="section"><h3>'+esc(area.name)+'</h3>'+svg+'<div class="chiprow">'+items.map((i,n)=>'<span class="tag">'+(n+1)+'. '+esc(i.name)+'</span>').join('')+'</div></div>';
   }
   function crew(e,c){
-    const pub=published(e),total=(pub?.tasks||[]).filter(t=>ui.area==='all'||t.areaId===ui.area),done=total.filter(t=>t.state!=='pending').length;
+    const pub=published(e),total=(pub?.tasks||[]).filter(t=>matchesCrew(e,t)),done=total.filter(t=>t.state!=='pending').length;
     return hero('CREW WORKSPACE','Install the event','Simple, area-specific instructions from a versioned crew pack. Track installation separately from technical verification.',
-      areaPicker(e))+
+      areaPicker(e)+crewSelector(e))+
       changeNotice(e)+
       (!pub?'<div class="empty">Publish a crew pack from Design to begin.</div>':
       '<div class="row between section no-print"><button class="btn" data-act="print">Print area crew pack / Save as PDF</button><span class="form-note">Select one area for a concise handout.</span></div><div class="notice info section">Crew pack revision <strong>'+pub.revision+'</strong> · issued '+new Date(pub.at).toLocaleString('en-AU')+'. <button class="btn small no-print" data-act="print-crew">Print crew pack</button> '+
@@ -405,6 +411,15 @@
       '<div class="progress section"><div style="width:'+(total.length?100*done/total.length:0)+'%"></div></div>'+taskList(e)+
       '<p class="form-note">Checking a box means the item was reported installed. It does not indicate a qualified safety sign-off.</p></section>'+
       '<section class="panel"><h2>Where things go</h2>'+diagram(e)+'<p class="form-note">Diagram is schematic, not a measured construction or rigging drawing. Use the approved site drawings and instructions.</p></section></div>');
+  }
+  function taskOwnership(e){
+    const tasks=published(e)?.tasks||[],members=crewMembers(e);
+    return '<section class="panel section"><div class="section-head"><h2>Assign installation tasks</h2>'+pill(tasks.filter(t=>taskOwner(e,t.id)).length+' / '+tasks.length+' assigned')+'</div>'+
+      '<p class="muted">Assign each published instruction to a named team member. These are organisational assignments only; they do not grant access or certify safe completion.</p>'+
+      (members.length?'<div class="table-scroll"><table><thead><tr><th>Task</th><th>Area</th><th>State</th><th>Assigned person</th></tr></thead><tbody>'+
+      tasks.map(t=>'<tr><td>'+esc(t.title)+'</td><td>'+esc(areaName(e,t.areaId,published(e).snapshot))+'</td><td>'+esc(t.state)+'</td><td><select aria-label="Assign '+esc(t.title)+'" data-act="task-owner" data-id="'+esc(t.id)+'"><option value="">Unassigned</option>'+members.map(m=>'<option value="'+esc(m.id)+'" '+(taskOwner(e,t.id)===m.id?'selected':'')+'>'+esc(m.name)+'</option>').join('')+'</select></td></tr>').join('')+
+      '</tbody></table></div>':'<div class="empty">Add a person to the event team above before assigning tasks.</div>')+
+      '</section>';
   }
   function production(e,c){
     const p=published(e),a=org().assignments.filter(x=>x.eventId===e.id);
@@ -427,6 +442,7 @@
       '<div class="sep"></div><h3>Open issues</h3>'+
       (org().issues.filter(x=>x.eventId===e.id&&x.status!=='Resolved').map(x=>'<div class="linkrow"><div><strong>'+esc(x.note)+'</strong><div class="detail">'+esc(x.taskId||'General issue')+' · '+new Date(x.at).toLocaleString('en-AU')+'</div></div><button class="btn small" data-act="resolve-issue" data-id="'+esc(x.id)+'">Resolve</button></div>').join('')||'<p class="muted">No open issues.</p>')+
       '<div class="sep"></div><button class="btn" data-act="report" data-id="">+ Report general issue</button></section></div>'+
+      taskOwnership(e)+
       '<section class="panel section"><div class="section-head"><h2>Run of show</h2>'+pill((org().show[e.id]||[]).length+' cues')+'</div>'+
       '<p class="muted">A lightweight production cue list. This does not drive live lighting consoles or control show-critical systems.</p>'+
       '<div class="table-scroll"><table><thead><tr><th>Time</th><th>Cue / activity</th><th>Area</th><th>Draft look</th><th>Status</th><th></th></tr></thead><tbody>'+
@@ -532,9 +548,20 @@
   document.addEventListener('change',ev=>{
     const el=ev.target;if(!$.contains(el))return;
     if(el.id==='role-picker'){ui.role=el.value;store();location.hash='#/'+({lead:'home',tech:'technical',crew:'crew',manager:'production'}[ui.role]||'home');route();}
-    if(el.id==='event-picker'){ui.eventId=el.value;ui.area='all';store();render();}
+    if(el.id==='event-picker'){ui.eventId=el.value;ui.area='all';ui.crewPerson='all';store();render();}
     if(el.id==='area-picker'){ui.area=el.value;store();render();}
+    if(el.id==='crew-person-picker'){ui.crewPerson=el.value;store();render();}
     if(el.id==='entity-filter'){ui.entityType=el.value;render();}
+    if(el.dataset.act==='task-owner'){
+      const e=current(),t=published(e)?.tasks.find(x=>x.id===el.dataset.id);
+      if(!t)return;
+      const eligible=crewMembers(e).some(x=>x.id===el.value);
+      if(el.value&&!eligible){notice('Add the person to the event team first.');return;}
+      if(!org().taskAssignments[e.id])org().taskAssignments[e.id]={};
+      if(el.value)org().taskAssignments[e.id][t.id]=el.value;
+      else delete org().taskAssignments[e.id][t.id];
+      store();render();
+    }
   });
   document.addEventListener('input',ev=>{
     const el=ev.target;if(!$.contains(el))return;
