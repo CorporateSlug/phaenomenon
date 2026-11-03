@@ -1,0 +1,58 @@
+/* Multi-space venue planner: discreet controls attached to the 3D canvas. */
+#space-planner-root .msp-root{margin:0 13px 12px;border:1px solid #e0ece7;border-radius:11px;background:#f7faf8;overflow:hidden}
+#space-planner-root .msp-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;flex-wrap:wrap}
+#space-planner-root .msp-top-left{display:flex;align-items:center;gap:12px;min-width:0;flex:1;flex-wrap:wrap}
+#space-planner-root .msp-overline{font:800 10px 'DM Sans',system-ui,sans-serif;letter-spacing:.09em;color:#88a097;white-space:nowrap}
+#space-planner-root .msp-tabs{display:flex;align-items:center;gap:3px;padding:3px;background:#e9f0ec;border-radius:9px;flex-wrap:wrap}
+#space-planner-root .msp-tabs button{appearance:none;border:0;border-radius:7px;min-height:31px;padding:6px 11px;color:#71867c;background:transparent;font:740 11px 'DM Sans',system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+#space-planner-root .msp-tabs button:hover{background:#ddebe1;color:#2e5e4c}
+#space-planner-root .msp-tabs button.is-active{color:#2d5b4b;background:#fff;box-shadow:0 1px 4px #25453516}
+#space-planner-root .msp-actions button{border:1px solid #d7e4dc;background:#fff;color:#3a6858;padding:7px 12px;min-height:32px;font:750 11px 'DM Sans',system-ui,sans-serif;border-radius:8px;cursor:pointer}
+#space-planner-root .msp-actions button:hover{background:#ebf5ed}
+#space-planner-root .msp-disclaimer{margin:0;padding:7px 13px 9px;background:#fff6e9;border-top:1px solid #f1e7d7;font:560 10px/1.5 'DM Sans',system-ui,sans-serif;color:#90744a}
+#space-planner-root .msp-disclaimer strong{font-weight:850}
+#space-planner-root .msp-details{border-top:1px solid #e1ece4;padding:12px 13px 14px;background:#fff}
+#space-planner-root .msp-details[hidden]{display:none!important}
+#space-planner-root .msp-editor-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 13px;gap:12px;color:#2e574a;font-size:13px}
+#space-planner-root .msp-editor-head button{background:#f4f8f4;border:1px solid #dfeae2;padding:5px 10px;color:#477261;font-size:10px;font-weight:750;border-radius:7px;cursor:pointer}
+#space-planner-root .msp-area-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}
+#space-planner-root .msp-area-card{border:1px solid #e4ede6;background:#f8fbf9;border-radius:10px;padding:11px;min-width:0}
+#space-planner-root .msp-area-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+#space-planner-root .msp-area-title strong{color:#315d4e;font-size:12px;font-weight:820}
+#space-planner-root .msp-area-title span{padding:4px 7px;border-radius:20px;background:#e9f3ec;color:#4d7d63;font-size:10px}
+#space-planner-root .msp-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#space-planner-root .msp-field-grid label{display:flex;flex-direction:column;min-width:0;gap:5px;color:#708a7c;font-size:10px;font-weight:750}
+#space-planner-root .msp-field-grid input,#space-planner-root .msp-field-grid select,#space-planner-root .msp-link input,#space-planner-root .msp-create-link select{width:100%;height:33px;min-width:0;box-sizing:border-box;border:1px solid #d9e7dd;border-radius:7px;background:#fff;color:#325444;padding:5px 8px;font:700 11px 'DM Sans',system-ui,sans-serif}
+#space-planner-root .msp-link-head{margin:17px 0 10px}
+#space-planner-root .msp-link-head strong{font-size:12px;color:#315748}
+#space-planner-root .msp-link-head p{font-size:10px;color:#84978b;line-height:1.5;margin:5px 0 0}
+#space-planner-root .msp-links{display:grid;gap:7px}
+#space-planner-root .msp-link{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:#f8faf8;border:1px solid #e1e9e2;border-radius:9px;color:#315548;font-size:11px;font-weight:750;flex-wrap:wrap}
+#space-planner-root .msp-link>span:first-child{flex:1}
+#space-planner-root .msp-link small{display:block;color:#7f9689;font-size:10px;margin-top:4px;font-weight:500}
+#space-planner-root .msp-link>span:nth-child(2){min-width:125px;max-width:150px;font-size:10px;color:#7c9184}
+#space-planner-root .msp-link-status{font-size:10px;font-weight:730;border-radius:20px;padding:6px 8px;background:#fff0d9;color:#a37f45}
+#space-planner-root .msp-empty{color:#83998b;font-size:11px;padding:14px;border:1px dashed #e0e9e1;border-radius:8px}
+#space-planner-root .msp-create-link{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:11px 0}
+#space-planner-root .msp-create-link select{width:auto;max-width:210px;flex:1 1 135px}
+#space-planner-root .msp-create-link button,#space-planner-root .msp-editor-foot button{border:1px solid #cbe0d1;border-radius:8px;background:#e9f4ec;padding:8px 11px;color:#36684c;font:750 11px 'DM Sans',system-ui,sans-serif;cursor:pointer;min-height:34px}
+#space-planner-root .msp-create-link button:hover,#space-planner-root .msp-editor-foot button:hover{background:#d8ecdd}
+#space-planner-root .msp-editor-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:15px}
+#space-planner-root .msp-editor-foot>span{font-size:10px;color:#8b9e92}
+#space-planner-root #sp-load-abbotsford{background:#f4f8f4;border:1px solid #cfe3d7;color:#356552;white-space:nowrap}
+#space-planner-root #sp-load-abbotsford:hover{background:#e7f4e9}
+#space-planner-root .sp3-label-space{background:rgba(22,46,41,.90);border:1px solid rgba(147,212,176,.5);border-radius:8px;padding:5px 9px!important;font-weight:760!important;font-size:12px!important;color:#e6f6ed!important;white-space:nowrap}
+#space-planner-root .sp3-label-link{background:rgba(49,51,42,.9);border:1px solid rgba(229,194,139,.55);border-radius:6px;color:#ffe2b0!important;font-size:10px!important;font-weight:730!important;padding:4px 7px!important;white-space:nowrap}
+@media(max-width:720px){
+ #space-planner-root .msp-root{margin:0 8px 9px}
+ #space-planner-root .msp-top{gap:8px;padding:9px}
+ #space-planner-root .msp-top-left{gap:6px}
+ #space-planner-root .msp-overline{flex-basis:100%;font-size:9px}
+ #space-planner-root .msp-tabs{width:100%;overflow-x:auto;flex-wrap:nowrap}
+ #space-planner-root .msp-tabs button{padding:6px 8px;font-size:10px}
+ #space-planner-root .msp-actions{width:100%}
+ #space-planner-root .msp-actions button{width:100%}
+ #space-planner-root .msp-area-cards{grid-template-columns:1fr}
+ #space-planner-root .msp-link{align-items:flex-start}
+ #space-planner-root .msp-create-link{gap:5px}
+}
