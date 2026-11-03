@@ -422,7 +422,8 @@
       '</select></label><details class="header-more"><summary class="btn" aria-label="More workspace options">Options ▾</summary>'+
       '<div class="header-more-menu"><label>Default starting view<select id="role-picker">'+
       [['lead','Designer / lead'],['tech','Lighting technician'],['crew','Installation crew'],['manager','Production manager']].map(x=>'<option value="'+x[0]+'" '+(ui.role===x[0]?'selected':'')+'>'+x[1]+'</option>').join('')+
-      '</select></label><button type="button" class="btn" data-act="export-backup">Export JSON backup</button>'+
+      '</select></label><p class="mobile-local-note">Stored on this device only · not synchronised with other devices</p>'+
+      '<button type="button" class="btn" data-act="export-backup">Export JSON backup</button>'+
       '<button type="button" class="btn" data-act="import-backup">Import JSON backup</button>'+recoveryPoints()+
       '<a class="btn" href="index.html#/bookings/'+eventId+'">Edit event booking ↗</a></div></details>'+
       '<small id="save-status" class="save-status" title="This is local browser storage, not cloud sync.">Saved in this browser</small></div></header>'+
@@ -1463,11 +1464,17 @@
   document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){if(document.getElementById('production-rail')?.classList?.contains('is-expanded')){
     document.getElementById('production-rail').classList.remove('is-expanded');
     document.body?.classList?.remove('ph-mobile-menu-open');
+    document.querySelector('.production-mobile-tabs .mobile-more-tab')?.setAttribute('aria-expanded','false');
     document.querySelector('.production-mobile-tabs .mobile-more-tab')?.focus();
   }else if(cueEditorOpen)closeCueEditor();else if(builderEventOpen)closeBuilderEvent();else if(quickVenueOpen)productionQuickClose();}});
   document.addEventListener('toggle',ev=>{
     if(ev.target?.id==='event-venue-settings')ui.homeVenueOpen=ev.target.open;
   },true);
+  document.addEventListener('click',ev=>{
+    if(!ev.target?.closest?.('#production-navigation a[href]'))return;
+    document.getElementById('production-rail')?.classList?.remove('is-expanded');
+    document.body?.classList?.remove('ph-mobile-menu-open');
+  });
   window.addEventListener('hashchange',route);
   ensure();store();route();
 })();
