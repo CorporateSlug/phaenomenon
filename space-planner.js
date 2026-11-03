@@ -136,7 +136,7 @@
           <div class="sp-placement-list"><h3>Placed equipment <span id="sp-count"></span></h3><div id="sp-placed"></div></div>
         </aside>
       </div>
-      <section class="panel sp-cable-panel"><div class="sp-cable-head"><div><h2>Power, data & cable routing</h2><p>Estimate floor-level cable paths within the mapped boundary, then add vertical drops and slack. Connections are editable.</p></div><button id="sp-sync" class="button primary">Copy placed equipment to event kit</button></div>
+      <section class="panel sp-cable-panel"><div class="sp-cable-head"><div><h2>Power, data & cable routing</h2><p>Estimate floor-level cable paths within the mapped boundary, then add vertical drops and slack. Connections are editable.</p></div><button id="sp-sync" class="button primary">Match event kit to placed equipment</button></div>
         <form id="sp-cable-form" class="sp-cable-form"><label>From<select id="sp-from" class="form-select" required></select></label><label>To<select id="sp-to" class="form-select" required></select></label><label>Cable type<select id="sp-type" class="form-select">${Object.entries(CABLES).map(([k,t])=>`<option value="${k}">${esc(t.label)}</option>`).join('')}</select></label><label>Slack %<input id="sp-slack" class="field" type="number" min="0" max="100" value="15" step="5"></label><button type="submit" class="button primary">Add route</button></form>
         <div class="sp-table-scroll"><table class="table sp-cable-table"><thead><tr><th>Connection</th><th>Type</th><th>Estimated route</th><th>Suggested single length</th><th></th></tr></thead><tbody id="sp-runs"></tbody></table></div>
         <div id="sp-totals" class="sp-cable-totals"></div>
