@@ -107,7 +107,17 @@
       </section>
       <div class="sp-summary" id="sp-summary" aria-live="polite"></div>
       <div class="sp-workspace">
-        <section class="sp-scene-shell panel"><div class="sp-scene-head"><div><h2>Interactive space layout</h2><p>Drag equipment or orbit in 3D. Switch to top view to drag boundary corners.</p></div><div class="sp-view-controls"><button id="sp-view-three" class="button small primary">3D view</button><button id="sp-view-top" class="button small">Top view</button><button id="sp-zoom-out" class="button small" aria-label="Zoom out">−</button><button id="sp-zoom-in" class="button small" aria-label="Zoom in">+</button><button id="sp-fit" class="button small">Fit</button></div></div>
+        <section class="sp-scene-shell panel"><div class="sp-scene-head"><div><h2>Interactive space layout</h2><p>Drag equipment or orbit in 3D. Switch to top view to drag boundary corners.</p></div><div class="sp-view-controls" role="toolbar" aria-label="Space view controls">
+          <div class="sp-control-group sp-view-switch" role="group" aria-label="Projection">
+            <button type="button" id="sp-view-three" class="sp-tool sp-toggle is-active" aria-pressed="true" title="3D perspective">3D</button>
+            <button type="button" id="sp-view-top" class="sp-tool sp-toggle" aria-pressed="false" title="Top-down plan">Top</button>
+          </div>
+          <button type="button" id="sp-fit" class="sp-tool sp-reset" title="Reset rotation and zoom" aria-label="Reset rotation and zoom"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 3 6.7"/><path d="M3 4v7h7"/></svg><span>Reset</span></button>
+          <div class="sp-control-group sp-zoom-group" role="group" aria-label="Zoom">
+            <button type="button" id="sp-zoom-out" class="sp-tool sp-zoom-btn" aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+            <button type="button" id="sp-zoom-in" class="sp-tool sp-zoom-btn" aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          </div>
+        </div></div>
           <div class="sp-canvas-wrap"><canvas id="sp-canvas" role="img" aria-label="Interactive, dimensioned event layout. Select objects on the canvas or use the editable equipment list."></canvas><div class="sp-canvas-corner"><span>METRES · NOT TO SCALE FOR CONSTRUCTION</span></div></div>
           <div class="sp-floor-tools"><strong>Add to layout</strong><div class="sp-palette">${TYPES.map(([kind,label])=>`<button class="sp-add" data-kind="${kind}" type="button"><i style="background:${palette[kind]}"></i>${esc(label)}</button>`).join('')}</div></div>
           <div class="sp-hint"><span class="sp-dot" style="background:${CABLES.power.color}"></span> Power <span class="sp-dot" style="background:${CABLES.network.color}"></span> Network <span class="sp-dot" style="background:${CABLES.dmx.color}"></span> DMX <span class="sp-dot" style="background:${CABLES.audio.color}"></span> Audio <label><input id="sp-show-runs" type="checkbox" checked> Show cables</label></div>
@@ -271,7 +281,7 @@
       $('#sp-roof-corners').innerHTML=r.type==='custom'?`<p class="sp-geometry-note">Set a different elevation at each perimeter corner:</p><div class="sp-custom-grid">${g.footprint.map((p,i)=>`<label>Corner ${i+1}<input type="number" data-roof-vertex="${esc(p.id)}" class="field" min="0.5" max="50" step="0.1" value="${G.round(Number.isFinite(Number(r.heights[p.id]))?Number(r.heights[p.id]):r.eave)}"></label>`).join('')}</div>`:'';
       const edit=$('#sp-edit-outline');edit.setAttribute('aria-pressed',String(this.editOutline));
     }
-    setView(mode){this.mode=mode;this.root.querySelector('#sp-view-three').classList.toggle('primary',mode==='three');this.root.querySelector('#sp-view-top').classList.toggle('primary',mode==='top');this.draw();}
+    setView(mode){this.mode=mode;for(const [id,active] of [['sp-view-three',mode==='three'],['sp-view-top',mode==='top']]){const button=this.root.querySelector('#'+id);button.classList.toggle('is-active',active);button.setAttribute('aria-pressed',String(active));}this.draw();}
     selectedItem(){return this.plan.items.find(x=>x.id===this.selected);}
     kindForGear(g){const s=(g?.category||'').toLowerCase();return s.includes('light')?'light':s.includes('audio')?'audio':s.includes('power')?'power':s.includes('control')?'control':s.includes('rig')?'rigging':s.includes('network')?'network':'other';}
     add(kind){const v=this.venue,items=this.plan.items;const proposed={x:r1(clamp(v.width/2+(items.length%4-1.5)*1.2,0,v.width)),y:r1(clamp(v.length/2+Math.floor(items.length/4)*1.1,0,v.length))};const {x,y}=G.insidePosition(v.geometry.footprint,proposed);const obj={id:uid('obj'),kind,name:TYPES.find(t=>t[0]===kind)?.[1]||'Equipment',x,y,z:kind==='light'?Math.min(2.5,G.peakHeight(v)):0,watts:0,eqId:''};items.push(obj);this.selected=obj.id;this.persist();this.updateAll();}
