@@ -105,7 +105,18 @@
       const location=venue(x);
       const venueEntity=location&&o.entities.find(z=>z.legacyType==='venue'&&z.legacyId===location.id);
       const linkId='rel-event-location-'+x.id;
-      if(venueEntity&&!o.relationships.some(r=>r.id===linkId))o.relationships.push({id:linkId,from:eventRecord.id,to:venueEntity.id,type:'Takes place at',notes:'Derived from event booking',system:true});
+      const existingLocation=o.relationships.find(r=>r.id===linkId);
+      if(venueEntity){
+        if(existingLocation)existingLocation.to=venueEntity.id;
+        else o.relationships.push({id:linkId,from:eventRecord.id,to:venueEntity.id,type:'Takes place at',notes:'Derived from event booking',system:true});
+      }else if(existingLocation)o.relationships=o.relationships.filter(r=>r.id!==linkId);
+      const clientEntity=o.entities.find(z=>z.legacyType==='client'&&z.legacyId===x.clientId);
+      const clientLinkId='rel-event-client-'+x.id;
+      const clientLink=o.relationships.find(r=>r.id===clientLinkId);
+      if(clientEntity){
+        if(clientLink)clientLink.from=clientEntity.id;
+        else o.relationships.push({id:clientLinkId,from:clientEntity.id,to:eventRecord.id,type:'Client for',notes:'Derived from booking',system:true});
+      }else if(clientLink)o.relationships=o.relationships.filter(r=>r.id!==clientLinkId);
     });
     const example=org().entities.find(x=>x.id==='ent-demo-supplier');
     if(!example){org().entities.push(
