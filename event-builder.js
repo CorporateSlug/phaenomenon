@@ -47,7 +47,7 @@
   }
   const mark=(id,title,description,state,summary,action,href,extra={})=>
     ({id,title,description,state,summary,action,href,...extra});
-  function inspect(db,e){
+  function inspect(db,e,options={}){
     if(!e)return [];
     const p=plan(db,e),v=venue(db,e),
       spaces=own(v?.spaces).filter(x=>own(e.spaceIds).includes(x.id)),
@@ -61,10 +61,7 @@
     const layoutReady=items.length>0&&!p.needsVenueReview&&!invalidPositions.length;
     const equipmentReady=items.length>0&&gear.incomplete.length===0&&gear.unknown.length===0&&gear.unlinked.length===0;
     const isPublished=!!pub;
-    const revisionStale=!!pub&&(p.needsVenueReview||!!pub.signature&&
-      // Cannot independently compute the signature here; the UI supplies a
-      // reliable live-signature comparison through its existing isChanged().
-      false);
+    const revisionStale=!!pub&&(!!p.needsVenueReview||!!options.changed);
     return [
       mark('brief','Event details','Who, what and when.',
         readyBrief?'complete':'attention',readyBrief?'Event name, client and date recorded':'Add event name, client and date',
