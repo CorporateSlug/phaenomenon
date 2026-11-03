@@ -564,3 +564,13 @@
   .studio-mobile-dock,.studio-mobile-backdrop,.mobile-event-switch{display:none!important}
   body.ph-studio-menu-open{overflow:visible}
 }
+
+
+/* Phone overlays must sit above the persistent dock; don't scroll the page beneath them. */
+@media(max-width:840px){
+  .modal-backdrop,.drawer-backdrop{z-index:1250}
+  body:has(.modal-backdrop),body:has(.drawer-backdrop),body:has(.venue-quick-backdrop){overflow:hidden}
+  .topbar{padding-top:max(8px,env(safe-area-inset-top,0px))}
+  .sidebar{padding-top:calc(18px + env(safe-area-inset-top,0px))}
+  .modal,.drawer{-webkit-overflow-scrolling:touch}
+}
