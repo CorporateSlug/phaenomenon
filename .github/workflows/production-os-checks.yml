@@ -8,6 +8,7 @@ on:
       - 'production.css'
       - 'tests/production-os.test.mjs'
       - 'tests/venue-workflow.test.mjs'
+      - 'tests/venue-booking-ui.test.mjs'
       - 'venue-workflow.js'
       - 'venue-workflow.css'
       - 'app.js'
@@ -21,6 +22,7 @@ on:
       - 'production.css'
       - 'tests/production-os.test.mjs'
       - 'tests/venue-workflow.test.mjs'
+      - 'tests/venue-booking-ui.test.mjs'
       - 'venue-workflow.js'
       - 'venue-workflow.css'
       - 'app.js'
@@ -43,4 +45,4 @@ jobs:
       - name: Verify JavaScript syntax
         run: node --check production-os.js
       - name: Run Production OS and venue workflow regression suites
-        run: node --test tests/production-os.test.mjs tests/venue-workflow.test.mjs
+        run: node --test tests/production-os.test.mjs tests/venue-workflow.test.mjs tests/venue-booking-ui.test.mjs
