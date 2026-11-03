@@ -12,6 +12,7 @@ The existing **Design → Connect → Review → Export** stage lighting planner
 - Versioned crew instruction packs generated from the existing venue, equipment, DMX and cable records.
 - Area-specific printable installation diagrams, task completion, technical verification and issue reporting.
 - Production readiness, assignments, run-of-show cues and draft creative lighting looks.
+- A nested **event crew hierarchy** with in-charge, second-in-charge, team lead and helper positions, reporting-line editor, direct-report links, and protection against circular team structures. Each event has its own team tree.
 - Change-impact review before a revised installation pack is published.
 
 **Prototype limitation:** The new roles are UI presets, not security permissions. Data is stored in the same browser's local storage as the classic demo; there are no accounts, synchronisation or safety approvals. The Abbotsford Convent two-stage example and named demo crew are fictional/illustrative.
