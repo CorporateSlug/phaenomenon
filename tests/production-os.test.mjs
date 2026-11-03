@@ -155,3 +155,40 @@ test('stage structures are included in published crew pack',()=>{
   assert.ok(tasks.some(t=>t.sourceId==='demo-stage-in'&&t.title.includes('Indoor stage')));
   assert.ok(tasks.some(t=>t.sourceId==='demo-stage-out'&&t.title.includes('Outdoor stage')));
 });
+
+test('entity aliases prevent duplicate profiles and event profiles link to the team',()=>{
+  const h=harness(),eventId='ev-abbotsford-two-stage-demo';
+  h.click('profile','ent-demo-hand');
+  h.click('alias','ent-demo-hand');
+  const count=h.read().productionOS.entities.length;
+  h.submit('entity-form',{name:'Example site discrepancy',kind:'Person',aliases:'',notes:''});
+  assert.equal(h.read().productionOS.entities.length,count);
+  h.click('profile','ent-event-'+eventId);
+  assert.match(h.ui.innerHTML,/Production team/);
+  assert.match(h.ui.innerHTML,/Sam · demonstration stagehand/);
+});
+
+test('a supplier can provide multiple equipment types without duplicated identity',()=>{
+  const base={
+    projects:[],leads:[],events:[],clients:[],fixtures:[],eventJobs:[],venues:[],venuePlans:{},technicalPlans:{},
+    equipment:[{id:'eq-bar',name:'Pixel bar',category:'Lighting',owned:20,rate:35,watts:65},
+               {id:'eq-wash',name:'LED wash',category:'Lighting',owned:12,rate:50,watts:140}]
+  };
+  const h=harness(new Map([['phaenomenon-demo-v1',JSON.stringify(base)]]));
+  const values={entityId:'ent-demo-supplier',role:'Supplier',areaId:'all',responsibility:'Hire'};
+  h.submit('assign-form',{...values,equipmentId:'eq-bar',quantity:'12'});
+  h.submit('assign-form',{...values,equipmentId:'eq-wash',quantity:'4'});
+  const links=h.read().productionOS.assignments.filter(a=>a.entityId==='ent-demo-supplier'&&a.role==='Supplier');
+  assert.equal(links.length,2);
+  assert.deepEqual(links.map(x=>x.quantity),[12,4]);
+});
+
+test('task assignment outside member work area is visibly flagged',()=>{
+  const h=harness(),e='ev-abbotsford-two-stage-demo';
+  const indoor=h.read().productionOS.published[e].tasks.find(x=>x.sourceId==='demo-stage-in');
+  h.navigate('#/production');
+  h.change({id:'',dataset:{act:'task-owner',id:indoor.id},value:'ent-demo-hand'});
+  assert.match(h.ui.innerHTML,/Check assigned area/);
+  h.navigate('#/crew');
+  assert.match(h.ui.innerHTML,/Check assignment: different work area/);
+});
