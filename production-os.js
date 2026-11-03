@@ -491,13 +491,13 @@
         '<button class="btn small danger no-print" data-act="delete-look" data-id="'+esc(x.id)+'">Remove</button></div><h3 style="margin-top:12px">'+esc(x.name)+'</h3>'+
         '<p class="muted">'+esc(areaName(e,x.areaId))+' · '+esc(x.intensity)+'% · '+esc(x.effect)+'</p><p class="form-note">'+esc(x.notes||'')+'</p></div>'
       ).join(''):'<div class="empty">No looks defined yet. Add a creative idea below.</div>')+'</div>'+
-      '<form id="look-form" class="form-grid"><label>Look name<input class="input" name="name" required maxlength="100" placeholder="e.g. Sunset wash"></label>'+
+      '<details class="workspace-disclosure"><summary>+ Add draft lighting look</summary><div class="disclosure-body"><form id="look-form" class="form-grid"><label>Look name<input class="input" name="name" required maxlength="100" placeholder="e.g. Sunset wash"></label>'+
       '<label>Space<select name="areaId">'+areas(e).map(a=>'<option value="'+esc(a.id)+'">'+esc(a.name)+'</option>').join('')+'</select></label>'+
       '<label>Colour<input class="input" type="color" name="color" value="#8cddcf"></label>'+
       '<label>Intensity (%)<input class="input" type="number" min="0" max="100" step="1" name="intensity" value="75"></label>'+
       '<label>Effect concept<select name="effect"><option>Static</option><option>Slow fade</option><option>Pulse</option><option>Chase</option><option>Audio-reactive (concept)</option><option>Other</option></select></label>'+
       '<label>Notes<input class="input" name="notes" maxlength="220" placeholder="Fixture group / desired mood"></label>'+
-      '<div class="wide"><button class="btn primary" type="submit">+ Add draft look</button></div></form></section>';
+      '<div class="wide"><button class="btn primary" type="submit">Add draft look</button></div></form></div></details></section>';
   }
   function patchTable(e){
     const p=plan(e),t=db.technicalPlans?.[e.id]||{};
@@ -814,12 +814,12 @@
       productionTabs()+productionPane('team')+teamStructure(e)+
       '<div class="grid cols2 section"><section class="panel"><div class="section-head"><h2>Event team</h2>'+pill(a.length+' assignments')+'</div>'+
       '<div class="stack">'+(a.length?a.map(x=>'<div class="linkrow"><div><strong><a href="#/entities/'+encodeURIComponent(x.entityId)+'" data-act="profile" data-id="'+esc(x.entityId)+'">'+esc(aname(x.entityId))+'</a></strong><div class="detail">'+esc(x.role)+' · '+esc(x.areaId==='all'?'Entire event':areaName(e,x.areaId))+(x.responsibility?' · '+esc(x.responsibility):'')+(x.equipmentId&&x.quantity?' · '+esc(x.quantity)+' × '+esc((db.equipment||[]).find(g=>g.id===x.equipmentId)?.name||'Unknown equipment'):'')+'</div></div><button class="btn small danger" data-act="remove-assignment" data-id="'+esc(x.id)+'">Remove</button></div>').join(''):'<div class="empty">No assignments yet.</div>')+'</div>'+
-      '<div class="sep"></div><h3>Assign someone to this event</h3><form id="assign-form" class="form-grid">'+
+      '<details class="workspace-disclosure"><summary>+ Add person or supplier</summary><div class="disclosure-body"><form id="assign-form" class="form-grid">'+
       '<label>Person or organisation<select name="entityId" required>'+org().entities.filter(x=>['Person','Organisation'].includes(x.kind)).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
       '<label>Role<select name="role"><option>Production manager</option><option>Lighting designer</option><option>Lighting technician</option><option>Stagehand</option><option>DJ</option><option>Promoter</option><option>Event organiser</option><option>Audio technician</option><option>Video technician</option><option>Supplier</option><option>Other</option></select></label>'+
       '<label>Responsibility / notes<input class="input" name="responsibility" maxlength="180" placeholder="e.g. Patch outdoor stage"></label>'+
       '<label>Assigned area<select name="areaId"><option value="all">Entire event</option>'+areas(e).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
-      '<label>Equipment supplied (optional)<select name="equipmentId"><option value="">No equipment linked</option>'+(db.equipment||[]).map(g=>'<option value="'+esc(g.id)+'">'+esc(g.name)+'</option>').join('')+'</select></label><label>Quantity supplied (optional)<input class="input" type="number" name="quantity" min="0" max="9999" step="1" value="0"></label>'+'<div class="wide"><button class="btn primary" type="submit">+ Add assignment</button></div></form></section>'+
+      '<label>Equipment supplied (optional)<select name="equipmentId"><option value="">No equipment linked</option>'+(db.equipment||[]).map(g=>'<option value="'+esc(g.id)+'">'+esc(g.name)+'</option>').join('')+'</select></label><label>Quantity supplied (optional)<input class="input" type="number" name="quantity" min="0" max="9999" step="1" value="0"></label>'+'<div class="wide"><button class="btn primary" type="submit">Add to event team</button></div></form></div></details></section>'+
       '<section class="panel"><div class="section-head"><h2>Installation readiness</h2>'+pill('Revision '+(p?.revision||'—'))+'</div>'+
       '<div class="row between"><span class="muted">Installed tasks</span><strong>'+c.installed+' / '+c.all+'</strong></div><div class="progress" style="margin:13px 0"><div style="width:'+done+'%"></div></div>'+
       '<div class="row between"><span class="muted">Independently verified</span><strong>'+c.verified+' / '+c.all+'</strong></div>'+
@@ -831,8 +831,8 @@
       '<p class="muted">A lightweight production cue list. This does not drive live lighting consoles or control show-critical systems.</p>'+
       '<div class="table-scroll"><table><thead><tr><th>Time</th><th>Cue / activity</th><th>Area</th><th>Draft look</th><th>Status</th><th></th></tr></thead><tbody>'+
       (org().show[e.id]||[]).slice().sort((a,b)=>a.time.localeCompare(b.time)).map(x=>'<tr><td>'+esc(x.time)+'</td><td>'+esc(x.title)+'</td><td>'+esc(areaName(e,x.areaId))+'</td><td>'+esc((org().looks[e.id]||[]).find(l=>l.id===x.lookId)?.name||'—')+'</td><td>'+pill(x.done?'Done':'Planned',x.done?'good':'')+'</td><td><button class="btn small" data-act="toggle-cue" data-id="'+esc(x.id)+'">'+(x.done?'Reopen':'Mark done')+'</button></td></tr>').join('')+'</tbody></table></div>'+
-      '<form id="cue-form" class="form-grid" style="margin-top:15px"><label>Time<input class="input" type="time" name="time" required value="19:00"></label><label>Area<select name="areaId">'+areas(e).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
-      '<label class="wide">Cue or activity<input class="input" name="title" required maxlength="160" placeholder="e.g. Outdoor stage changeover"></label><label class="wide">Optional draft lighting look<select name="lookId"><option value="">No linked look</option>'+(org().looks[e.id]||[]).map(l=>'<option value="'+esc(l.id)+'">'+esc(l.name)+'</option>').join('')+'</select></label><div class="wide"><button class="btn primary" type="submit">+ Add cue</button></div></form></section>'+
+      '<details class="workspace-disclosure"><summary>+ Add show cue</summary><div class="disclosure-body"><form id="cue-form" class="form-grid"><label>Time<input class="input" type="time" name="time" required value="19:00"></label><label>Area<select name="areaId">'+areas(e).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
+      '<label class="wide">Cue or activity<input class="input" name="title" required maxlength="160" placeholder="e.g. Outdoor stage changeover"></label><label class="wide">Optional draft lighting look<select name="lookId"><option value="">No linked look</option>'+(org().looks[e.id]||[]).map(l=>'<option value="'+esc(l.id)+'">'+esc(l.name)+'</option>').join('')+'</select></label><div class="wide"><button class="btn primary" type="submit">Add cue</button></div></form></div></details></section>'+
       '<section class="panel"><h2>Published revisions</h2>'+([...(p?.history||[]),...(p?[{revision:p.revision,at:p.at,tasks:p.tasks}]:[])].reverse().map(x=>'<div class="linkrow"><div><strong>Revision '+x.revision+'</strong><div class="detail">'+new Date(x.at).toLocaleString('en-AU')+' · '+(x.tasks?.length||0)+' tasks</div></div>'+pill(x.revision===p.revision?'Current':'Archived')+'</div>').join('')||'<div class="empty">No revisions yet.</div>')+'</section></section>';
   }
   function navigateProfile(id,backOrForward){
@@ -883,12 +883,13 @@
       '<div class="form-grid section"><label>Search name, alias or notes<input class="input" id="entity-search" placeholder="Search entities" value="'+esc(ui.query)+'"></label>'+
       '<label>Entity type<select id="entity-filter">'+['All','Person','Organisation','Venue','Space','Event'].map(x=>'<option '+(ui.entityType===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label></div>'+
       '<div class="stack">'+(all.map(x=>'<button class="linkrow" data-act="profile" data-id="'+esc(x.id)+'"><div><strong>'+esc(x.name)+'</strong><div class="detail">'+esc(x.kind)+(x.aliases?.length?' · '+esc(x.aliases.join(', ')):'')+'</div></div><span class="chev">›</span></button>').join('')||'<div class="empty">No matching entities.</div>')+'</div></section>'+
-      '<section class="panel"><h2>Create entity</h2><p class="muted">An entity exists once, even when it has different roles at different events.</p><form id="entity-form" class="form-grid">'+
+      '<section class="panel"><details class="workspace-disclosure"><summary>+ Add person or organisation</summary><div class="disclosure-body"><p class="muted">Create a person or organisation once, then assign different roles to each event.</p><form id="entity-form" class="form-grid">'+
       '<label>Name<input class="input" name="name" maxlength="140" required placeholder="Display name"></label>'+
-      '<label>Type<select name="kind"><option>Person</option><option>Organisation</option><option>Venue</option><option>Space</option></select></label>'+
+      '<label>Type<select name="kind"><option>Person</option><option>Organisation</option></select></label>'+
       '<label class="wide">Aliases (comma separated)<input class="input" name="aliases" placeholder="Other names or abbreviations"></label>'+
       '<label class="wide">Notes<textarea name="notes" maxlength="4000"></textarea></label>'+
-      '<div class="wide"><button class="btn primary" type="submit">+ Create entity</button></div></form><p class="form-note">Adding a venue entity alone does not create a measurable 3D geometry record. Set up venue geometry in the classic planner.</p></section></div>'+
+      '<div class="wide"><button class="btn primary" type="submit">Create record</button></div></form><p class="form-note">Venues and spaces are managed in the reusable Venue library.</p>'+
+      '<a class="btn small" href="#/home/venue/'+encodeURIComponent(e?.id||'')+'">Manage venues &amp; spaces</a></div></details></section></div>'+
       (selected?entityProfile(selected,e):'<section class="panel inspector"><div class="empty">Select an entity to see its profile, aliases, relationships, roles and linked events.</div></section>')+'</div>';
   }
   function route(){
@@ -1107,6 +1108,7 @@
     }
     if(f.id==='entity-form'){
       if(!val('name'))return;
+      if(!['Person','Organisation'].includes(val('kind'))){notice('Create venues and spaces in the Venue library, not as unlinked records.');return;}
       const existing=o.entities.find(x=>x.kind===val('kind')&&(x.name.toLowerCase()===val('name').toLowerCase()||(x.aliases||[]).some(alias=>alias.toLowerCase()===val('name').toLowerCase())));
       if(existing){navigateProfile(existing.id);notice('Existing entity opened instead of creating a duplicate.');return;}
       const x={id:uid('ent'),name:val('name').slice(0,140),kind:entityKind(val('kind')),aliases:val('aliases').split(',').map(x=>x.trim()).filter(Boolean).slice(0,30),notes:val('notes').slice(0,4000)};
