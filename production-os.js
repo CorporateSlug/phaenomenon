@@ -486,6 +486,26 @@
   }
 
 
+
+  function builderEquipmentLinks(e,gear){
+    const objects=[...gear.unlinked,...gear.unknown,...gear.ignored];
+    if(!objects.length)return '';
+    const catalog=db.equipment||[];
+    return '<details class="workspace-disclosure section builder-item-links"><summary>Resolve '+(gear.unlinked.length+gear.unknown.length)+' catalogue links'+(gear.ignored.length?' · '+gear.ignored.length+' intentionally excluded':'')+'</summary>'+
+      '<div class="disclosure-body"><p class="muted">Each physical object can link to a reusable equipment type. If it is a venue feature or another object that is not part of the event hire kit, mark it as excluded. Adding a catalogue placeholder does not claim you own that equipment.</p>'+
+      '<div class="stack">'+objects.map(item=>{
+        const isIgnored=item.kitTracked===false;
+        return '<div class="builder-link-row"><div><strong>'+esc(item.name)+'</strong><small>'+esc(item.kind||'Object')+' · '+esc(areaName(e,item.areaId))+'</small></div>'+
+        '<label>Equipment library link<select data-act="builder-link-object" data-id="'+esc(item.id)+'">'+
+        '<option value="" '+(!item.eqId&&!isIgnored?'selected':'')+'>Not linked yet</option>'+
+        catalog.map(g=>'<option value="'+esc(g.id)+'" '+(!isIgnored&&item.eqId===g.id?'selected':'')+'>'+esc(g.name)+'</option>').join('')+
+        '<option value="__new__">+ Create catalogue placeholder…</option>'+
+        '<option value="__skip__" '+(isIgnored?'selected':'')+'>Not part of the event kit</option>'+
+        '</select></label></div>';
+      }).join('')+'</div>'+
+      '<p class="form-note">Changing a linked object can affect published crew instructions. Review and publish a revision if necessary.</p></div></details>';
+  }
+
   function builderPage(e,c){
     const model=window.PhaenomenonEventBuilder;
     if(!e)return hero('EVENT BUILDER','Start a production','Create an event to begin.','<button class="btn primary" data-act="builder-new">+ Create event</button>');
@@ -512,7 +532,7 @@
       (gear&&gear.incomplete.length?'<section class="panel section builder-action-panel"><div class="section-head"><div><h2>Event kit is behind the layout</h2><p class="muted">Placed items linked to the equipment catalogue need matching quantities in this event’s kit. Existing unrelated quantities are preserved.</p></div><span class="builder-state attention">'+gear.incomplete.length+' gaps</span></div>'+
       '<div class="stack">'+gear.incomplete.map(x=>'<div class="linkrow"><strong>'+esc(x.name)+'</strong><span class="muted">'+x.placed+' placed · '+x.requested+' allocated</span></div>').join('')+'</div>'+
       '<button class="btn primary" style="margin-top:13px" data-act="builder-reconcile-kit">Bring kit up to placed quantities</button></section>':'')+
-      (gear&&(gear.unlinked.length||gear.unknown.length)?'<div class="notice info section"><strong>Equipment catalogue links to review:</strong> '+gear.unlinked.length+' placed object(s) not linked to the equipment library and '+gear.unknown.length+' with missing catalogue references. <a href="index.html#/spaces/'+encodeURIComponent(e.id)+'">Review the 3D design ↗</a></div>':'')+
+            (gear?builderEquipmentLinks(e,gear):'')+
       '<div class="builder-footnote">You can leave an event as a draft and return to any step. Layout revisions, technical verification and crew sign-offs remain separate from these planning markers.</div>';
   }
   let builderEventOpen=false;
@@ -1143,6 +1163,35 @@
     if(el.id==='area-picker'){ui.area=el.value;store();render();}
     if(el.id==='crew-person-picker'){ui.crewPerson=el.value;store();render();}
     if(el.id==='entity-filter'){ui.entityType=el.value;render();}
+    if(el.dataset.act==='builder-link-object'){
+      const e=current(),item=plan(e).items?.find(x=>x.id===el.dataset.id);
+      if(!item)return;
+      if(el.value==='__skip__'){
+        delete item.eqId;item.kitTracked=false;
+      }else if(el.value==='__new__'){
+        const same=db.equipment?.find(x=>x.name.trim().toLocaleLowerCase('en-AU')===String(item.name||'').trim().toLocaleLowerCase('en-AU'));
+        if(same){
+          if(!confirm('An equipment catalogue item with the same name exists. Link this placed object to '+same.name+'?'))return;
+          item.eqId=same.id;item.kitTracked=true;
+        }else{
+          if(!confirm('Create a reusable equipment catalogue placeholder for "'+item.name+'"?\n\nOwned quantity and hire rate will start at zero. Check the specifications independently.'))return;
+          const id=uid('eq');
+          if(!Array.isArray(db.equipment))db.equipment=[];
+          const category=({light:'Lighting',audio:'Audio',video:'Video',control:'Control',network:'Network',power:'Power',stage:'Staging',rigging:'Rigging'})[item.kind]||'Other';
+          db.equipment.push({id,name:String(item.name||'Equipment').trim().slice(0,120),category,owned:0,rate:0,watts:Math.max(0,num(item.watts))});
+          item.eqId=id;item.kitTracked=true;
+        }
+      }else if(el.value===''){
+        delete item.eqId;item.kitTracked=true;
+      }else{
+        const gear=db.equipment?.find(x=>x.id===el.value);
+        if(!gear){notice('Choose an existing equipment type.');return;}
+        item.eqId=gear.id;item.kitTracked=true;
+        if(item.watts==null&&Number.isFinite(Number(gear.watts)))item.watts=Number(gear.watts);
+      }
+      if(store())notice('Layout equipment link updated. Review kit allocation and any published instructions.');
+      return;
+    }
     if(el.dataset.act==='kit-quantity'){
       const e=current(),id=el.dataset.id;
       if(!db.equipment.some(x=>x.id===id))return;
