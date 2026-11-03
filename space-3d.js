@@ -112,21 +112,16 @@ class SceneViewer{
    }
   }
   if(this.p.showRuns){for(const cable of this.p.plan.runs){const r=this.p.route(cable);if(r){this.line(r.points.map(p=>this.point(p.x,p.y,Math.max(.05,p.z))),cableColors[cable.type]||0xd4e8e1,.9)}}}
-  this.p.plan.items.forEach(o=>this.addItem(o));
+  let migrated=false;
+  this.p.plan.items.forEach(o=>{if(o.kind==='light'&&window.PhaenomenonFixtures?.ensure(o))migrated=true;this.addItem(o)});
+  if(migrated)this.p.save();
   this.updateCamera();this.render();this.decorateInspector();
  }
  addItem(o){
   const kind=o.kind||'other',color=colors[kind]||colors.other,selected=o.id===this.p.selected;
   const group=new T.Group();group.position.copy(this.point(o.x,o.y,Math.max(.17,n(o.z))));group.rotation.y=-rad(n(o.rotation));this.world.add(group);this.meshes.set(o.id,group);
   const mat=this.mat(color),add=(mesh)=>{mesh.userData.itemId=o.id;group.add(mesh);this.picks.push(mesh);return mesh};
-  if(kind==='light'){
-   const head=add(new T.Mesh(new T.CylinderGeometry(.23,.23,.45,18),mat));head.rotation.x=Math.PI/2;
-   const lens=add(new T.Mesh(new T.CylinderGeometry(.18,.18,.018,20),new T.MeshBasicMaterial({color:0xffe0a4})));lens.rotation.x=Math.PI/2;lens.position.z=-.23;
-   if(this.showBeams){const tilt=rad(clamp(n(o.tilt,48),2,89)),pan=rad(n(o.pan)),distance=clamp(n(o.beamRange,8),1,30),length=Math.min(distance,Math.max(.5,n(o.z))/Math.sin(tilt));
-    const d=new T.Vector3(Math.sin(pan)*Math.cos(tilt),-Math.sin(tilt),-Math.cos(pan)*Math.cos(tilt));
-    const cone=new T.Mesh(new T.ConeGeometry(Math.tan(rad(clamp(n(o.beamAngle,35),5,100))/2)*length,length,24,1,true),new T.MeshBasicMaterial({color:0xffd798,transparent:true,opacity:.13,depthWrite:false,side:T.DoubleSide}));
-    cone.position.copy(d.clone().multiplyScalar(length/2));cone.quaternion.setFromUnitVectors(new T.Vector3(0,-1,0),d);group.add(cone);
-    const aim=new T.ArrowHelper(d,new T.Vector3(0,0,0),Math.min(1.4,length),0xffd798,.12,.08);group.add(aim)}
+  if(kind==='light'){window.PhaenomenonFixtures?.build3D(T,o,group,add,this.showBeams);
   }else if(kind==='stage'){const mesh=add(new T.Mesh(new T.BoxGeometry(1.8,.26,1.25),mat));mesh.position.y=.06}
   else if(kind==='rigging'){const mesh=add(new T.Mesh(new T.BoxGeometry(.2,1.5,.2),mat));mesh.position.y=.55}
   else if(kind==='audio'){add(new T.Mesh(new T.BoxGeometry(.52,.7,.38),mat))}
@@ -137,12 +132,8 @@ class SceneViewer{
  }
  label(s,v,type){const d=document.createElement('span');d.className='sp3-label sp3-label-'+type;d.textContent=s;this.labels.append(d);this.labelRefs.push({d,v,type})}
  decorateInspector(){
-  const o=this.p.selectedItem(),el=this.p.root.querySelector('#sp-inspect-body');if(!o||!el||el.querySelector('.sp3-properties'))return;
-  const node=document.createElement('div');node.className='sp3-properties';
-  const inp=(label,key,val,min,max,step)=>'<label>'+label+'<input type="number" class="field" data-sp3="'+key+'" min="'+min+'" max="'+max+'" step="'+step+'" value="'+n(val)+'"></label>';
-  node.innerHTML='<strong>Orientation'+(o.kind==='light'?' & light beam':'')+'</strong><div class="sp3-fields">'+inp('Rotation °','rotation',o.rotation,0,360,5)+(o.kind==='light'?inp('Pan °','pan',o.pan,0,360,5)+inp('Tilt down °','tilt',o.tilt??48,2,89,1)+inp('Beam °','beamAngle',o.beamAngle??35,5,100,1)+inp('Range m','beamRange',o.beamRange??8,1,30,.5):'')+'</div>';
-  el.append(node);
-  node.querySelectorAll('[data-sp3]').forEach(input=>input.addEventListener('change',()=>{const limits={rotation:[0,360],pan:[0,360],tilt:[2,89],beamAngle:[5,100],beamRange:[1,30]},k=input.dataset.sp3;o[k]=clamp(n(input.value),...limits[k]);this.p.save();this.rebuild()}))
+  const item=this.p.selectedItem(),el=this.p.root.querySelector('#sp-inspect-body');
+  if(item&&el&&!el.querySelector('.sp-optics'))this.p.updateInspector();
  }
  updateCamera(){
   const w=Math.max(1,this.host.clientWidth),h=Math.max(1,this.host.clientHeight),aspect=w/h;
