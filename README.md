@@ -87,7 +87,14 @@ This is a single-browser, local-first demo using `localStorage`. **Changes do no
 See [VISION.md](VISION.md) for a longer product and engineering roadmap.
 ## Technical planning (linked event systems)
 
-The 3D Space Planner includes **3D Layout**, **Power + data map**, **DMX patch**, **Power**, **Cable runs**, and **Install pack** views. These are connected to the same placed equipment and physical cable runs. A change to placement recalculates estimated route lengths; a change to a fixture mode/address or circuit assignment updates the technical summaries and print pack.
+The Space Planner now uses a **four-step guided workflow**, following the same progressive-disclosure pattern as SlugSync: **1. Design → 2. Connect → 3. Review → 4. Export**. Each step has short instructions, forward/back navigation and optional direct jumping to earlier steps. The earlier six top-level technical views are preserved as focused tasks inside these four steps, rather than competing navigation tabs.
+
+1. **Design:** Choose an event and venue, model the floorplan/roof, add and aim equipment in 3D. When ready, continue to Connect.
+2. **Connect:** Complete the three small tasks in order: **DMX patch**, **Power circuits**, then **Cable runs**. Existing technical editors and detailed manufacturer inputs remain available, with advanced cable settings collapsed.
+3. **Review:** Read automatically generated DMX and power connection diagrams and exceptions. Use direct **Edit DMX**, **Edit power**, **Edit cables** or **Move fixtures** shortcuts to make corrections.
+4. **Export:** Review the installation checklist and print the crew pack (including connection maps), or export a CSV schedule.
+
+The event, fixture positions, physical cable connections, DMX addresses, power assignments and reports all share the same underlying data. Changes in the 3D model automatically update cable length estimates and regenerate the map/reports. Workflow position is remembered with the event in browser storage, but visiting a stage does **not** mean its technical checks have passed. Users can move between any stages without blocked steps.
 
 - **DMX:** Enter real fixture mode footprints, choose universes and assign starts. Automatic addressing only works on enabled devices with entered footprints. Locked addresses are preserved. Collisions and addresses exceeding 512 are flagged. DMX physical topology is defined by actual cable connections, not inferred from address order.
 - **Power:** Enter circuits with user-defined voltage, current limit and warning threshold; assign each device and optionally supply rated current. Values calculated from watts/voltage are rough estimates only and do not account for power factor, protection or installation rules.
