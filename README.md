@@ -3,11 +3,11 @@
 
 ## Simplified navigation and focused workspaces (November 2026)
 
-The classic Studio and Production views now use the same task-based information architecture. The main menus keep **Event workspace**, **Events** and **Studio home** immediately accessible; specialised links sit in expandable groups:
+The classic Studio and Production views now use the same task-based information architecture. The main menus keep **Event workspace**, **Events** and **Studio overview** immediately accessible; specialised links sit in expandable groups:
 
 - **Plan & design:** 3D planner and technical connections.
 - **Deliver the event:** Crew installation and Production (team, equipment, installation, show schedule).
-- **Library & people:** Reusable Venues and Spaces, people and organisations, equipment and fixture profiles.
+- **Library & people:** Reusable Venues and Spaces, people and organisations, equipment and fixture library.
 - **Studio management:** Projects, opportunities, calendar, clients, invoices and Settings.
 
 The Studio sidebar has **Plan & design**, **Equipment library** and **Studio management** submenus, rather than a long flat list. Production offers **Plan & design**, **Deliver the event**, **Library & people** and **Studio management**. Both switch to an expandable vertical menu on smaller screens, instead of forcing users to scroll through a long horizontal bar.
