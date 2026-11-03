@@ -359,3 +359,38 @@
 }
 /* No menus in generated printouts. */
 @media print{.nav-mobile-toggle{display:none!important}}
+
+
+/* Focused booking workflow: details and equipment remain mounted, but only one is visible. */
+.bookings-metrics{border:1px solid #dce7e5;border-radius:10px;background:#f7faf9;margin:0 0 17px;overflow:hidden}
+.bookings-metrics>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;padding:11px 15px;color:#637b7d;cursor:pointer;font-size:12px;font-weight:700}
+.bookings-metrics>summary::-webkit-details-marker{display:none}
+.bookings-metrics>summary::marker{content:""}
+.bookings-metrics>summary:hover{background:#edf4f1}
+.bookings-metrics>summary>span{font-size:13px}
+.bookings-metrics[open]>summary>span{transform:rotate(180deg)}
+.bookings-metrics .event-summary{padding:0 12px 12px;margin:0}
+.event-detail-tabs{display:flex;align-items:stretch;gap:5px;border-bottom:1px solid #dce8e5;margin:9px 0 16px}
+.event-detail-tab{appearance:none;border:0;border-bottom:2px solid transparent;padding:11px 15px;margin-bottom:-1px;background:transparent;color:#7b9094;font-size:12px;font-weight:750;cursor:pointer;display:inline-flex;gap:9px;align-items:center}
+.event-detail-tab:hover{color:#314e4d}
+.event-detail-tab.active{border-bottom-color:#36776c;color:#2d5751}
+.event-detail-tab:focus-visible{outline:2px solid #5b9e92;outline-offset:-2px}
+.event-detail-panel[hidden]{display:none!important}
+.event-detail-panel .event-form{padding-top:3px;margin-top:0;border:0}
+.event-detail-panel .equipment-head{border:0;margin:3px 0 16px;padding:0}
+.event-tab-count{padding:2px 7px;font-size:10px;background:#eaf2ef;border-radius:99px;color:#54786f}
+.event-more{position:relative}
+.event-more summary{list-style:none}
+.event-more summary::-webkit-details-marker{display:none}
+.event-more summary::marker{content:""}
+.event-more-list{position:absolute;right:0;top:calc(100% + 7px);z-index:8;display:grid;gap:6px;min-width:160px;padding:9px;background:white;border:1px solid #dbe5e3;border-radius:10px;box-shadow:0 15px 34px #17322b25}
+.event-more-list .button{width:100%;justify-content:flex-start;text-align:left}
+.event-work-head .inline-actions{gap:7px;flex-wrap:wrap}
+.event-work-head{align-items:center}
+@media(max-width:680px){
+ .event-work-head{align-items:flex-start}
+ .event-detail-tabs{overflow-x:auto}
+ .event-detail-tab{white-space:nowrap;padding:10px 12px}
+ .event-more-list{right:auto;left:0}
+ .bookings-metrics .event-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
