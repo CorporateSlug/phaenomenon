@@ -16,7 +16,7 @@ The existing **Design → Connect → Review → Export** stage lighting planner
 
 **Prototype limitation:** The new roles are UI presets, not security permissions. Data is stored in the same browser's local storage as the classic demo; there are no accounts, synchronisation or safety approvals. The Abbotsford Convent two-stage example and named demo crew are fictional/illustrative.
 
-To run regression tests with a recent Node.js installation: \`node --test tests/production-os.test.mjs\`.
+To run regression tests with a recent Node.js installation: `node --test tests/production-os.test.mjs`.
 
 ---
 
