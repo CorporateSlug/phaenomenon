@@ -17,8 +17,9 @@
   const entries=(db,e)=>own(db?.productionOS?.assignments).filter(x=>x.eventId===e?.id);
   function mapEquipment(db,e){
     const items=own(plan(db,e).items),catalogue=own(db?.equipment),existing=own(e?.kit);
-    const map=new Map(),unlinked=[],unknown=[];
+    const map=new Map(),unlinked=[],unknown=[],ignored=[];
     for(const item of items){
+      if(item.kitTracked===false){ignored.push(item);continue;}
       if(!item.eqId){unlinked.push(item);continue;}
       if(!catalogue.some(x=>x.id===item.eqId)){unknown.push(item);continue;}
       map.set(item.eqId,(map.get(item.eqId)||0)+1);
@@ -28,7 +29,7 @@
       const requested=existing.filter(x=>x.id===id).reduce((a,b)=>a+qty(b.qty),0);
       return {id,name:gear.name,placed,requested,missing:Math.max(0,placed-requested)};
     });
-    return {linked:[...map.values()].reduce((a,b)=>a+b,0),unlinked,unknown,gaps,
+    return {linked:[...map.values()].reduce((a,b)=>a+b,0),unlinked,unknown,ignored,gaps,
       incomplete:gaps.filter(x=>x.missing>0),catalogueCount:catalogue.length};
   }
   function reconcileKit(db,eventId){
@@ -75,7 +76,7 @@
         'Open 3D planner','index.html#/spaces/'+encodeURIComponent(e.id)),
       mark('equipment','Equipment kit','Link physical layout to event equipment quantities.',
         equipmentReady?'complete':items.length?'attention':'todo',
-        !items.length?'Add a layout first':gear.unlinked.length+' unlinked · '+gear.unknown.length+' unknown · '+gear.incomplete.length+' kit gaps',
+        !items.length?'Add a layout first':gear.unlinked.length+' unlinked · '+gear.unknown.length+' unknown · '+gear.incomplete.length+' kit gaps'+(gear.ignored.length?' · '+gear.ignored.length+' excluded from kit':''),
         'Check equipment','#/production/logistics/'+encodeURIComponent(e.id),
         {equipment:gear}),
       mark('connections','Technical connections','Plan power, DMX, network, audio and video connections.',
