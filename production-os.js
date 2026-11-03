@@ -800,9 +800,9 @@
   function productionTabs(){
     return '<nav class="tabs production-tabs section no-print" role="tablist" aria-label="Production work areas">'+
       PRODUCTION_TABS.map(([key,label])=>
-        '<button type="button" class="tab '+(ui.productionTab===key?'active':'')+'" role="tab" aria-selected="'+(ui.productionTab===key)+'" aria-controls="production-'+key+'" data-act="production-tab" data-id="'+key+'">'+label+'</button>').join('')+'</nav>';
+        '<button type="button" class="tab '+(ui.productionTab===key?'active':'')+'" role="tab" aria-selected="'+(ui.productionTab===key)+'" aria-controls="production-'+key+'" data-act="production-tab" data-id="'+key+'">'+esc(label)+'</button>').join('')+'</nav>';
   }
-  function productionPane(key){return '<section id="production-'+key+'" role="tabpanel" aria-label="'+PRODUCTION_TABS.find(x=>x[0]===key)[1]+'" class="production-pane '+(ui.productionTab===key?'active':'')+'">';}
+  function productionPane(key){return '<section id="production-'+key+'" role="tabpanel" aria-label="'+esc(PRODUCTION_TABS.find(x=>x[0]===key)[1])+'" class="production-pane '+(ui.productionTab===key?'active':'')+'">';}
 
   function production(e,c){
     const p=published(e),a=org().assignments.filter(x=>x.eventId===e.id);
