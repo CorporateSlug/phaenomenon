@@ -35,14 +35,14 @@ function harness(){
 test('an existing show cue can be edited without changing other cues or lighting looks',()=>{
   const h=harness(),api=h.window.__test,e=api.current(),cues=api.org().show[e.id]||[];
   api.org().show[e.id]=cues;
-  const other={id:'other-cue',time:'20:00',title:'Doors',areaId:e.spaceIds[0],done:false};
-  const cue={id:'edit-cue',time:'20:30',title:'Performance',areaId:e.spaceIds[0],done:true};
+  const other={id:'other-cue',time:'20:00',title:'Doors',areaId:(e.spaceIds?.[0]||'ab-indoor'),done:false};
+  const cue={id:'edit-cue',time:'20:30',title:'Performance',areaId:(e.spaceIds?.[0]||'ab-indoor'),done:true};
   cues.push(other,cue);
   h.refresh();
   assert.match(h.ui.innerHTML,/data-act="edit-cue"/);
   h.click('edit-cue',cue.id);
   assert.match(h.modal(),/id="cue-editor-form"/);
-  h.submit('cue-editor-form',{id:cue.id,time:'21:30',title:'Encore',areaId:e.spaceIds[0],lookId:''});
+  h.submit('cue-editor-form',{id:cue.id,time:'21:30',title:'Encore',areaId:(e.spaceIds?.[0]||'ab-indoor'),lookId:''});
   assert.equal(cue.title,'Encore');
   assert.equal(cue.time,'21:30');
   assert.equal(cue.done,false);
@@ -51,7 +51,7 @@ test('an existing show cue can be edited without changing other cues or lighting
 });
 test('removing one show cue leaves other cues and draft lighting looks alone',()=>{
   const h=harness(),api=h.window.__test,e=api.current();
-  api.org().show[e.id]=[{id:'cue-one',time:'21:00',title:'Changeover',areaId:e.spaceIds[0]},{id:'cue-two',time:'22:00',title:'Main set',areaId:e.spaceIds[0]}];
+  api.org().show[e.id]=[{id:'cue-one',time:'21:00',title:'Changeover',areaId:(e.spaceIds?.[0]||'ab-indoor')},{id:'cue-two',time:'22:00',title:'Main set',areaId:(e.spaceIds?.[0]||'ab-indoor')}];
   const existing=JSON.stringify(api.org().looks[e.id]||[]);
   h.click('delete-cue','cue-one');
   assert.equal(api.org().show[e.id].length,1);
