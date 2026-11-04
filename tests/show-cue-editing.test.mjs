@@ -19,6 +19,9 @@ function harness(){
     body:{insertAdjacentHTML:(where,html)=>{modal=html}}
   };
   class FormDataMock{constructor(el){this.v=el.values||{}}get(key){return this.v[key]??null}getAll(key){return this.v[key]||[]}}
+  for(const file of ['event-lifecycle.js','event-lifecycle-ui.js']){
+    runInNewContext(readFileSync(new URL('../'+file,import.meta.url),'utf8'),{window},{filename:file});
+  }
   runInNewContext(script,{
     window,document,location,FormData:FormDataMock,
     localStorage:{getItem:key=>store.get(key)||null,setItem:(key,val)=>store.set(key,String(val))},
