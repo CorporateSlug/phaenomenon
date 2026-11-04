@@ -65,7 +65,7 @@ body:has(#app) .ph-workspace-tabs{
   border-radius:9px 9px 0 0;
   scroll-snap-align:start;
 }
-.ph-workspace-tab.is-home{flex-basis:112px;width:112px;max-width:112px}
+
 .ph-workspace-tab.is-active{
   background:var(--ph-tabs-bg);
   color:var(--ph-tab-focus);
@@ -193,69 +193,63 @@ body:has(#app) .ph-workspace-tabs{
   .ph-tabs-track{scroll-behavior:auto!important}
 }
 
-/* v2: slimmer, flush workspace band. Tabs should read like a navigation strip,
-   not a row of oversized raised cards. */
+/* v3: independent floating workspace pills.
+   No tab joins a baseline; the background is a quiet, uninterrupted band. */
 .ph-workspace-tabs{
-  flex:0 0 37px;
-  height:37px;
-  min-height:37px;
-  max-height:37px;
-  gap:7px;
-  padding:4px 11px 0;
+  flex:0 0 54px;
+  height:54px;
+  min-height:54px;
+  max-height:54px;
+  padding:8px 14px;
+  gap:10px;
+  align-items:center;
   background:#111920;
-  border-bottom:1px solid #33424d;
+  border:0;
+  box-shadow:none;
   z-index:32;
 }
-.ph-tabs-track{gap:3px;align-items:stretch;}
+.ph-tabs-track{height:100%;align-items:center;gap:8px}
+.ph-tabs-empty{display:inline-flex;align-items:center;color:#738b95;font-size:11px;padding:0 6px;white-space:nowrap}
 .ph-workspace-tab{
-  flex:0 0 172px;
-  width:172px;
-  min-width:172px;
-  max-width:172px;
-  min-height:0;
-  height:32px;
-  background:transparent;
-  color:#a8b9c2;
-  border:1px solid transparent;
-  border-bottom:0;
-  border-radius:6px 6px 0 0;
-}
-.ph-workspace-tab.is-home{
-  flex-basis:88px;
-  width:88px;
-  min-width:88px;
-  max-width:88px;
+  flex:0 0 178px;
+  width:178px;min-width:178px;max-width:178px;
+  min-height:36px;height:36px;
+  background:#192630;
+  color:#a9bac3;
+  border:1px solid #334752;
+  border-radius:10px;
+  box-shadow:0 2px 5px #0002;
 }
 .ph-workspace-tab.is-active{
-  background:#1e2b33;
-  color:#8cddcf;
-  border-color:#405761;
-  box-shadow:inset 0 2px 0 #8cddcf;
+  background:#22363b;
+  color:#a0e4d8;
+  border-color:#71b9ab;
+  box-shadow:0 0 0 1px #71b9ab22,0 3px 9px #0003;
 }
-.ph-workspace-tab:hover:not(.is-active){background:#22313a;color:#d9e6e7}
-.ph-tab-link{min-height:31px;gap:6px;padding:0 2px 0 9px;}
-.ph-tab-icon{flex-basis:15px}
-.ph-tab-icon svg{width:14px;height:14px}
-.ph-tab-title{font-size:11px;font-weight:600;letter-spacing:0}
+.ph-workspace-tab:hover:not(.is-active){background:#24343f;border-color:#526b75;color:#e0edef}
+.ph-tab-link{min-height:34px;gap:8px;padding:0 2px 0 10px}
+.ph-tab-icon{flex-basis:16px}
+.ph-tab-icon svg{width:15px;height:15px}
+.ph-tab-title{font-size:11px;font-weight:650;letter-spacing:0}
 .ph-tab-status{width:5px;height:5px;opacity:.85}
-.ph-tab-close{width:21px;flex-basis:21px;height:22px;margin-right:3px}
+.ph-tab-close{width:22px;flex-basis:22px;height:23px;margin-right:5px}
 .ph-tab-close svg{width:11px;height:11px}
 .ph-tab-new{
-  flex:0 0 29px;
-  width:29px;
-  height:28px;
+  flex:0 0 35px;
+  width:35px;height:35px;
   align-self:center;
-  margin-bottom:3px;
-  background:transparent;
-  border:1px solid #364d58;
-  border-radius:7px;
+  margin:0;
+  background:#1a2a33;
+  border:1px solid #3b535f;
+  border-radius:10px;
 }
-.ph-tab-new:hover{background:#263d42}
-body:has(#app) .ph-workspace-tabs{background:#f6f8f7;border-color:#dce6e3}
-body:has(#app) .ph-workspace-tab{color:#61757b}
-body:has(#app) .ph-workspace-tab.is-active{background:#fff;color:#2b796e;border-color:#d8e6e0;box-shadow:inset 0 2px 0 #398b7c}
-body:has(#app) .ph-workspace-tab:hover:not(.is-active){background:#e6efec;color:#2f504f}
-body:has(#app) .ph-tab-new{border-color:#cadbd5;color:#3b786e}
+.ph-tab-new:hover{background:#263b43}
+body:has(#app) .ph-workspace-tabs{background:#f6f8f7;border:0}
+body:has(#app) .ph-workspace-tab{background:#fff;color:#61757b;border-color:#d5e2de;box-shadow:0 2px 7px #20383012}
+body:has(#app) .ph-workspace-tab.is-active{background:#e7f4ef;color:#2b796e;border-color:#8dc9b8;box-shadow:0 0 0 1px #8dc9b833,0 3px 9px #2038301a}
+body:has(#app) .ph-workspace-tab:hover:not(.is-active){background:#edf5f2;color:#2f504f;border-color:#bdd9cf}
+body:has(#app) .ph-tab-new{background:#fff;border-color:#cbded7;color:#3b786e}
+body:has(#app) .ph-tabs-empty{color:#839a96}
 /* The picker is anchored to + and floats above workspace content. */
 .ph-tab-picker{
   position:absolute;
@@ -325,11 +319,10 @@ body:has(#app) .ph-tab-picker-item:hover,
 body:has(#app) .ph-tab-picker-item:focus-visible{background:#edf5f2}
 body:has(#app) .ph-tab-picker-hint{color:#728b86;border-color:#e2ebe6}
 @media(max-width:840px){
-  .ph-workspace-tabs{flex-basis:35px;height:35px;min-height:35px;max-height:35px;padding:3px 7px 0}
-  .ph-workspace-tab{flex-basis:150px;width:150px;min-width:150px;max-width:150px;height:31px}
-  .ph-workspace-tab.is-home{flex-basis:79px;width:79px;min-width:79px;max-width:79px}
-  .ph-tab-link{min-height:30px}
-  .ph-tab-new{width:27px;flex-basis:27px;height:27px}
+  .ph-workspace-tabs{flex-basis:48px;height:48px;min-height:48px;max-height:48px;padding:6px 9px;gap:6px}
+  .ph-workspace-tab{flex-basis:153px;width:153px;min-width:153px;max-width:153px;height:34px;min-height:34px}
+  .ph-tab-link{min-height:32px}
+  .ph-tab-new{width:32px;flex-basis:32px;height:32px}
   .ph-tab-picker{max-height:min(390px,calc(100dvh - 90px));right:6px}
 }
 @media print{.ph-tab-picker{display:none!important}}
