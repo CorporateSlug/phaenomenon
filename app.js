@@ -589,7 +589,7 @@
         alert('A deselected space still contains equipment. Move those items first.');return;
       }
       const draft=JSON.parse(JSON.stringify(ev)),L=window.PhaenomenonLifecycle;
-      const outcome=L.setDetails(draft,{date:val('date'),bookingStage:val('bookingStage'),
+      const outcome=L.setDetails(draft,{date:val('date'),eventLead:val('eventLead'),bookingStage:val('bookingStage'),
         dateCertainty:val('dateCertainty'),targetMonth:val('targetMonth'),
         followUpDate:val('followUpDate'),nextAction:val('nextAction'),
         dateNotes:val('dateNotes'),productionStage:val('productionStage')});
