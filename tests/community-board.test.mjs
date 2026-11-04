@@ -94,7 +94,8 @@ test('Phaenomenon exposes separate internal moderation and public preview',()=>{
  assert.match(internal,/model.review\(id,status\)/);
  assert.match(html,/community-data.js/);
  assert.match(html,/community-admin.js/);
- assert.match(home,/community.html/);
+ assert.match(internal,/Community noticeboard/);
+ assert.doesNotMatch(home,/Go to workspace/);
  assert.match(tabs,/community-review/);
 });
 
