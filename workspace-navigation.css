@@ -332,3 +332,18 @@ body:has(#app) .ph-tab-picker-hint{color:#728b86;border-color:#e2ebe6}
 /* Header option menus remain above the navigation band when opened. */
 body:has(#production-app) .header{z-index:50}
 body:has(#app) .topbar{position:relative;z-index:50}
+
+/* Collection-first navigation: browsing lives on the left; records live in tabs. */
+@media(min-width:841px){
+ body:has(#app) .sidebar .nav-items{display:flex;flex:1 1 auto;min-height:0;overflow-y:auto;scrollbar-width:thin;overscroll-behavior:contain}
+ body:has(#app) .sidebar-collections-bottom{margin-top:auto;padding-top:11px;border-top:1px solid #35454d}
+ body:has(#production-app) .rail #production-navigation{scrollbar-width:thin}
+ body:has(#production-app) .rail-community-section{margin-top:auto;padding-top:12px;border-top:1px solid #35454d}
+}
+body:has(#app) .sidebar-collections-bottom .nav-link{min-height:39px}
+body:has(#app) .topbar .top-actions>.button{font-size:12px;min-height:35px;min-width:0;padding:8px 11px;white-space:nowrap}
+body:has(#production-app) .collection-hero .collection-actions>.btn{min-height:36px}
+@media(max-width:840px){
+ body:has(#app) .sidebar-collections-bottom{margin-top:12px;padding-top:10px;border-top:1px solid #35454d}
+ body:has(#app) .sidebar .nav-items{flex:none}
+}
