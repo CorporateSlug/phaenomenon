@@ -105,7 +105,7 @@
       client=db.clients.find(x=>clean(x.name).toLocaleLowerCase('en-AU')===clientName.toLocaleLowerCase('en-AU'));
       if(!client)newClient={id:uid('c'),name:clientName,person:'',email:'',type:'Event contact'};
     }
-    if(newClient){db.clients.push(newClient);client=newClient;}
+    if(newClient)client=newClient;
     const e={
       id:uid('ev'),title,date,clientId:client?.id||'',venue:'',venueId:'',spaceIds:[],
       eventType:'Other',status:'Enquiry',guests:1,zones:1,environment:'Indoor',
@@ -124,6 +124,7 @@
       });
       if(stageResult.error)return stageResult;
     }
+    if(newClient)db.clients.push(newClient);
     db.eventJobs.push(e);
     return {event:e,client:newClient};
   }
