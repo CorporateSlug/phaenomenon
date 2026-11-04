@@ -196,11 +196,11 @@ body:has(#app) .ph-workspace-tabs{
 /* v3: independent floating workspace pills.
    No tab joins a baseline; the background is a quiet, uninterrupted band. */
 .ph-workspace-tabs{
-  flex:0 0 54px;
-  height:54px;
-  min-height:54px;
-  max-height:54px;
-  padding:8px 14px;
+  flex:0 0 50px;
+  height:50px;
+  min-height:50px;
+  max-height:50px;
+  padding:7px 16px;
   gap:10px;
   align-items:center;
   background:#111920;
@@ -208,12 +208,12 @@ body:has(#app) .ph-workspace-tabs{
   box-shadow:none;
   z-index:32;
 }
-.ph-tabs-track{height:100%;align-items:center;gap:8px}
+.ph-tabs-track{height:100%;align-items:center;gap:9px;padding-block:1px}
 .ph-tabs-empty{display:inline-flex;align-items:center;color:#738b95;font-size:11px;padding:0 6px;white-space:nowrap}
 .ph-workspace-tab{
-  flex:0 0 178px;
-  width:178px;min-width:178px;max-width:178px;
-  min-height:36px;height:36px;
+  flex:0 0 202px;
+  width:202px;min-width:202px;max-width:202px;
+  box-sizing:border-box;min-height:36px;height:36px;
   background:#192630;
   color:#a9bac3;
   border:1px solid #334752;
@@ -227,16 +227,16 @@ body:has(#app) .ph-workspace-tabs{
   box-shadow:0 0 0 1px #71b9ab22,0 3px 9px #0003;
 }
 .ph-workspace-tab:hover:not(.is-active){background:#24343f;border-color:#526b75;color:#e0edef}
-.ph-tab-link{min-height:34px;gap:8px;padding:0 2px 0 10px}
+.ph-tab-link{min-height:0;height:100%;gap:8px;padding:0 2px 0 11px}
 .ph-tab-icon{flex-basis:16px}
 .ph-tab-icon svg{width:15px;height:15px}
-.ph-tab-title{font-size:11px;font-weight:650;letter-spacing:0}
+.ph-tab-title{font-size:12px;font-weight:650;letter-spacing:0}
 .ph-tab-status{width:5px;height:5px;opacity:.85}
-.ph-tab-close{width:22px;flex-basis:22px;height:23px;margin-right:5px}
+.ph-tab-close{width:25px;flex-basis:25px;height:25px;margin-right:5px}
 .ph-tab-close svg{width:11px;height:11px}
 .ph-tab-new{
-  flex:0 0 35px;
-  width:35px;height:35px;
+  flex:0 0 36px;
+  width:36px;height:36px;
   align-self:center;
   margin:0;
   background:#1a2a33;
@@ -319,10 +319,12 @@ body:has(#app) .ph-tab-picker-item:hover,
 body:has(#app) .ph-tab-picker-item:focus-visible{background:#edf5f2}
 body:has(#app) .ph-tab-picker-hint{color:#728b86;border-color:#e2ebe6}
 @media(max-width:840px){
-  .ph-workspace-tabs{flex-basis:48px;height:48px;min-height:48px;max-height:48px;padding:6px 9px;gap:6px}
-  .ph-workspace-tab{flex-basis:153px;width:153px;min-width:153px;max-width:153px;height:34px;min-height:34px}
-  .ph-tab-link{min-height:32px}
-  .ph-tab-new{width:32px;flex-basis:32px;height:32px}
+  .ph-workspace-tabs{flex-basis:46px;height:46px;min-height:46px;max-height:46px;padding:6px 10px;gap:8px}
+  .ph-tabs-track{gap:7px}
+  .ph-workspace-tab{flex-basis:171px;width:171px;min-width:171px;max-width:171px;height:34px;min-height:34px}
+  .ph-tab-link{min-height:0;height:100%;gap:6px;padding-left:9px}
+  .ph-tab-title{font-size:11px}
+  .ph-tab-new{width:34px;flex-basis:34px;height:34px}
   .ph-tab-picker{max-height:min(390px,calc(100dvh - 90px));right:6px}
 }
 @media print{.ph-tab-picker{display:none!important}}
