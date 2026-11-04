@@ -83,6 +83,9 @@
     if(typeof lc.nextAction!=='string')lc.nextAction='';
     if(!exactDate(lc.followUpDate))lc.followUpDate='';
     if(typeof lc.closedAt!=='string')lc.closedAt='';
+    // Private-only reference to an explicitly published community listing.
+    // Never copy this internal event ID into the public community record.
+    if(typeof lc.publicListingId!=='string')lc.publicListingId='';
     if(!lc.closeout||typeof lc.closeout!=='object'||Array.isArray(lc.closeout))lc.closeout={};
     for(const task of TASKS){
       const value=lc.closeout[task.id];
