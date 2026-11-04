@@ -1,5 +1,13 @@
 # Phaenomenon
 
+## Event lifecycle and post-event closeout
+
+[**Event lifecycle architecture and rules**](EVENT_LIFECYCLE.md) defines the single connected event record from initial opportunity and organiser outreach through tentative/confirmed booking, independent production progress, delivery, financial reconciliation and explicit closure. **Date, client and venue can remain unknown at creation.** An approximate month and follow-up action can be recorded while a booking remains an idea.
+
+The guided Event Builder and classic Studio forms expose booking stage, date certainty and production stage separately. The Events directory groups opportunities, confirmed bookings, delivered events with outstanding work and Closed / archive. Home highlights opportunities, upcoming confirmed events, closeout work and near-term follow-ups.
+
+The new **Production → Closeout** view tracks equipment returns, crew approval/payments, supplier costs, invoice issuance/payment and archived records. Linked invoices provide derived issuance/payment statuses (Draft is never treated as issued or paid). Other items are manual acknowledgements; Not applicable requires an explanation. Closure is explicit and gated, with a reopen action. An existing legacy `Completed` event becomes **Delivered but not automatically closed**. No existing booking IDs, technical plans or invoices are replaced. Dates use the shared hierarchical date/month picker.
+
 ## Collapsible icon sidebar and open workspace tabs
 
 Phaenomenon uses a shared navigation system across [Home / Production](production.html#/dashboard) and [Studio](index.html#/overview). On desktop, the left sidebar has matching line-style icons and a collapse control. Collapsed navigation shows icons only; hover/focus exposes the item name, and choosing a grouped icon expands the menu to expose its child links. This preference is remembered locally.
