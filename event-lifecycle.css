@@ -1,0 +1,45 @@
+/* Compact event lifecycle controls shared by Production and Studio. */
+.ph-lifecycle-fields{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 13px;align-items:start}
+.ph-lifecycle-fields>label{min-width:0}
+.ph-lifecycle-fields .ph-lifecycle-wide{grid-column:1/-1}
+.ph-lifecycle-fields input,.ph-lifecycle-fields select{width:100%;min-width:0}
+.ph-stage-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:8px 0 13px}
+.ph-stage-strip>a,.ph-stage-strip>span{display:flex;flex-direction:column;gap:5px;padding:10px 12px;border:1px solid #3b5259;border-radius:9px;background:#17272e;min-width:0;color:#d7e9e8;text-decoration:none}
+.ph-stage-strip small{color:#9cb6b9;font-size:10px}
+.ph-stage-strip strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:700}
+.ph-stage-strip>a:hover{border-color:#75c1b3;background:#213d3c}
+body:has(#app) .ph-stage-strip>a,body:has(#app) .ph-stage-strip>span{border-color:#d7e8e2;background:#f5faf8;color:#34524d}
+body:has(#app) .ph-stage-strip small{color:#7d958d}
+.ph-closeout-summary{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.ph-closeout-summary strong{font-size:18px}
+.ph-closeout-summary small{font-size:11px;color:var(--muted,#9faab1)}
+.ph-lifecycle-closeout{min-width:0}
+.ph-lifecycle-closeout .section-head{margin-bottom:10px}
+.ph-closeout-progress{height:6px;width:100%;border-radius:99px;background:#32434a;overflow:hidden;margin-bottom:12px}
+.ph-closeout-progress span{display:block;height:100%;background:#8cddcf}
+.ph-closeout-group{margin:14px 0}
+.ph-closeout-group h3{font-size:12px;color:#9edace;margin:0 0 7px;text-transform:uppercase;letter-spacing:.04em}
+.ph-closeout-row{display:grid;grid-template-columns:minmax(190px,1.45fr) 145px minmax(160px,1fr);align-items:center;gap:12px;border-bottom:1px solid #35434b;padding:8px 0;min-width:0}
+.ph-closeout-task{display:grid;gap:3px;min-width:0}
+.ph-closeout-task strong{font-size:12px}
+.ph-closeout-task small{color:#91a5ae;font-size:10px}
+.ph-closeout-state{min-width:0}
+.ph-closeout-state select{width:100%;min-width:0}
+.ph-closeout-derived{display:inline-flex;border-radius:7px;padding:6px 9px;background:#29413c;color:#ade4d5;font-size:11px}
+.ph-closeout-note{color:#a3b5bc;font-size:10px}
+.ph-closeout-reason{min-width:0}
+.ph-closeout-reason input{width:100%;font-size:11px;min-width:0}
+.ph-closeout-actions{margin-top:13px;gap:8px}
+.ph-closed-caption{font-size:11px;color:#96a8ae;margin:10px 0 0}
+.ph-opportunity-heading{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ph-opportunity-tag{display:inline-flex;background:#223b3a;border:1px solid #456c62;border-radius:6px;color:#aee0d0;padding:3px 7px;font-size:10px;font-weight:700;white-space:nowrap}
+.ph-event-index-meta{font-size:10px;color:#a7b9be}
+.ph-lifecycle-summary-note{font-size:11px;color:#a6bbb9}
+.visually-hidden{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+body:has(#app) .ph-closeout-group h3{color:#38776e}
+body:has(#app) .ph-closeout-row{border-color:#e0e9e5}
+body:has(#app) .ph-closeout-task small{color:#748d89}
+body:has(#app) .ph-closeout-derived{background:#e2f2eb;color:#2d7866}
+@media(max-width:920px){.ph-closeout-row{grid-template-columns:minmax(140px,1fr) minmax(120px,.6fr)}.ph-closeout-reason,.ph-closeout-note{grid-column:1/-1}.ph-closeout-row{gap:7px}}
+@media(max-width:600px){.ph-stage-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.ph-lifecycle-fields{grid-template-columns:1fr}.ph-lifecycle-fields .ph-lifecycle-wide{grid-column:auto}.ph-closeout-row{grid-template-columns:minmax(0,1fr) 120px}.ph-closeout-group{margin:10px 0}}
+@media print{.ph-closeout-row{break-inside:avoid}.ph-lifecycle-closeout .btn{display:none}}
