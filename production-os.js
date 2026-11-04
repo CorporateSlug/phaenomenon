@@ -1148,19 +1148,15 @@
     const all=org().entities.filter(x=>(ui.entityType==='All'||x.kind===ui.entityType)&&
       (x.name+' '+(x.aliases||[]).join(' ')+' '+(x.notes||'')).toLowerCase().includes(ui.query.toLowerCase()));
     const selected=entity(ui.entityId);
-    return hero('DIRECTORY','People, places and organisations','Canonical records with aliases, event-specific roles, typed relationships and navigable profiles.')+
+    if(selected)return hero('DIRECTORY / RECORD',selected.name,'Linked roles, relationships and event involvement.','<a class="btn" href="#/entities">← People & organisations</a>')+entityProfile(selected,e);
+    return hero('DIRECTORY','People & organisations','Browse and search people, organisations, venues and related records.',
+      '<button class="btn primary" data-act="collection-new" data-kind="entity">+ New person or organisation</button>')+
       '<div class="side-by-side"><div><section class="panel section"><div class="section-head"><h2>Browse entities</h2>'+pill(all.length+' records')+'</div>'+
       '<div class="form-grid section"><label>Search name, alias or notes<input class="input" id="entity-search" placeholder="Search entities" value="'+esc(ui.query)+'"></label>'+
       '<label>Entity type<select id="entity-filter">'+['All','Person','Organisation','Venue','Space','Event'].map(x=>'<option '+(ui.entityType===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label></div>'+
-      '<div class="stack">'+(all.map(x=>'<button class="linkrow" data-act="profile" data-id="'+esc(x.id)+'"><div><strong>'+esc(x.name)+'</strong><div class="detail">'+esc(x.kind)+(x.aliases?.length?' · '+esc(x.aliases.join(', ')):'')+'</div></div><span class="chev">›</span></button>').join('')||'<div class="empty">No matching entities.</div>')+'</div></section>'+
-      '<section class="panel"><details class="workspace-disclosure"><summary>+ Add person or organisation</summary><div class="disclosure-body"><p class="muted">Create a person or organisation once, then assign different roles to each event.</p><form id="entity-form" class="form-grid">'+
-      '<label>Name<input class="input" name="name" maxlength="140" required placeholder="Display name"></label>'+
-      '<label>Type<select name="kind"><option>Person</option><option>Organisation</option></select></label>'+
-      '<label class="wide">Aliases (comma separated)<input class="input" name="aliases" placeholder="Other names or abbreviations"></label>'+
-      '<label class="wide">Notes<textarea name="notes" maxlength="4000"></textarea></label>'+
-      '<div class="wide"><button class="btn primary" type="submit">Create record</button></div></form><p class="form-note">Venues and spaces are managed in the reusable Venue library.</p>'+
-      '<a class="btn small" href="#/home/venue/'+encodeURIComponent(e?.id||'')+'">Manage venues &amp; spaces</a></div></details></section></div>'+
-      (selected?entityProfile(selected,e):'<section class="panel inspector"><div class="empty">Select an entity to see its profile, aliases, relationships, roles and linked events.</div></section>')+'</div>';
+      '<div class="stack">'+(all.map(x=>'<a class="linkrow" data-ph-record href="#/entities/'+encodeURIComponent(x.id)+'"><div><strong>'+esc(x.name)+'</strong><div class="detail">'+esc(x.kind)+(x.aliases?.length?' · '+esc(x.aliases.join(', ')):'')+'</div></div><span class="chev">›</span></a>').join('')||'<div class="empty">No matching entities.</div>')+'</div></section>'+
+      '</div>'+ 
+      '<section class="panel inspector"><div class="empty">Open a record to review its profile, relationships, notes and event roles in a separate workspace tab.</div></section></div>';
   }
   function route(){
     document.body?.classList?.remove('ph-mobile-menu-open');
