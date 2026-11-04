@@ -7,7 +7,7 @@ const closeout=id=>'#/production/closeout/'+encodeURIComponent(id);
 const fmt=s=>/^\d{4}-\d\d-\d\d$/.test(s||'')?new Date(s+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'Date unknown';
 const dayString=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const hrefStep=(e,s)=>['brief','spaces','equipment','review'].includes(s.id)?link(e.id)+'/'+s.id:s.href||link(e.id);
-const isOpportunity=e=>['idea','outreach','contacted','discussion','quoted','tentative'].includes(e.bookingStage)&&!e.closed;
+const isOpportunity=e=>!!e&&['idea','outreach','contacted','discussion','quoted','tentative','postponed'].includes(e.bookingStage)&&!e.closed;
 const isDelivered=e=>!!e&&e.productionStage==='delivered'&&!e.closed;
 function render({events=[],activeId}={}){
  const now=new Date(),today=dayString(now),later=new Date(now.getFullYear(),now.getMonth(),now.getDate()+30),last=dayString(later);
