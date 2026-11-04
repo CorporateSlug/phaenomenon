@@ -727,6 +727,11 @@
   }
 
   function home(e,c){
+    if(ui.homeVenueOpen&&e){
+      return hero('VENUE & SPACES',e.title,'Edit the reusable venue and spaces linked to this event.',
+        '<a class="btn" href="#/home/'+encodeURIComponent(e.id)+'">← Event workspace</a>')+
+        venueSettings(e);
+    }
     return window.PhaenomenonEventWorkspace.render(db,e,{
       changed:!!e&&isChanged(e),
       publishOpen:ui.publicListingOpen
