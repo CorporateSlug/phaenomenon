@@ -21,7 +21,7 @@ test('existing bookings migrate to client-led, keeping client references intact'
  L.ensureAll(db);
  assert.equal(e.lifecycle.eventLead,'client');
  assert.equal(e.clientId,'client1');
- assert.equal(L.summary(db,e).eventLeadLabel,'Client-led · external commission');
+ assert.equal(L.summary(db,e).eventLeadLabel,'Client-led · external organiser');
  const original=JSON.stringify(e);
  L.ensureAll(db);
  assert.equal(JSON.stringify(e),original);
