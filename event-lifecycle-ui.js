@@ -13,6 +13,7 @@
    const prefix=compact?'':'Event ';
    const date='<label>'+prefix+'date (optional)<input class="input" type="date" name="date" value="'+esc(event?.date||'')+'"></label>';
    return '<div class="ph-lifecycle-fields">'+
+     '<label class="ph-lifecycle-lead">Event organised by<select name="eventLead">'+options(LCx.EVENT_LEADS,lc.eventLead)+'</select><small class="ph-lifecycle-lead-hint">Own events are not client commissions. No self-invoice is created.</small></label>'+
      '<label>Booking stage<select name="bookingStage">'+options(LCx.BOOKING,lc.bookingStage)+'</select></label>'+
      '<label>How certain is the date?<select name="dateCertainty">'+options(LCx.DATE,lc.dateCertainty)+'</select></label>'+
      (config.includeDate!==false?date:'')+
@@ -26,6 +27,7 @@
  function stageStrip(event,db){
    const m=LC().summary(db,event);
    return '<div class="ph-stage-strip" aria-label="Event lifecycle overview">'+
+      '<span><small>Organiser</small><strong>'+esc(m.eventLead==='studio'?'Own event · Phaenomenon':'Client-led event')+'</strong></span>'+
       '<span><small>Booking</small><strong>'+esc(m.bookingLabel)+'</strong></span>'+
       '<span><small>Event date</small><strong>'+esc(event.date?m.dateLabel: m.dateCertainty==='unknown'?'Unknown':m.dateLabel)+'</strong></span>'+
       '<span><small>Production</small><strong>'+esc(m.productionLabel)+'</strong></span>'+
@@ -35,13 +37,13 @@
  function closeoutPanel(db,event){
    const L=LC(),m=L.summary(db,event),lc=L.ensureEvent(event);
    const row=item=>{
-     const derived=item.source==='invoices';
+     const derived=item.source==='invoices'||item.source==='own-event';
      return '<div class="ph-closeout-row">'+
        '<div class="ph-closeout-task"><strong>'+esc(item.label)+'</strong>'+
-       (derived?'<small>Automatically read from '+m.linkedInvoices+' linked invoice'+(m.linkedInvoices===1?'':'s')+'</small>':
+       (derived?'<small>'+(item.source==='own-event'?'No self-invoice required':'Read from '+m.linkedInvoices+' linked invoice'+(m.linkedInvoices===1?'':'s'))+'</small>':
          item.updatedAt?'<small>Last updated '+esc(new Date(item.updatedAt).toLocaleDateString('en-AU'))+'</small>':'<small>Manually recorded · not independently verified</small>')+
        '</div><label class="ph-closeout-state"><span class="visually-hidden">Status: '+esc(item.label)+'</span>'+
-       (derived?'<input type="hidden" name="derived_'+esc(item.id)+'" value="true"><span class="ph-closeout-derived">'+(item.status==='done'?'Done':'Pending')+'</span>':
+       (derived?'<input type="hidden" name="derived_'+esc(item.id)+'" value="true"><span class="ph-closeout-derived">'+(item.status==='done'?'Done':item.status==='na'?'Not applicable':'Pending')+'</span>':
          '<select name="status_'+esc(item.id)+'" aria-label="'+esc(item.label)+' status" '+(m.closed?'disabled':'')+'>'+
            [['pending','Pending'],['done','Done'],['na','Not applicable']].map(([key,label])=>
               '<option value="'+key+'" '+(item.status===key?'selected':'')+'>'+label+'</option>').join('')+'</select>')+'</label>'+
