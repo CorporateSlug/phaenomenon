@@ -99,9 +99,10 @@
     if(!title)return {error:'Enter an event name.'};
     if(date&&(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(new Date(date+'T00:00:00Z').getTime())||
       new Date(date+'T00:00:00Z').toISOString().slice(0,10)!==date))return {error:'Choose a valid date or leave it blank.'};
-    let client=db.clients.find(x=>x.id===fields.clientId),newClient=null;
+    const selfProduced=clean(fields.eventLead)==='studio';
+    let client=selfProduced?null:db.clients.find(x=>x.id===fields.clientId),newClient=null;
     const clientName=clean(fields.clientName).slice(0,120);
-    if(!client&&clientName){
+    if(!selfProduced&&!client&&clientName){
       client=db.clients.find(x=>clean(x.name).toLocaleLowerCase('en-AU')===clientName.toLocaleLowerCase('en-AU'));
       if(!client)newClient={id:uid('c'),name:clientName,person:'',email:'',type:'Event contact'};
     }
@@ -116,7 +117,7 @@
     lifecycle?.ensureEvent(e);
     if(lifecycle){
       const stageResult=lifecycle.setDetails(e,{
-        date,bookingStage:clean(fields.bookingStage)||'idea',
+        date,eventLead:clean(fields.eventLead)||'client',bookingStage:clean(fields.bookingStage)||'idea',
         dateCertainty:clean(fields.dateCertainty)||(date?'proposed':'unknown'),
         targetMonth:clean(fields.targetMonth),
         dateNotes:clean(fields.dateNotes),nextAction:clean(fields.nextAction),
