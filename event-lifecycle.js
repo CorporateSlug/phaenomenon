@@ -12,6 +12,7 @@
     ['discussion','In discussion'],
     ['quoted','Quote / proposal sent'],
     ['tentative','Tentative / on hold'],
+    ['postponed','Postponed / rescheduling'],
     ['confirmed','Confirmed booking'],
     ['declined','Declined by us'],
     ['lost','Not proceeding / lost'],
@@ -51,8 +52,8 @@
   const exactMonth=s=>/^\d{4}-(0[1-9]|1[0-2])$/.test(s||'');
   const label=(list,id)=>list.find(x=>x[0]===id)?.[1]||String(id||'');
   const statusFor=(stage,production,closedAt)=>{
-    if(closedAt)return 'Completed';
     if(['cancelled','declined','lost'].includes(stage))return 'Cancelled';
+    if(closedAt)return 'Completed';
     if(production==='delivered')return 'Completed';
     if(stage==='confirmed')return 'Confirmed';
     if(stage==='quoted')return 'Quoted';
@@ -138,7 +139,7 @@
       dateCertainty:lc.dateCertainty,dateLabel:label(DATE,lc.dateCertainty),
       date: event.date||'',targetMonth:lc.targetMonth,nextAction:lc.nextAction,followUpDate:lc.followUpDate,
       closed:!!lc.closedAt,closedAt:lc.closedAt,done,total:items.length,remaining:items.length-done,
-      readyToClose:lc.productionStage==='delivered'&&done===items.length,
+      readyToClose:(lc.productionStage==='delivered'||['cancelled','declined','lost'].includes(lc.bookingStage))&&done===items.length,
       items,linkedInvoices:invoicesFor(db,event).length
     };
   }
@@ -157,9 +158,9 @@
     const lc=ensureEvent(event);if(!lc)return {error:'Event not found.'};
     const s=summary(db,event);
     if(lc.closedAt)return {error:'Already closed.'};
-    if(!s.readyToClose)return {error:'Mark the production Delivered and resolve or explicitly waive all '+s.remaining+' outstanding closeout items before closing.'};
+    if(!s.readyToClose)return {error:'Mark production Delivered (or cancel / decline the booking) and resolve or explicitly waive all '+s.remaining+' outstanding closeout items before closing.'};
     lc.closedAt=new Date().toISOString();
-    event.status='Completed';
+    event.status=statusFor(lc.bookingStage,lc.productionStage,lc.closedAt);
     return {ok:true,closedAt:lc.closedAt};
   }
   function reopenEvent(event){
