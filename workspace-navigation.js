@@ -230,11 +230,11 @@
       if(header)header.after(bar);else main.prepend(bar);
     }
     bar.innerHTML='<div class="ph-tabs-track" aria-label="Open workspaces">'+tabs.map(t=>{
-      const active=t.id===selected,status=getTabStatus(t);
+      const active=t.id===selected;
       return '<div class="ph-workspace-tab'+(active?' is-active':'')+(t.id==='home'?' is-home':'')+'" data-tab-id="'+escape(t.id)+'">'+
         '<a class="ph-tab-link" data-open-tab="'+escape(t.id)+'" '+(active?'aria-current="page" ':'')+'href="'+escape(t.href)+'" title="'+escape(t.label)+'">'+
           '<span class="ph-tab-icon">'+svg(t.icon,15)+'</span><span class="ph-tab-title">'+escape(t.label)+'</span>'+
-          (status?'<span class="ph-tab-status '+status.color+'" title="'+escape(status.label)+'" aria-label="'+escape(status.label)+'"></span>':'')+'</a>'+
+          '</a>'+
         (t.id==='home'?'':'<button type="button" class="ph-tab-close" data-close-id="'+escape(t.id)+'" aria-label="Close '+escape(t.label)+'" title="Close workspace">'+svg('close',13)+'</button>')+
         '</div>';
     }).join('')+'</div><button type="button" class="ph-tab-new" aria-label="Open a new workspace tab" title="Open a new workspace tab" aria-haspopup="menu" aria-expanded="false">'+svg('plus',18)+'</button>';
@@ -281,17 +281,6 @@
     picker.remove();
     document.querySelector('.ph-tab-new')?.setAttribute('aria-expanded','false');
     return true;
-  }
-  function getTabStatus(tab){
-    const match=/^[^:]+:([^:]+)$/.exec(tab.key);
-    if(!match)return null;
-    const e=events().find(x=>x.id===match[1]);
-    if(!e)return null;
-    const status=safeString(e.status).toLowerCase();
-    return status==='enquiry'?{color:'is-amber',label:'Enquiry'}:
-      status==='confirmed'?{color:'is-teal',label:'Confirmed'}:
-      status==='cancelled'?{color:'is-red',label:'Cancelled'}:
-      status==='completed'?{color:'is-blue',label:'Completed'}:null;
   }
   function redraw(){
     const root=host();if(!root)return;
