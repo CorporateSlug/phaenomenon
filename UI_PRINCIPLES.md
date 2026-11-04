@@ -64,3 +64,13 @@ The shared implementation lives in `workspace-navigation.js` and `workspace-navi
 - **No fictitious transactions.** An own-produced event is not an external invoice addressed to the studio. Client-invoice closeout is not applicable without a linked external invoice; if a genuine external invoice is linked, its recorded issue/payment states apply.
 - **Compact discoverability.** Keep own events and client work recognisable in event rows and accessible through a simple filter; don't split them into unrelated data stores or multiply dashboards.
 - **Future collaborators.** Sponsors, co-producers, promoters and suppliers should be linkable through the existing entity and role systems, without overriding the primary event-lead distinction.
+
+
+## Unified event entry and stage-aware disclosure
+
+- **Event workspace as the single entry:** Opening an event from the directory, calendar, Home or Studio should lead to `#/home/{eventId}`, using the existing event record rather than creating a new project.
+- **Recommend, don't obstruct:** Present the most useful next task based on lifecycle, unresolved issues, venue/design readiness and closeout. Preserve the ability to open any specialist workspace early; conceal advanced complexity through progressive disclosure, not stage gates.
+- **Connected but distinct workspaces:** Event details, venues, 3D, technical, people, budgets, community publishing and closeout should link to the same event ID. Saving and navigation must not silently create duplicates.
+- **Small-screen density:** Compact status facts, bounded lists, one primary next action, consistent line icons, restrained colours and collapsible advanced controls.
+- **Explicit public publishing:** A public listing is an opt-in extract of user-chosen fields. Show a field-accurate preview, require permission acknowledgement, allow save for review/publish/update/unpublish, and never import private contact details, crew, budgets, technical plans or event identifiers into the public record.
+- **Prototype is not deployment:** Browser-local public demo and internal admin are not a security boundary. Deploy only after origin isolation, authenticating moderation, server-side validation and a shared data layer.
