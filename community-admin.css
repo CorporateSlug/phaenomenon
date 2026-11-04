@@ -1,0 +1,16 @@
+/* Compact internal review workspace for public community submissions. */
+.community-admin-workspace{display:grid;gap:12px}.community-admin-workspace>.hero{margin-bottom:2px}
+.community-admin-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.community-admin-metrics .stat{padding:12px 15px}.community-admin-metrics .stat strong{font-size:23px;margin:3px 0 0}
+.community-review-group{padding:13px 15px}.community-review-group .section-head{margin-bottom:8px}
+.community-review-group .section-head h2{font-size:15px;margin:0 0 4px}.community-review-group .section-head p{font-size:11px;margin:0}
+.community-admin-list{max-height:min(35dvh,400px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.community-admin-row{padding:12px 2px;border-top:1px solid #344753;display:flex;gap:14px;justify-content:space-between;align-items:center}
+.community-admin-main{min-width:0;flex:1}.community-admin-name{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:5px}
+.community-admin-name strong{font-size:13px}.community-admin-name .pill{font-size:10px;padding:3px 7px}
+.community-admin-main p{color:#c0cfd0;font-size:11px;margin:7px 0;line-height:1.45}
+.community-admin-main small{color:#9bb0b9;font-size:10px}.community-admin-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.community-admin-secondary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.community-admin-empty{padding:13px 3px}
+@media(max-width:980px){.community-admin-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.community-admin-secondary{grid-template-columns:1fr}}
+@media(max-width:600px){.community-admin-row{align-items:flex-start;flex-direction:column}.community-admin-actions{width:100%}.community-admin-actions .btn{flex:1}}
