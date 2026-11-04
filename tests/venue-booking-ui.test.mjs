@@ -33,7 +33,7 @@ function harness(){
     get(key){return this.data[key]??null;}
     getAll(key){return this.data[key]||[];}
   }
-  for(const file of ['venue-geometry.js','multi-space.js','venue-workflow.js']){
+  for(const file of ['venue-geometry.js','multi-space.js','venue-workflow.js','event-lifecycle.js','event-lifecycle-ui.js']){
     runInNewContext(source(file),{window},{filename:file});
   }
   window.PhaenomenonSpacePlanner={ensure(db){if(!db.venues)db.venues=[{id:'v-existing',name:'Existing Club',width:16,length:12,height:4}]},mount(){}};
