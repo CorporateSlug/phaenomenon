@@ -42,3 +42,17 @@ Phaenomenon is a professional operational application, not a series of long mark
 A spatial 3D editor, long instructional document, full-width planning canvas, detailed configuration form or printable crew pack can use its own specialised layout. Compactness must never override safety-critical visibility, readability or task completion.
 
 This document describes enduring UI requirements, not a claim that every legacy view has already been converted to the ideal pattern.
+
+## Persistent workspace navigation (SlugSync-inspired)
+
+The main Studio and Production pages share one navigation contract:
+
+- **Consistent line icons:** Every sidebar destination and expandable group uses the same stroke weight, sizing and colour treatment. Icons are semantic rather than mixed Unicode glyphs or unrelated symbols.
+- **Collapsible desktop sidebar:** The toggle in the sidebar header switches between named navigation and a slim icon rail. The icon-only rail retains tooltips and accessible names. Clicking a group icon expands the sidebar so its nested destinations are accessible. The choice is stored locally and applies to both Studio and Production. Phone navigation stays a dedicated full drawer.
+- **Workspace tabs directly under the global header:** Tabs show open views with an icon, workspace-first label, event context and a dismiss control. Home is always available as a persistent anchor.
+- **Stable tab widths:** Additional tabs are added to the right; crowded tabs scroll horizontally instead of shrinking. The current tab scrolls into view automatically. A small **+** button remains pinned on the right and opens the app's existing New Event flow.
+- **Stateful navigation identity:** Builder substeps share one tab per event, Production subviews share one per event, and unrelated event-specific views (Builder, 3D, technical, crew, event details) remain separate. Switching to another event creates a different tab rather than silently repointing an open event tab.
+- **Closing is non-destructive:** Dismissing a tab closes only the shortcut/view; it never deletes a booking, design, equipment placement, cue, team assignment or published pack. Both the open list and selected route are reconstructed from local-browser URLs and local storage.
+- **Cross-workspace consistency:** The tab strip persists across navigation between `index.html` (Studio) and `production.html` (Production OS). It is a **persistent navigation system** over the existing page routers, not multiple simultaneously running 3D/design processes. Unsaved form input is not guaranteed to survive route changes, so users should save drafts before switching tabs.
+
+The shared implementation lives in `workspace-navigation.js` and `workspace-navigation.css`. Avoid implementing a second incompatible sidebar, tab bar or menu-specific icon system for new features.
