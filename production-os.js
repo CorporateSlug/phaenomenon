@@ -1187,7 +1187,7 @@
     ui.builderFocus=ui.view==='builder'&&['brief','spaces','design','equipment','connections','team','review'].includes(parts[2])?parts[2]:'';
     ui.homeVenueOpen=(ui.view==='home'&&parts[1]==='venue')||(ui.view==='builder'&&ui.builderFocus==='spaces');
     const routeEvent=ui.view==='home'&&parts[1]==='venue'?parts[2]:ui.view==='production'&&['team','logistics','installation','show','closeout'].includes(parts[1])?parts[2]:['entities','events'].includes(ui.view)?null:parts[1];
-    if(ui.view==='production'&&['team','logistics','installation','show'].includes(parts[1]))ui.productionTab=parts[1];
+    if(ui.view==='production'&&['team','logistics','installation','show','closeout'].includes(parts[1]))ui.productionTab=parts[1];
     if(routeEvent&&events().some(x=>x.id===decodeURIComponent(routeEvent)))ui.eventId=decodeURIComponent(routeEvent);
     if(ui.view==='entities'&&parts[1]&&entity(decodeURIComponent(parts[1]))){
       const id=decodeURIComponent(parts[1]);if(ui.entityId!==id){ui.entityId=id;if(ui.history[ui.histIndex]!==id){ui.history=ui.history.slice(0,ui.histIndex+1);ui.history.push(id);ui.histIndex=ui.history.length-1;}}
