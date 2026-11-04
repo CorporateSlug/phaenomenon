@@ -12,6 +12,7 @@
   // auto-generated v1 tabs that accumulated during ordinary navigation.
   const TABS_KEY='phaenomenon-open-workspace-tabs-v2';
   const ACTIVE_KEY='phaenomenon-active-workspace-tab-v2';
+  const LAST_WORK_KEY='phaenomenon-last-workspace-tab-v2';
   const RAIL_KEY='phaenomenon-icon-sidebar-v1';
   const DB_KEY='phaenomenon-demo-v1';
   const isProduction=()=>!!document.getElementById('production-app');
@@ -144,12 +145,16 @@
   };
   const getActive=()=>{try{return session().getItem(ACTIVE_KEY)||'home'}catch{return 'home'}};
   const setActive=id=>{try{session().setItem(ACTIVE_KEY,id)}catch{}};
-  let selected=getActive(),lastWorking=selected!=='home'?selected:'';
+  let selected=getActive(),lastWorking=(()=>{try{return session().getItem(LAST_WORK_KEY)||''}catch{return ''}})();
+  if(selected!=='home')lastWorking=selected;
   const newId=()=> 'work-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);
   const saveTabs=()=>{try{localStorage.setItem(TABS_KEY,JSON.stringify({version:2,tabs}))}catch{}};
   function activate(id){
     selected=id;
-    if(id!=='home')lastWorking=id;
+    if(id!=='home'){
+      lastWorking=id;
+      try{session().setItem(LAST_WORK_KEY,id)}catch{}
+    }
     setActive(id);
   }
   function synchronize(){
@@ -240,7 +245,10 @@
     if(!bar)return;
     const old=bar.querySelector('.ph-tab-picker');
     if(old){old.remove();button.setAttribute('aria-expanded','false');return}
-    const id=encodeURIComponent(activeEventId()||'');
+    const route=getRoute();
+    const eventScoped=/^(?:builder|venue|overview|design|technical|crew|production|spaces|bookings):/.test(route.key);
+    const eventId=eventScoped?route.key.split(':').slice(1).join(':'):activeEventId();
+    const id=encodeURIComponent(eventId||'');
     const options=[
       ['production.html#/dashboard','home','Home dashboard'],
       ['production.html#/events','calendar','Events & schedule'],
@@ -348,7 +356,11 @@
       if(tabs.some(t=>t.id===tabLink.dataset.openTab)){
         activate(tabLink.dataset.openTab);
         saveTabs();
-        schedule();
+        // The destination URL changes the page; do not rebind the newly
+        // selected slot to the previous page during the click microtask.
+        if(tabLink.getAttribute('href')===(isProduction()?'production.html':'index.html')+location.hash){
+          drawTabs(host()?.querySelector('.main'));
+        }
       }
       return;
     }
