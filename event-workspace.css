@@ -43,7 +43,7 @@
 .ew-stage-advice{color:#9daeb6;font-size:11px;line-height:1.5;margin:0}
 .ew-disclaimer{margin:0;color:#8297a0;font-size:10px;line-height:1.5}
 .ew-empty{display:flex;align-items:flex-start;flex-direction:column;gap:10px}.ew-empty h1{font-size:23px;margin:0}.ew-empty p{margin:0}
-.ew-publication{padding:0!important;overflow:hidden}
+.ew-publication{padding:0!important;overflow:hidden;scroll-margin-top:130px}
 .ew-publication>summary{display:flex;align-items:center;gap:11px;cursor:pointer;list-style:none;padding:12px 15px;color:#deebe8}
 .ew-publication>summary::-webkit-details-marker{display:none}
 .ew-publication>summary>.ew-icon{color:#a5d5c9}.ew-publication>summary>span:nth-child(2){display:grid;gap:3px;min-width:0;flex:1}
