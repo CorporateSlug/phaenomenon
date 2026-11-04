@@ -543,28 +543,71 @@
       return;
     }
     if(which==='new-booking'){
-      if(!val('title')||!db.clients.some(c=>c.id===val('clientId'))||!val('date'))return;
-      const v=VE()?.findVenue(db,val('venueId'));
+      const title=val('title').slice(0,120),L=window.PhaenomenonLifecycle;
+      if(!title){alert('Enter an event or opportunity name.');return;}
+      const venueId=val('venueId'),v=VE()?.findVenue(db,venueId);
       const picked=(a.getAll?a.getAll('spaceIds'):[]).map(String);
-      if(!v||!picked.length){alert('Select an existing venue and at least one space, or create them from this form.');return;}
-      const ev={id:id('ev'),title:val('title').slice(0,120),clientId:val('clientId'),date:val('date'),venue:v.name,venueId:v.id,spaceIds:picked,eventType:EVENT_TYPES.includes(val('eventType'))?val('eventType'):'Other',guests:Math.max(1,Math.min(5000,num('guests'))),zones:Math.max(1,Math.min(12,num('zones'))),environment:val('environment')==='Outdoor'?'Outdoor':'Indoor',complexity:['Simple','Standard','Feature'].includes(val('complexity'))?val('complexity'):'Standard',status:'Enquiry',labourHours:6,labourRate:90,notes:'',kit:[]};
-      mutate(()=>{db.eventJobs.push(ev);ui.bookingTab='details';ui.eventId=ev.id;ui.modal=null;location.hash='#/bookings/'+ev.id;},'Event created with its reusable venue and selected spaces.');return;
+      if(venueId&&!v){alert('Select a valid saved venue or leave it blank.');return;}
+      if(v&&(!picked.length||picked.some(id=>!v.spaces.some(x=>x.id===id)))){
+        alert('Choose at least one valid space for the selected venue.');return;
+      }
+      const ev={id:id('ev'),title,clientId:db.clients.some(x=>x.id===val('clientId'))?val('clientId'):'',
+        date:'',venue:v?.name||'',venueId:v?.id||'',spaceIds:v?picked:[],
+        eventType:EVENT_TYPES.includes(val('eventType'))?val('eventType'):'Other',
+        guests:Math.max(1,Math.min(5000,num('guests'))),zones:Math.max(1,Math.min(12,num('zones'))),
+        environment:val('environment')==='Outdoor'?'Outdoor':'Indoor',
+        complexity:['Simple','Standard','Feature'].includes(val('complexity'))?val('complexity'):'Standard',
+        status:'Enquiry',labourHours:6,labourRate:90,notes:'',kit:[]};
+      const outcome=L.setDetails(ev,{date:val('date'),bookingStage:val('bookingStage'),
+        dateCertainty:val('dateCertainty'),targetMonth:val('targetMonth'),
+        followUpDate:val('followUpDate'),nextAction:val('nextAction'),
+        dateNotes:val('dateNotes'),productionStage:'not-started'});
+      if(outcome.error){alert(outcome.error);return;}
+      mutate(()=>{db.eventJobs.push(ev);ui.bookingTab='details';ui.eventId=ev.id;ui.modal=null;
+        location.hash='#/bookings/'+ev.id;},'Event or opportunity added. Details can be completed later.');
+      return;
     }
     if(which==='edit-booking'){
-      const ev=getBooking(val('id')),v=VE()?.findVenue(db,val('venueId'));
-      if(!ev||!v||!val('title')||!val('date')||!db.clients.some(c=>c.id===val('clientId')))return;
-      const spaceIds=(a.getAll?a.getAll('spaceIds'):[]).map(String);
-      if(!spaceIds.length||spaceIds.some(x=>!v.spaces.some(sp=>sp.id===x))){alert('Choose at least one valid space belonging to this venue.');return;}
-      const p=db.venuePlans?.[ev.id],oldVenue=ev.venueId||p?.venueId;
-      if(oldVenue!==v.id&&p?.items?.length&&!confirm('This event already has equipment placed in another venue. Keep those placements marked for review when switching the venue?'))return;
-      if(oldVenue===v.id&&p?.items?.some(item=>item.areaId&&v.spaces.some(sp=>sp.id===item.areaId)&&!spaceIds.includes(item.areaId))){
-        alert('A deselected space still contains equipment. Move those items in the 3D planner before removing the space from the event.');return;
+      const ev=getBooking(val('id')),venueId=val('venueId'),v=VE()?.findVenue(db,venueId);
+      if(!ev||!val('title'))return;
+      if(venueId&&!v){alert('Select a valid venue or leave it blank.');return;}
+      const spaceIds=(a.getAll?a.getAll('spaceIds'):[]).map(String),p=db.venuePlans?.[ev.id];
+      const oldVenue=ev.venueId||p?.venueId;
+      if(v&&(!spaceIds.length||spaceIds.some(x=>!v.spaces.some(sp=>sp.id===x)))){
+        alert('Select at least one space from the chosen venue.');return;
       }
+      if(!v&&p?.items?.length){
+        alert('There is placed equipment in this event. Move or remove it before unlinking the venue.');return;
+      }
+      if(v&&oldVenue!==v.id&&p?.items?.length&&!confirm('This event has equipment placed at another venue. Keep those placements marked for review?'))return;
+      if(v&&oldVenue===v.id&&p?.items?.some(item=>item.areaId&&v.spaces.some(sp=>sp.id===item.areaId)&&!spaceIds.includes(item.areaId))){
+        alert('A deselected space still contains equipment. Move those items first.');return;
+      }
+      const draft=JSON.parse(JSON.stringify(ev)),L=window.PhaenomenonLifecycle;
+      const outcome=L.setDetails(draft,{date:val('date'),bookingStage:val('bookingStage'),
+        dateCertainty:val('dateCertainty'),targetMonth:val('targetMonth'),
+        followUpDate:val('followUpDate'),nextAction:val('nextAction'),
+        dateNotes:val('dateNotes'),productionStage:val('productionStage')});
+      if(outcome.error){alert(outcome.error);return;}
       mutate(()=>{
-        const result=VE().updateEvent(db,ev.id,v.id,spaceIds);
-        if(result.error){alert(result.error);return;}
-        Object.assign(ev,{title:val('title').slice(0,120),clientId:val('clientId'),date:val('date'),eventType:EVENT_TYPES.includes(val('eventType'))?val('eventType'):'Other',guests:Math.max(1,Math.min(5000,num('guests'))),zones:Math.max(1,Math.min(12,num('zones'))),environment:val('environment')==='Outdoor'?'Outdoor':'Indoor',complexity:['Simple','Standard','Feature'].includes(val('complexity'))?val('complexity'):'Standard',status:EVENT_STATUS.includes(val('status'))?val('status'):'Enquiry',labourHours:Math.min(1000,num('labourHours')),labourRate:Math.min(100000,num('labourRate')),notes:val('notes').slice(0,3000)});
-      },'Event saved with selected venue spaces. Review the 3D layout after changing a venue.');return;
+        if(v){
+          const result=VE().updateEvent(db,ev.id,v.id,spaceIds);
+          if(result.error){alert(result.error);return;}
+        }else{ev.venueId='';ev.venue='';ev.spaceIds=[];}
+        Object.assign(ev,{title:val('title').slice(0,120),
+          clientId:db.clients.some(c=>c.id===val('clientId'))?val('clientId'):'',
+          date:draft.date,lifecycle:draft.lifecycle,status:draft.status,
+          eventType:EVENT_TYPES.includes(val('eventType'))?val('eventType'):'Other',
+          guests:Math.max(1,Math.min(5000,num('guests'))),
+          zones:Math.max(1,Math.min(12,num('zones'))),
+          environment:val('environment')==='Outdoor'?'Outdoor':'Indoor',
+          complexity:['Simple','Standard','Feature'].includes(val('complexity'))?val('complexity'):'Standard',
+          labourHours:Math.min(1000,num('labourHours')),
+          labourRate:Math.min(100000,num('labourRate')),
+          notes:val('notes').slice(0,3000)
+        });
+      },'Event lifecycle and planning details saved.');
+      return;
     }
     if(which==='edit-equipment'){const gear=db.equipment.find(g=>g.id===val('id'));if(!gear)return;mutate(()=>{gear.owned=Math.min(100000,Math.floor(num('owned')));gear.rate=Math.min(100000,num('rate'));gear.watts=Math.min(100000,Math.floor(num('watts')));},'Equipment stock and hire rate updated');return;}
     if(which==='new-equipment'){if(!val('name')||!val('category'))return;mutate(()=>{db.equipment.push({id:id('eq'),name:val('name').slice(0,120),category:val('category').slice(0,70),owned:Math.min(100000,Math.floor(num('owned'))),rate:Math.min(100000,num('rate')),watts:Math.min(100000,Math.floor(num('watts')))});ui.modal=null;},'Equipment added to the catalogue');return;}
