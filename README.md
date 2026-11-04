@@ -1,5 +1,13 @@
 # Phaenomenon
 
+## Collection-first navigation — November 2026
+
+Phaenomenon is organised around **records, not global tools**. Start at [Dashboard](production.html#/dashboard), then browse [Events & schedule](production.html#/events), [People & organisations](production.html#/entities), [Venues & spaces](production.html#/venues), [Equipment & fixtures](production.html#/equipment) or [Finances](production.html#/finances). Community Noticeboard and Settings stay at the bottom of the sidebar.
+
+Each collection has a contextual **New** action. Opening a record or selecting **New** creates a workspace tab; opening a record already in a tab focuses it without duplication. New records remain unsaved, session-preserved drafts until the user submits Create. Switching between collections reuses a browsing tab **without replacing open record or draft tabs**. Closing a tab never deletes a saved record. For specialist event design, crew, technical and closeout tools, open the relevant event first. The global **Switch Event** dropdown and competing dashboard launcher menu have been removed.
+
+The connected data is unchanged. This is still a browser-local demo; sessions and unsaved drafts are not secure cloud storage. Details and acceptance checks: [Collection navigation](COLLECTION_NAVIGATION.md).
+
 ## Unified Event Workspace — start here
 
 **[Open an event in the unified workspace](production.html#/home)** · [Architecture and workflow](EVENT_WORKSPACE.md)
@@ -26,19 +34,17 @@ The new **Production → Closeout** view tracks equipment returns, crew approval
 
 ## Collapsible icon sidebar and open workspace tabs
 
-Phaenomenon uses a shared navigation system across [Home / Production](production.html#/dashboard) and [Studio](index.html#/overview). On desktop, the left sidebar has matching line-style icons and a collapse control. Collapsed navigation shows icons only; hover/focus exposes the item name, and choosing a grouped icon expands the menu to expose its child links. This preference is remembered locally.
+The [main Production workspace](production.html#/dashboard) and legacy [Studio specialist tools](index.html#/overview) share one floating, rounded workspace-tab system. The sidebar uses consistent icons and can collapse to icon-only mode. Its entries are **browseable collections**, not a list of event-specific operations.
 
-Workspace tabs appear as **independent floating, rounded pills**, with space below them rather than merging into a bottom border. **Home is an ordinary closable tab**, not a locked anchor. Ordinary navigation reuses the active tab instead of automatically adding new tabs. To keep multiple views open, click the **+** at the right and deliberately select another workspace, including Home, an event, the 3D planner or technical connections. Each tab remembers its event/view until it is navigated elsewhere. Closing the last tab displays the Home dashboard without automatically recreating a tab; click Home or **+** to open one again. The active pill is subtly highlighted; tabs stay compact and scroll horizontally when crowded. Keyboard users can use arrow keys to move between tabs and Delete to close the focused tab.
+**Browse → open or create → work in a tab:** switching collections reuses one browse tab, while opening a saved record creates/activates a record tab. The same event uses one workspace tab even when moving between Event Builder, technical and production subviews. Contextual **+ New** creates a dedicated draft tab; its form values are held in this browser session until submission. Changing an unsaved legacy specialist editor may still discard changes; save those first.
 
-Tab choices and sidebar collapse state persist in this browser; the initial update discards previously auto-generated tabs and are shared between the Studio and Production pages. **Closing a tab never deletes event data**. These are route-based saved workspaces, not independently executing app instances; save unsaved form edits before changing views. The implementation is in `workspace-navigation.js` and `workspace-navigation.css`, with regression coverage in `tests/workspace-navigation.test.mjs`.
+Home is a normal, closable tab. The **+** on the tab strip can open additional workspaces deliberately, but ordinary collection navigation and record openings work without a separate picker. Tabs and sidebar collapse are kept locally, and closing a tab does not delete data. Source: `workspace-navigation.js`, `workspace-navigation.css` and `collection-workspaces.js`.
 
 ## Home dashboard (default landing screen)
 
-Open **[Phaenomenon Home](production.html#/dashboard)** to see the compact, connected overview. Opening the app root (the repository's `index.html` without a hash route) redirects to this dashboard; direct links to the classic Studio pages, Event Builder and all Production views remain available.
+Open [Phaenomenon Dashboard](production.html#/dashboard) for a concise summary of upcoming work, own concepts, client leads, closeout and unresolved issues. It presents existing records and next actions, rather than functioning as a second global navigation menu. Follow an event row to open the linked Event Workspace in its own tab.
 
-The Home screen uses existing browser-local records to show four metrics (opportunities broken down into own concepts and client leads, confirmed events in the next 30 days, unfinished closeouts and open production issues), the selected event with its seven-step planning progress, an independently scrollable list of own concepts and upcoming confirmed work, actionable warnings and shortcuts. It does not invent activity dates or treat planning completion as technical approval.
-
-The Dashboard/Home link is available from Production's sidebar and brand, plus the Studio sidebar/brand and mobile navigation. Longer datasets scroll inside their panels rather than increasing the entire page height. The dashboard's responsive presentation lives in `home-dashboard.css`, the data-driven rendering in `home-dashboard.js` and the application integration in `production-os.js`.
+On desktop the page uses compact metric cards and independently scrollable event and attention lists. It never treats planning completion as safety sign-off or financial verification. Source: `home-dashboard.js` and `home-dashboard.css`.
 
 ## Interface-wide compactness and scrolling
 
@@ -48,11 +54,9 @@ The shared implementation is in `compact-workspace.css`; new views should follow
 
 ## Event switching and event schedule
 
-Open [All events & schedule](production.html#/events) from the Production OS sidebar (or the **All events** button beside the event selector). The event index reads the same saved bookings as the classic studio workspace, with an **Event list** showing upcoming, past and undated events and a **Month calendar** with previous/next month, Today and Selected event controls. Select any event to open its unified Event Workspace, with the guided builder one click away. The **Switch event** selector remains available throughout each event workspace and updates the browser route to the newly selected event, so follow-on navigation remains consistent. The classic [Studio calendar](index.html#/schedule) is linked from the event index for broader diary needs.
+Use [Events & schedule](production.html#/events) for the complete event list, own/client filtering and month calendar. Choose an event to open or activate its tab, or select **+ New event** to start an independent draft tab. There is **no global active-event dropdown**; the event record and tab URL determine which production is being worked on.
 
-All of these are local-browser views of your existing event data. No separate calendar database or cross-device sync is created.
-
-
+Inside a record the [unified Event Workspace](EVENT_WORKSPACE.md) connects its details, reusable venue spaces, 3D design, technical plans, people/crew, finance, community publication and closeout. The legacy [Studio diary](index.html#/schedule) remains available as a specialist tool.
 
 ## New: Guided Event Builder, equipment links and local recovery
 
@@ -92,41 +96,19 @@ The web prototype remains for demonstration and planning, **not** live technical
 
 ## Mobile experience (November 2026)
 
-The phone layout is a deliberate **task-first mobile view** of the same browser application, not a separate simplified product.
+The compact mobile docks prioritise **Home, Events, People, Equipment and More**. More exposes the remaining collections and the secondary Community destination. Opening a record continues into its contextual tools rather than changing the entire application's selected event.
 
-- **Production phone dock:** **Build**, **3D**, **Tech**, **Crew**, **More**. The current event stays available in a compact top selector. **More** opens a full-height navigation sheet containing Production, Directory, event settings, the equipment and fixture libraries, and Studio management.
-- **Studio phone dock:** **Events**, **Build**, **3D**, **More**. The Events screen shows the selected event immediately with a compact **Choose event** control instead of forcing the user to scroll through every booking.
-- **Focused screens:** The Event Builder uses short touch-friendly steps and a prominent suggested next action; deeper settings remain available in context. Production tabs are horizontally swipeable on narrow screens and wide technical tables scroll inside their panels.
-- **Touch support:** Controls are sized for fingers; form text stays readable without iOS input-focus zoom; venue/event/cue dialogs open as bottom sheets; navigation and dialogs account for safe-area insets. The existing technical planner and multi-space editor retain all controls.
-- **Accessibility:** More menus support backdrop/Escape dismissal and show the selected navigation section. Reduced-motion users are not forced through drawer transitions.
-- **Limits:** The public site remains a local-first **website**. It does not yet sync or securely share work between phones and computers, save to a managed server, or guarantee recovery. Export JSON backups before relying on experimental changes. Opening it through another browser or a Home Screen shortcut may use a different local data store.
+Mobile collection lists and long tables scroll within accessible panels. The connected Event Builder, space planner, crew workflows and technical planning still work as contextual specialist screens. Form controls and tab strips retain touch targets and safe-area spacing. Public and private pages remain browser-local prototypes, without server-backed multi-device synchronisation.
 
-Useful links: [Phone Event Builder](production.html#/builder) · [Studio/Bookings](index.html#/bookings) · [Mobile usability guide](USER_TESTING.md).
-
-Regression coverage: `node --test tests/mobile-ux.test.mjs` and `node --test tests/*.test.mjs`.
-
----
+Regression coverage: `tests/mobile-ux.test.mjs` and `tests/collection-navigation.test.mjs`.
 
 ## Simplified navigation and focused workspaces (November 2026)
 
-The classic Studio and Production views now use the same task-based information architecture. The main menus keep **Event workspace**, **Events** and **Studio overview** immediately accessible; specialised links sit in expandable groups:
+**Current design:** The sidebar is a short, stable collection list: Dashboard; Events & schedule; People & organisations; Venues & spaces; Equipment & fixtures; and Finances. Community Noticeboard and Settings sit at the bottom. The header no longer displays a global selected-event dropdown or an unconditional New Event action.
 
-- **Plan & design:** 3D planner and technical connections.
-- **Deliver the event:** Crew installation and Production (team, equipment, installation, show schedule).
-- **Library & people:** Reusable Venues and Spaces, people and organisations, equipment and fixture library.
-- **Studio management:** Projects, opportunities, calendar, clients, invoices and Settings.
+Each collection has search, bounded scrolling and its own creation controls. Selecting an existing record opens an independently navigable tab, or focuses one already open; selecting **New** opens a session-preserved draft tab. Specialist event design, technical, installation, show and closeout workspaces remain connected to the event, not global sidebar entries. Legacy Studio subtools remain available through those contextual links.
 
-The Studio sidebar has **Plan & design**, **Equipment library** and **Studio management** submenus, rather than a long flat list. Production offers **Plan & design**, **Deliver the event**, **Library & people** and **Studio management**. Both switch to an expandable vertical menu on smaller screens, instead of forcing users to scroll through a long horizontal bar.
-
-Within **Events**, selecting a booking shows two focused tabs: **Event details** (including the saved Venue and selected Spaces) and **Equipment kit**. Switching tabs does not rebuild the unsaved form fields. Optional booking totals are behind a summary disclosure, while rebooking and invoice drafting remain under **More**. The selected event can be opened directly in the Production workspace or 3D planner.
-
-The **Event overview** defaults to four primary tasks (3D design, connections, crew installation and production). Reusable Venue/Space configuration and extended progress detail can expand on demand. Production uses the short tabs **Team**, **Equipment & logistics**, **Installation** and **Show schedule**. Optional creation forms (assignments, show cues, draft looks and entity records) remain accessible but collapsed until needed. The starting-view preset and JSON backup live under **Options** in the Production header.
-
-The legacy **Design → Connect → Review → Export** technical-planning sequence and its DMX, power and cable subtasks are unchanged. All data and actions remain available; this is an information architecture and presentation pass, not a new data model or a security update.
-
-Navigation checks: `node --test tests/navigation.test.mjs`. Run the full suite with `node --test tests/*.test.mjs`.
-
----
+The older grouped, event-first navigation described in past implementation notes is superseded by this model. The underlying event, venue, team, equipment and financial records remain unchanged. Implementation details: [COLLECTION_NAVIGATION.md](COLLECTION_NAVIGATION.md), [EVENT_WORKSPACE.md](EVENT_WORKSPACE.md), [UI_PRINCIPLES.md](UI_PRINCIPLES.md).
 
 ## New: Connected Event Production workspace
 
@@ -134,7 +116,7 @@ Navigation checks: `node --test tests/navigation.test.mjs`. Run the full suite w
 
 The existing **Design → Connect → Review → Export** stage lighting planner is retained. A new shared event workspace provides:
 
-- Event-first, task-based navigation for design, technical, crew and production responsibilities.
+- Collection-first browsing with event-contextual workspaces for design, technical, crew and production responsibilities.
 - Casebook-style people, organisations, venues, spaces and event entity profiles, aliases and typed links, with event-specific roles and Back/Forward navigation.
 - Versioned crew instruction packs generated from the existing venue, equipment, DMX and cable records.
 - Area-specific printable installation diagrams, task completion, technical verification and issue reporting.
