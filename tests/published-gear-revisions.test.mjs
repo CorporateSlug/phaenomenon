@@ -20,6 +20,9 @@ function harness(){
     getItem:key=>mem.get(key)||null,
     setItem:(key,val)=>mem.set(key,String(val))
   };
+  for(const file of ['event-lifecycle.js','event-lifecycle-ui.js']){
+    runInNewContext(readFileSync(new URL('../'+file,import.meta.url),'utf8'),{window},{filename:file});
+  }
   runInNewContext(source,{
     window,document,location,localStorage,
     confirm:()=>true,alert(){},prompt:()=>'',setTimeout(){},
