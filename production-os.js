@@ -25,10 +25,10 @@
     catch(e){return starter();}
   }
   const storedRaw=()=>{try{return localStorage.getItem(KEY);}catch(e){return null;}};
-  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'dashboard',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',homeVenueOpen:false,builderFocus:'',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,scheduleMode:'list',scheduleMonth:'',notice:''};
-  try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.crewPerson=saved.crewPerson||'all';ui.role=saved.role||'lead';ui.productionTab=saved.productionTab||'team';ui.scheduleMode=saved.scheduleMode==='calendar'?'calendar':'list';}catch(e){}
+  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'dashboard',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',homeVenueOpen:false,builderFocus:'',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,scheduleMode:'list',scheduleMonth:'',eventScope:'all',notice:''};
+  try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.crewPerson=saved.crewPerson||'all';ui.role=saved.role||'lead';ui.productionTab=saved.productionTab||'team';ui.scheduleMode=saved.scheduleMode==='calendar'?'calendar':'list';ui.eventScope=['all','studio','client'].includes(saved.eventScope)?saved.eventScope:'all';}catch(e){}
   function savePreferences(){
-    try{localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,crewPerson:ui.crewPerson,role:ui.role,productionTab:ui.productionTab,scheduleMode:ui.scheduleMode}));}catch(e){}
+    try{localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,crewPerson:ui.crewPerson,role:ui.role,productionTab:ui.productionTab,scheduleMode:ui.scheduleMode,eventScope:ui.eventScope}));}catch(e){}
   }
   function store(){
     try{
@@ -450,6 +450,7 @@
       return {
         id:e.id,title:e.title,date:e.date,status:e.status,
         bookingStage:life.bookingStage,bookingLabel:life.bookingLabel,
+        eventLead:life.eventLead,eventLeadLabel:life.eventLeadLabel,
         dateCertainty:life.dateCertainty,targetMonth:life.targetMonth,
         productionStage:life.productionStage,productionLabel:life.productionLabel,
         followUpDate:life.followUpDate,nextAction:life.nextAction,
@@ -566,7 +567,7 @@
       '<form id="builder-basics-form" class="form-grid">'+
       '<label class="wide">Event name<input class="input" name="title" required maxlength="120" value="'+esc(e.title)+'"></label>'+
       window.PhaenomenonLifecycleUI.fields(e,{compact:true})+
-      '<label>Client / organiser (optional)<select name="clientId"><option value="">Not known yet</option>'+db.clients.map(x=>'<option value="'+esc(x.id)+'" '+(e.clientId===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label>'+
+      '<label data-ph-client-field>Client / organiser (optional)<select name="clientId"><option value="">Not known yet</option>'+db.clients.map(x=>'<option value="'+esc(x.id)+'" '+(e.clientId===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label>'+
       '<label>Event type<select name="eventType">'+eventTypes.map(x=>'<option value="'+esc(x)+'" '+(e.eventType===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></label>'+
 
       '<details class="wide workspace-disclosure builder-assumptions"><summary>Planning assumptions &amp; estimated costs</summary><div class="disclosure-body form-grid">'+
@@ -639,7 +640,7 @@
       '<form id="builder-new-event-form" class="venue-quick-form">'+
       '<label>Event name<input class="input" name="title" required maxlength="120" placeholder="e.g. Saturday warehouse party"></label>'+
       window.PhaenomenonLifecycleUI.fields(null,{create:true,compact:true})+
-      '<label>Existing client (optional)<select name="clientId"><option value="">Not known yet…</option>'+
+      '<label data-ph-client-field>Existing client (optional)<select name="clientId"><option value="">Not known yet…</option>'+
       (db.clients||[]).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
       '<label>Or new client name<input class="input" name="clientName" maxlength="120" placeholder="Only needed if not in the list"></label>'+
       '<div class="venue-quick-actions"><button class="btn" type="button" data-act="builder-new-close">Cancel</button>'+
@@ -1479,7 +1480,7 @@
       ev.preventDefault();
       const data=new FormData(f),fields={title:clean(data.get('title')),date:clean(data.get('date')),
         clientId:clean(data.get('clientId')),clientName:clean(data.get('clientName')),
-        bookingStage:clean(data.get('bookingStage')),dateCertainty:clean(data.get('dateCertainty')),
+        eventLead:clean(data.get('eventLead')),bookingStage:clean(data.get('bookingStage')),dateCertainty:clean(data.get('dateCertainty')),
         targetMonth:clean(data.get('targetMonth')),dateNotes:clean(data.get('dateNotes')),
         followUpDate:clean(data.get('followUpDate')),nextAction:clean(data.get('nextAction'))};
       const result=window.PhaenomenonEventBuilder?.create(db,fields);
@@ -1515,13 +1516,13 @@
       const title=val('title').slice(0,120),day=val('date');
       if(!title){notice('Enter an event name.');return;}
       const result=window.PhaenomenonLifecycle.setDetails(e,{
-        date:day,bookingStage:val('bookingStage'),dateCertainty:val('dateCertainty'),
+        date:day,eventLead:val('eventLead'),bookingStage:val('bookingStage'),dateCertainty:val('dateCertainty'),
         targetMonth:val('targetMonth'),dateNotes:val('dateNotes'),
         nextAction:val('nextAction'),followUpDate:val('followUpDate'),
         productionStage:val('productionStage')
       });
       if(result.error){notice(result.error);return;}
-      e.title=title;e.clientId=db.clients.some(x=>x.id===val('clientId'))?val('clientId'):'';
+      e.title=title;e.clientId=e.lifecycle.eventLead==='client'&&db.clients.some(x=>x.id===val('clientId'))?val('clientId'):'';
       const allowed=['Other','Performance','Live music','Festival','Wedding','Corporate','Private','Exhibition'];
       e.eventType=allowed.includes(val('eventType'))?val('eventType'):'Other';
       e.guests=Math.max(1,Math.min(5000,Math.floor(num(val('guests'),1))));
