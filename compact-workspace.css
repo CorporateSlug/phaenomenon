@@ -239,3 +239,5 @@ body:has(#production-app) .calendar-grid { gap:4px; }
 }
 body:has(#production-app) .ph-table-region thead th { background:#202935;box-shadow:0 1px 0 #40505c; }
 body:has(#app) .ph-table-region thead th { background:#f1f6f3;box-shadow:0 1px 0 #dce8e3; }
+
+@media(max-width:840px){body:has(#app) .studio-mobile-dock{grid-template-columns:repeat(5,minmax(0,1fr));}}
