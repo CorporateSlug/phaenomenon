@@ -25,7 +25,7 @@
     catch(e){return starter();}
   }
   const storedRaw=()=>{try{return localStorage.getItem(KEY);}catch(e){return null;}};
-  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'dashboard',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',homeVenueOpen:false,publicListingOpen:false,builderFocus:'',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,scheduleMode:'list',scheduleMonth:'',eventScope:'all',notice:''};
+  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'dashboard',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',homeVenueOpen:false,publicListingOpen:false,builderFocus:'',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,scheduleMode:'list',scheduleMonth:'',eventScope:'all',collectionSearch:'',recordId:'',draftKind:'',draftId:'',notice:''};
   try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.crewPerson=saved.crewPerson||'all';ui.role=saved.role||'lead';ui.productionTab=saved.productionTab||'team';ui.scheduleMode=saved.scheduleMode==='calendar'?'calendar':'list';ui.eventScope=['all','studio','client'].includes(saved.eventScope)?saved.eventScope:'all';}catch(e){}
   function savePreferences(){
     try{localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,crewPerson:ui.crewPerson,role:ui.role,productionTab:ui.productionTab,scheduleMode:ui.scheduleMode,eventScope:ui.eventScope}));}catch(e){}
@@ -367,7 +367,7 @@
     return {all:t.length,installed:t.filter(x=>x.state!=='pending').length,verified:t.filter(x=>x.state==='verified').length,issues:org().issues.filter(x=>x.eventId===e?.id&&x.status!=='Resolved').length};
   }
   function notice(message){if(saveConflict){message='Another tab updated the event. Your latest edit was not saved. Please retry it.';saveConflict=false;}ui.notice=message;render();setTimeout(()=>{if(ui.notice===message){ui.notice='';document.querySelector('#message')?.remove();}},4200);}
-  function viewName(){return ({dashboard:'Home',builder:'Event builder',home:'Event workspace',events:'Events & schedule',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'Directory',community:'Community noticeboard'}[ui.view]||'Event overview');}
+  function viewName(){return ({dashboard:'Dashboard',builder:'Event builder',home:'Event workspace',events:'Events & schedule',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'People & organisations',venues:'Venues & spaces',equipment:'Equipment & fixtures',fixtures:'Fixture',finances:'Invoices & billing',new:'Create record',community:'Community noticeboard'}[ui.view]||'Workspace');}
   function render(){
     const e=current(),c=counts(e);
     const navItem=(href,label,glyph,active)=>'<a href="'+href+'" class="nav'+(active?' active':'')+'"'+(active?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+glyph+'</span><span>'+esc(label)+'</span></a>';
@@ -376,65 +376,39 @@
       '<div class="rail-subnav">'+rows.join('')+'</div></details>';
     const eventId=e?.id?encodeURIComponent(e.id):'';
     const navigation=
-      '<div class="rail-label">HOME</div>'+navItem('#/dashboard','Dashboard','⌂',ui.view==='dashboard')+
-      '<div class="rail-label">EVENTS</div>'+navItem('#/events','All events & schedule','▦',ui.view==='events')+
-      '<div class="rail-label">ACTIVE EVENT</div>'+
-      navItem('#/builder/'+eventId,'Event builder','◈',ui.view==='builder')+
-      navItem('#/home/'+eventId,'Event workspace','⌂',ui.view==='home'&&!ui.homeVenueOpen)+
-      navItem('index.html#/bookings/'+eventId,'Event details','▤',false)+
-      '<div class="rail-label">WORKSPACES</div>'+
-      navGroup('plan','Plan & design','⌑',[
-        navItem('#/design','3D design','◫',ui.view==='design'),
-        navItem('#/technical','Technical connections','⚡',ui.view==='technical')
-      ],['design','technical'].includes(ui.view))+
-      navGroup('deliver','Deliver the event','✓',[
-        navItem('#/crew','Crew installation','☑',ui.view==='crew'),
-        navItem('#/production','Production','▦',ui.view==='production'),
-        navItem('#/production/closeout/'+eventId,'Closeout','✓',ui.view==='production'&&ui.productionTab==='closeout')
-      ],['crew','production'].includes(ui.view))+
-      navGroup('library','Library & people','◇',[
-        navItem('#/home/venue/'+eventId,'Venues & spaces','⌘',ui.view==='home'&&ui.homeVenueOpen),
-        navItem('#/entities','Directory','♧',ui.view==='entities'),
-        navItem('index.html#/equipment','Equipment','◫',false),
-        navItem('index.html#/fixtures','Fixture library','◉',false)
-      ],ui.view==='entities'||(ui.view==='home'&&ui.homeVenueOpen))+
-      navGroup('studio','Studio management','▤',[
-        navItem('index.html#/overview','Studio overview','⌂',false),
-        navItem('index.html#/projects','Projects','◇',false),
-        navItem('index.html#/pipeline','Opportunities','▥',false),
-        navItem('index.html#/schedule','Calendar','▦',false),
-        navItem('index.html#/clients','Clients','♧',false),
-        navItem('index.html#/invoices','Invoices','▤',false),
-        navItem('index.html#/settings','Settings','⚙',false)
-      ],false)+
-      '<div class="rail-community-section"><div class="rail-label">COMMUNITY</div>'+
-        navItem('#/community','Community noticeboard','✳',ui.view==='community')+'</div>';
+      '<div class="rail-label">WORKSPACE</div>'+
+      navItem('#/dashboard','Dashboard','⌂',ui.view==='dashboard')+
+      navItem('#/events','Events & schedule','▦',ui.view==='events')+
+      navItem('#/entities','People & organisations','♧',ui.view==='entities')+
+      navItem('#/venues','Venues & spaces','⌘',ui.view==='venues')+
+      navItem('#/equipment','Equipment & fixtures','◫',['equipment','fixtures'].includes(ui.view))+
+      navItem('#/finances','Finances','▤',ui.view==='finances')+
+      '<div class="rail-community-section"><div class="rail-label">OTHER</div>'+
+      navItem('#/community','Community noticeboard','✳',ui.view==='community')+
+      navItem('index.html#/settings','Settings','⚙',false)+'</div>';
     const mobileTab=(href,label,glyph,active)=>'<a class="mobile-tab'+(active?' is-active':'')+'" href="'+href+'" '+(active?'aria-current="page"':'')+'><span aria-hidden="true" class="mobile-tab-icon">'+glyph+'</span><span>'+label+'</span></a>';
-    const mobileNavigation='<nav class="mobile-tabbar production-mobile-tabs" aria-label="Quick event navigation">'+
+    const mobileNavigation='<nav class="mobile-tabbar production-mobile-tabs" aria-label="Main navigation">'+
       mobileTab('#/dashboard','Home','⌂',ui.view==='dashboard')+
-      mobileTab('index.html#/spaces/'+eventId,'3D','▧',false)+
-      mobileTab('#/technical/'+eventId,'Tech','⚡',ui.view==='technical')+
-      mobileTab('#/crew/'+eventId,'Crew','✓',ui.view==='crew')+
-      '<button type="button" class="mobile-tab mobile-more-tab'+(['production','entities','design'].includes(ui.view)?' is-active':'')+'" data-act="toggle-rail" aria-controls="production-navigation" aria-expanded="false">'+
+      mobileTab('#/events','Events','▦',ui.view==='events')+
+      mobileTab('#/entities','People','♧',ui.view==='entities')+
+      mobileTab('#/equipment','Equipment','◫',['equipment','fixtures'].includes(ui.view))+
+      '<button type="button" class="mobile-tab mobile-more-tab'+(['venues','finances','community'].includes(ui.view)?' is-active':'')+'" data-act="toggle-rail" aria-controls="production-navigation" aria-expanded="false">'+
       '<span class="mobile-tab-icon" aria-hidden="true">☰</span><span>More</span></button></nav>';
     const html='<div class="shell"><aside class="rail" id="production-rail">'+
       '<div class="rail-top"><a class="brand" href="#/dashboard">phaenomenon<span>.</span></a>'+
       '<button type="button" class="rail-mobile-toggle" data-act="toggle-rail" aria-expanded="false" aria-controls="production-navigation">☰ <span>Menu</span></button></div>'+
-      '<button type="button" class="rail-quick-new" data-act="builder-new">+ New event</button>'+
       '<nav id="production-navigation" aria-label="Production navigation">'+navigation+'</nav>'+
-      '<div class="rail-bottom"><strong>ALL EVENTS · CONNECTED WORK</strong><p>Browse the schedule or switch events at any time.</p>'+
+      '<div class="rail-bottom"><strong>COLLECTIONS · CONNECTED RECORDS</strong><p>Browse a library, then open or create a record in a tab.</p>'+
       '<p>Local prototype · Role views are not security permissions.</p></div></aside>'+
       '<button type="button" class="mobile-nav-backdrop" data-act="close-rail" aria-label="Close navigation"></button>'+
       '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / '+(ui.view==='dashboard'?'Home':'Event')+'</div><div class="header-title"><span class="header-title-desktop">'+viewName()+'</span><span class="header-title-mobile">'+({dashboard:'Home',builder:'Build',home:'Event',events:'Events',design:'Design',technical:'Tech',crew:'Crew',production:'Production',entities:'Directory',community:'Community'}[ui.view]||'Event')+'</span></div></div>'+
-      '<div class="header-tools">'+(ui.view==='events'?'':'<a class="btn header-events-link" href="#/events">All events</a>')+'<button type="button" class="btn primary" data-act="builder-new">+ New event</button><label class="event-header-select"><span class="event-header-select-label">Switch event</span><select id="event-picker" aria-label="Switch active event">'+
-      events().map(x=>'<option value="'+esc(x.id)+'" '+(x.id===e?.id?'selected':'')+'>'+esc(x.title)+'</option>').join('')+
-      '</select></label><details class="header-more"><summary class="btn" aria-label="More workspace options">Options ▾</summary>'+
+      '<div class="header-tools"><details class="header-more"><summary class="btn" aria-label="More workspace options">Options ▾</summary>'+
       '<div class="header-more-menu"><label>Default starting view<select id="role-picker">'+
       [['lead','Designer / lead'],['tech','Lighting technician'],['crew','Installation crew'],['manager','Production manager']].map(x=>'<option value="'+x[0]+'" '+(ui.role===x[0]?'selected':'')+'>'+x[1]+'</option>').join('')+
       '</select></label><p class="mobile-local-note">Stored on this device only · not synchronised with other devices</p>'+
       '<button type="button" class="btn" data-act="export-backup">Export JSON backup</button>'+
       '<button type="button" class="btn" data-act="import-backup">Import JSON backup</button>'+recoveryPoints()+
-      '<a class="btn" href="index.html#/bookings/'+eventId+'">Edit event booking ↗</a></div></details>'+
+      '<a class="btn" href="index.html#/settings">Studio settings ↗</a></div></details>'+
       '<small id="save-status" class="save-status" title="This is local browser storage, not cloud sync.">Saved in this browser</small></div></header>'+
       '<div class="content">'+(ui.notice?'<div id="message" class="notice good section" role="status">'+esc(ui.notice)+'</div>':'')+
       (ui.view==='dashboard'?studioDashboard():ui.view==='events'?eventSchedule():ui.view==='builder'?builderPage(e,c):ui.view==='home'?home(e,c):ui.view==='design'?design(e,c):ui.view==='technical'?technical(e,c):ui.view==='crew'?crew(e,c):ui.view==='production'?production(e,c):ui.view==='community'?window.PhaenomenonCommunityAdmin.render():entities(e))+
