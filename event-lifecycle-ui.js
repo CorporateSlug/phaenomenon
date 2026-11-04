@@ -13,7 +13,7 @@
    const prefix=compact?'':'Event ';
    const date='<label>'+prefix+'date (optional)<input class="input" type="date" name="date" value="'+esc(event?.date||'')+'"></label>';
    return '<div class="ph-lifecycle-fields">'+
-     '<label class="ph-lifecycle-lead">Event organised by<select name="eventLead">'+options(LCx.EVENT_LEADS,lc.eventLead)+'</select><small class="ph-lifecycle-lead-hint">Own events are not client commissions. No self-invoice is created.</small></label>'+
+     '<label class="ph-lifecycle-lead">Event led by<select name="eventLead">'+options(LCx.EVENT_LEADS,lc.eventLead)+'</select><small class="ph-lifecycle-lead-hint">Choose who the idea or event is for. Own events do not need an external client or self-invoice.</small></label>'+
      '<label>Booking stage<select name="bookingStage">'+options(LCx.BOOKING,lc.bookingStage)+'</select></label>'+
      '<label>How certain is the date?<select name="dateCertainty">'+options(LCx.DATE,lc.dateCertainty)+'</select></label>'+
      (config.includeDate!==false?date:'')+
