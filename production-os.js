@@ -25,7 +25,7 @@
     catch(e){return starter();}
   }
   const storedRaw=()=>{try{return localStorage.getItem(KEY);}catch(e){return null;}};
-  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'dashboard',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',homeVenueOpen:false,publicListingOpen:false,builderFocus:'',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,scheduleMode:'list',scheduleMonth:'',eventScope:'all',collectionSearch:'',recordId:'',draftKind:'',draftId:'',notice:''};
+  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'dashboard',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',homeVenueOpen:false,publicListingOpen:false,builderFocus:'',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'People',showArchived:false,scheduleMode:'list',scheduleMonth:'',eventScope:'all',collectionSearch:'',recordId:'',draftKind:'',draftId:'',notice:''};
   try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.crewPerson=saved.crewPerson||'all';ui.role=saved.role||'lead';ui.productionTab=saved.productionTab||'team';ui.scheduleMode=saved.scheduleMode==='calendar'?'calendar':'list';ui.eventScope=['all','studio','client'].includes(saved.eventScope)?saved.eventScope:'all';}catch(e){}
   function savePreferences(){
     try{localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,crewPerson:ui.crewPerson,role:ui.role,productionTab:ui.productionTab,scheduleMode:ui.scheduleMode,eventScope:ui.eventScope}));}catch(e){}
@@ -447,7 +447,7 @@
       '<div class="rail-bottom"><strong>COLLECTIONS · CONNECTED RECORDS</strong><p>Browse a library, then open or create a record in a tab.</p>'+
       '<p>Local prototype · Role views are not security permissions.</p></div></aside>'+
       '<button type="button" class="mobile-nav-backdrop" data-act="close-rail" aria-label="Close navigation"></button>'+
-      '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / '+(ui.view==='dashboard'?'Home':'Event')+'</div><div class="header-title"><span class="header-title-desktop">'+viewName()+'</span><span class="header-title-mobile">'+({dashboard:'Home',builder:'Build',home:'Event',events:'Events',design:'Design',technical:'Tech',crew:'Crew',production:'Production',entities:'Directory',community:'Community'}[ui.view]||'Event')+'</span></div></div>'+
+      '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / '+(['dashboard','events','entities','venues','equipment','fixtures','finances','new'].includes(ui.view)?'Studio':'Event')+'</div><div class="header-title"><span class="header-title-desktop">'+viewName()+'</span><span class="header-title-mobile">'+({dashboard:'Home',builder:'Build',home:'Event',events:'Events',design:'Design',technical:'Tech',crew:'Crew',production:'Production',entities:'People',venues:'Venues',equipment:'Equipment',fixtures:'Fixture',finances:'Finances',new:'New record',community:'Community'}[ui.view]||'Workspace')+'</span></div></div>'+
       '<div class="header-tools"><details class="header-more"><summary class="btn" aria-label="More workspace options">Options ▾</summary>'+
       '<div class="header-more-menu"><label>Default starting view<select id="role-picker">'+
       [['lead','Designer / lead'],['tech','Lighting technician'],['crew','Installation crew'],['manager','Production manager']].map(x=>'<option value="'+x[0]+'" '+(ui.role===x[0]?'selected':'')+'>'+x[1]+'</option>').join('')+
@@ -711,7 +711,7 @@
       '<span class="event-index-date">'+esc(date(x.date)==='Unscheduled'?(state(x).targetMonth?state(x).targetMonth+' approx.':'No date'):date(x.date))+'</span>'+
       '<span class="event-index-main"><strong>'+esc(x.title)+'</strong><small>'+esc(venue(x)?.name||x.venue||'Venue not assigned')+
       ' · '+esc(state(x).eventLead==='studio'?'Own production':'Client-led event')+' · '+esc(state(x).dateLabel)+' · '+esc(state(x).productionLabel)+(state(x).nextAction?' · Next: '+esc(state(x).nextAction):'')+'</small></span>'+
-      '<span class="event-index-status">'+pill(state(x).closed?'Closed':state(x).bookingLabel)+(x.id===ui.eventId?'<small class="event-index-active">Current</small>':'')+'</span><span class="event-index-chevron" aria-hidden="true">›</span></a>';
+      '<span class="event-index-status">'+pill(state(x).closed?'Closed':state(x).bookingLabel)+'</span><span class="event-index-chevron" aria-hidden="true">›</span></a>';
     const grouped=(name,list)=>list.length?'<section class="panel event-index-group"><h2>'+esc(name)+' <span class="muted">('+list.length+')</span></h2><div class="event-index-rows">'+list.map(eventRow).join('')+'</div></section>':'';
     const selected=current(),monthPattern=/^\d{4}-(0[1-9]|1[0-2])$/;
     const key=monthPattern.test(ui.scheduleMonth)?ui.scheduleMonth:monthKey(new Date());
@@ -737,7 +737,7 @@
         '<section class="panel section event-calendar"><div class="event-calendar-head"><h2>'+esc(monthTitle)+'</h2>'+
         '<div class="row"><button type="button" class="btn small" data-act="schedule-month" data-id="-1" aria-label="Previous month">←</button>'+
         '<button type="button" class="btn small" data-act="schedule-today">Today</button>'+
-        '<button type="button" class="btn small" data-act="schedule-selected" '+(!selected||!validEventDate(selected.date)?'disabled':'')+'>Selected event</button>'+
+        
         '<button type="button" class="btn small" data-act="schedule-month" data-id="1" aria-label="Next month">→</button></div></div>'+
         '<div class="calendar-grid" aria-label="'+esc(monthTitle)+'">'+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>'<div class="calendar-weekday">'+x+'</div>').join('')+grid+'</div>'+
         '<p class="form-note">Event dates from your saved bookings. Select an event to open its workspace. For the broader studio diary, use <a href="index.html#/schedule">Studio calendar ↗</a>.</p></section>'+
@@ -1191,18 +1191,17 @@
       '<label>Notes<input class="input" name="notes" maxlength="180"></label><button class="btn" type="submit">Add relationship</button></form></section>';
   }
   function entities(e){
-    const all=org().entities.filter(x=>(ui.entityType==='All'||x.kind===ui.entityType)&&
+    const all=org().entities.filter(x=>(ui.entityType==='All'||ui.entityType==='People'&&['Person','Organisation'].includes(x.kind)||x.kind===ui.entityType)&&
       (x.name+' '+(x.aliases||[]).join(' ')+' '+(x.notes||'')).toLowerCase().includes(ui.query.toLowerCase()));
     const selected=entity(ui.entityId);
     if(selected)return hero('DIRECTORY / RECORD',selected.name,'Linked roles, relationships and event involvement.','<a class="btn" href="#/entities">← People & organisations</a>')+entityProfile(selected,e);
     return hero('DIRECTORY','People & organisations','Browse and search people, organisations, venues and related records.',
       '<button class="btn primary" data-act="collection-new" data-kind="entity">+ New person or organisation</button>')+
-      '<div class="side-by-side"><div><section class="panel section"><div class="section-head"><h2>Browse entities</h2>'+pill(all.length+' records')+'</div>'+
+      '<div class="collection-entity-index"><section class="panel section"><div class="section-head"><h2>Browse entities</h2>'+pill(all.length+' records')+'</div>'+
       '<div class="form-grid section"><label>Search name, alias or notes<input class="input" id="entity-search" placeholder="Search entities" value="'+esc(ui.query)+'"></label>'+
-      '<label>Entity type<select id="entity-filter">'+['All','Person','Organisation','Venue','Space','Event'].map(x=>'<option '+(ui.entityType===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label></div>'+
-      '<div class="stack">'+(all.map(x=>'<a class="linkrow" data-ph-record href="#/entities/'+encodeURIComponent(x.id)+'"><div><strong>'+esc(x.name)+'</strong><div class="detail">'+esc(x.kind)+(x.aliases?.length?' · '+esc(x.aliases.join(', ')):'')+'</div></div><span class="chev">›</span></a>').join('')||'<div class="empty">No matching entities.</div>')+'</div></section>'+
-      '</div>'+ 
-      '<section class="panel inspector"><div class="empty">Open a record to review its profile, relationships, notes and event roles in a separate workspace tab.</div></section></div>';
+      '<label>Entity type<select id="entity-filter">'+['People','All','Person','Organisation','Venue','Space','Event'].map(x=>'<option '+(ui.entityType===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label></div>'+
+      '<div class="stack collection-scroll">'+(all.map(x=>'<a class="linkrow" data-ph-record href="#/entities/'+encodeURIComponent(x.id)+'"><div><strong>'+esc(x.name)+'</strong><div class="detail">'+esc(x.kind)+(x.aliases?.length?' · '+esc(x.aliases.join(', ')):'')+'</div></div><span class="chev">›</span></a>').join('')||'<div class="empty">No matching entities.</div>')+'</div></section>'+
+      '</div>';
   }
   function route(){
     document.body?.classList?.remove('ph-mobile-menu-open');
