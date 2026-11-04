@@ -1501,6 +1501,97 @@
   });
   document.addEventListener('submit',ev=>{
     const f=ev.target;
+    if(f.id==='collection-create-form'){
+      ev.preventDefault();
+      if(!$.contains(f))return;
+      const data=new FormData(f),get=k=>clean(data.get(k)),kind=f.dataset.kind;
+      if(!COLLECTION_KINDS.includes(kind)||!f.dataset.draftId){alert('This draft is not recognised. Reopen it from its collection.');return;}
+      let newRecord=null,target='';
+      if(kind==='event'){
+        const fields={title:get('title'),clientId:get('clientId'),eventLead:get('eventLead'),
+          bookingStage:get('bookingStage'),date:get('date'),dateCertainty:get('dateCertainty'),
+          targetMonth:get('targetMonth'),dateNotes:get('dateNotes'),nextAction:get('nextAction'),
+          followUpDate:get('followUpDate')};
+        const result=window.PhaenomenonEventBuilder?.create(db,fields);
+        if(result?.error||!result?.event){alert(result?.error||'Could not create the event.');return;}
+        newRecord=result.event;ui.eventId=newRecord.id;target='#/home/'+encodeURIComponent(newRecord.id);
+      }else if(kind==='entity'){
+        if(!get('name')||!['Person','Organisation'].includes(get('kind'))){alert('Enter a name and choose Person or Organisation.');return;}
+        const exists=org().entities.find(x=>x.kind===get('kind')&&x.name.toLocaleLowerCase()===get('name').toLocaleLowerCase());
+        if(exists){alert('This record already exists. Opening its workspace instead.');clearCollectionDraft(f.dataset.draftId);location.hash='#/entities/'+encodeURIComponent(exists.id);route();return;}
+        newRecord={id:uid('ent'),kind:get('kind'),name:get('name').slice(0,140),aliases:get('aliases').split(',').map(x=>x.trim()).filter(Boolean).slice(0,30),notes:get('notes').slice(0,4000)};
+        org().entities.push(newRecord);target='#/entities/'+encodeURIComponent(newRecord.id);
+      }else if(kind==='venue'){
+        const W=window.PhaenomenonVenueWorkflow;
+        const created=W?.addVenue(db,{name:get('name'),spaceName:get('spaceName'),width:get('width'),length:get('length'),height:get('height'),kind:get('kind')});
+        if(!created||created.error){alert(created?.error||'Could not create the venue.');return;}
+        newRecord=created.venue;target='#/venues/'+encodeURIComponent(newRecord.id);
+      }else if(kind==='equipment'){
+        if(!get('name')||!get('category')){alert('Provide an equipment name and category.');return;}
+        if((db.equipment||[]).some(x=>x.name.toLocaleLowerCase()===get('name').toLocaleLowerCase())){
+          alert('Equipment with this name already exists. Open it from the collection.');return;
+        }
+        newRecord={id:uid('eq'),name:get('name').slice(0,120),category:get('category').slice(0,70),
+          owned:Math.max(0,Math.min(100000,Math.floor(num(get('owned'))))),
+          rate:Math.max(0,Math.min(100000,num(get('rate')))),
+          watts:Math.max(0,Math.min(100000,num(get('watts'))))};
+        db.equipment.push(newRecord);target='#/equipment/'+encodeURIComponent(newRecord.id);
+      }else if(kind==='fixture'){
+        if(!get('name')||!get('code')||!get('maker')){alert('Name, code and manufacturer are required.');return;}
+        if((db.fixtures||[]).some(x=>x.code.toLocaleLowerCase()===get('code').toLocaleLowerCase())){alert('Fixture code already exists.');return;}
+        newRecord={id:uid('fix'),name:get('name').slice(0,120),code:get('code').slice(0,32),maker:get('maker').slice(0,60),
+          type:get('type').slice(0,40)||'Other',cct:get('cct').slice(0,30),beam:get('beam').slice(0,30),
+          stock:Math.max(0,Math.floor(num(get('stock')))),cost:Math.max(0,num(get('cost')))};
+        if(!Array.isArray(db.fixtures))db.fixtures=[];
+        db.fixtures.push(newRecord);target='#/fixtures/'+encodeURIComponent(newRecord.id);
+      }else if(kind==='invoice'){
+        if(!get('number')||!get('description')||!db.clients.some(x=>x.id===get('clientId'))){
+          alert('Enter a reference, description and existing external customer.');return;
+        }
+        if(db.invoices.some(x=>x.number.toLowerCase()===get('number').toLowerCase())){alert('Invoice reference already exists.');return;}
+        const issued=new Date(),due=new Date(issued.getFullYear(),issued.getMonth(),issued.getDate()+14);
+        newRecord={id:uid('inv'),number:get('number').slice(0,60),clientId:get('clientId'),
+          eventId:null,issueDate:dateKey(issued),dueDate:dateKey(due),status:'Draft',gstPercent:0,
+          notes:'Review business details, GST and payment terms before issuing externally.',
+          lines:[{id:uid('il'),description:get('description').slice(0,180),qty:1,rate:Math.max(0,num(get('rate')))}]};
+        db.invoices.push(newRecord);target='index.html#/invoices/'+encodeURIComponent(newRecord.id);
+      }
+      ensure();
+      if(!store()){alert('A newer browser edit prevented saving this record. Review the current data and retry.');return;}
+      clearCollectionDraft(f.dataset.draftId);
+      if(target.startsWith('index.html'))location.href=target;
+      else{location.hash=target;route();}
+      return;
+    }
+    if(['collection-edit-equipment','collection-edit-fixture','collection-edit-venue','collection-add-space'].includes(f.id)){
+      ev.preventDefault();
+      if(!$.contains(f))return;
+      const data=new FormData(f),get=k=>clean(data.get(k));
+      if(f.id==='collection-add-space'){
+        const W=window.PhaenomenonVenueWorkflow;
+        const result=W?.addSpace(db,get('venueId'),{name:get('name'),width:get('width'),length:get('length'),height:get('height'),kind:get('kind')});
+        if(result?.error||!result?.space){alert(result?.error||'Could not create the space.');return;}
+        ensure();if(store())notice('Space added to the reusable venue.');return;
+      }
+      if(!get('name')){alert('Enter a record name.');return;}
+      if(f.id==='collection-edit-equipment'){
+        const item=db.equipment.find(x=>x.id===get('id'));if(!item){alert('Equipment not found.');return;}
+        Object.assign(item,{name:get('name').slice(0,120),category:get('category').slice(0,70),
+          owned:Math.max(0,Math.floor(num(get('owned')))),rate:Math.max(0,num(get('rate'))),
+          watts:Math.max(0,num(get('watts')))});
+      }else if(f.id==='collection-edit-fixture'){
+        const item=(db.fixtures||[]).find(x=>x.id===get('id'));if(!item){alert('Fixture not found.');return;}
+        Object.assign(item,{name:get('name').slice(0,120),code:get('code').slice(0,32),maker:get('maker').slice(0,60),
+          type:get('type').slice(0,40),cct:get('cct').slice(0,30),beam:get('beam').slice(0,30),
+          stock:Math.max(0,Math.floor(num(get('stock')))),cost:Math.max(0,num(get('cost')))});
+      }else if(f.id==='collection-edit-venue'){
+        const item=(db.venues||[]).find(x=>x.id===get('id'));if(!item){alert('Venue not found.');return;}
+        if(db.venues.some(x=>x.id!==item.id&&x.name.toLowerCase()===get('name').toLowerCase())){alert('Another venue uses that name.');return;}
+        item.name=get('name').slice(0,120);item.notes=get('notes').slice(0,3000);
+      }
+      ensure();if(store())notice('Record saved. All existing event links are retained.');
+      return;
+    }
     if(f.id==='event-publication-form'){
       ev.preventDefault();
       if(!$.contains(f))return;
