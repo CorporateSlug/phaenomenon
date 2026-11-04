@@ -159,6 +159,7 @@
     if(!sidebar)return;
     const parent=sidebar.querySelector(isProduction()?'.rail-top':'.sidebar-heading');
     if(!parent)return;
+    parent.querySelector('.ph-rail-toggle')?.remove();
     const btn=document.createElement('button');btn.type='button';btn.className='ph-rail-toggle';
     btn.setAttribute('aria-controls',isProduction()?'production-navigation':'studio-navigation');
     btn.innerHTML=svg(collapsed?'chevronRight':'chevronLeft',18);
