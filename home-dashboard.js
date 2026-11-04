@@ -58,10 +58,10 @@ function render({events=[],activeId}={}){
  for(const e of watched){
    if(needsCloseout(e))alerts.push({title:(e.closed?'Closed event needs review':'Post-event closeout')+' · '+e.closeoutRemaining+' remaining',detail:e.title,url:closeout(e.id),type:'issue'});
    if(isOpportunity(e)&&(e.followUpDate&&e.followUpDate<=soon||e.nextAction&&!e.followUpDate)){
-     alerts.push({title:e.nextAction||'Follow up with organisers',detail:e.title+' · '+(e.followUpDate?fmt(e.followUpDate):'No follow-up date set'),url:link(e.id)+'/brief',type:'planning'});
+     alerts.push({title:e.nextAction||'Follow up with organisers',detail:e.title+' · '+(e.followUpDate?fmt(e.followUpDate):'No follow-up date set'),url:builder(e.id)+'/brief',type:'planning'});
    }
    if(e.openIssues)alerts.push({title:e.openIssues+' open production issue'+(e.openIssues===1?'':'s'),detail:e.title,url:'#/production/installation/'+encodeURIComponent(e.id),type:'issue'});
-   if(e.needsRevision)alerts.push({title:'Review unpublished design changes',detail:e.title,url:link(e.id)+'/review',type:'issue'});
+   if(e.needsRevision)alerts.push({title:'Review unpublished design changes',detail:e.title,url:builder(e.id)+'/review',type:'issue'});
    if(e.bookingStage==='confirmed'){
      const first=e.steps?.find(s=>s.state==='attention'&&s.id!=='review');
      if(first)alerts.push({title:first.title+' needs attention',detail:e.title+' · '+first.summary,url:hrefStep(e,first),type:'planning'});
