@@ -175,11 +175,12 @@
     };
     const activeEvent=ui.eventId&&db.eventJobs.some(x=>x.id===ui.eventId)?encodeURIComponent(ui.eventId):'';
     return '<aside class="sidebar" id="studio-sidebar">'+
-      '<div class="sidebar-heading"><a class="logo" href="#/overview" data-action="nav" data-view="overview" aria-label="Phaenomenon Studio overview">'+
+      '<div class="sidebar-heading"><a class="logo" href="production.html#/dashboard" aria-label="Phaenomenon Home dashboard">'+
         '<span class="logo-mark">'+icon('lamp',21)+'</span><span><span class="logo-name">phaenomenon<span style="color:#d9b58c">.</span></span><span class="logo-tag">Event production studio</span></span></a>'+
         '<button type="button" class="nav-mobile-toggle" data-action="toggle-sidebar" aria-expanded="false" aria-controls="studio-navigation">'+icon('menu',18)+'<span>Menu</span></button></div>'+
       '<nav class="nav-items" id="studio-navigation" aria-label="Studio navigation">'+
-        '<div class="nav-label">EVENT WORKSPACE</div>'+
+        '<div class="nav-label">HOME</div><a class="nav-link nav-feature" href="production.html#/dashboard" title="Open studio Home dashboard">'+icon('grid',17)+'<span>Dashboard</span></a>'+
+         '<div class="nav-label">EVENT WORKSPACE</div>'+
         '<a class="nav-link nav-feature" href="production.html#/builder/'+activeEvent+'" title="Continue the selected event’s guided workflow">'+icon('layers',17)+'<span>Event builder</span></a>'+
         navItem('bookings')+navItem('overview')+
         '<div class="nav-label">TOOLS &amp; RECORDS</div>'+
@@ -199,7 +200,8 @@
     const id=ui.eventId&&db.eventJobs.some(x=>x.id===ui.eventId)?encodeURIComponent(ui.eventId):'';
     const tab=(label,glyph,href,active)=>'<a class="studio-mobile-tab'+(active?' is-active':'')+'" href="'+href+'" '+(active?'aria-current="page"':'')+'>'+icon(glyph,19)+'<span>'+label+'</span></a>';
     return '<nav class="studio-mobile-dock" aria-label="Quick workspace navigation">'+
-      tab('Events','calendar','#/bookings',ui.view==='bookings')+
+      tab('Home','grid','production.html#/dashboard',false)+
+       tab('Events','calendar','#/bookings',ui.view==='bookings')+
       tab('Build','layers','production.html#/builder/'+id,false)+
       tab('3D','box','#/spaces/'+id,ui.view==='spaces')+
       '<button type="button" class="studio-mobile-tab studio-mobile-more'+(!['bookings','spaces'].includes(ui.view)?' is-active':'')+'" data-action="toggle-sidebar" aria-controls="studio-navigation" aria-expanded="false">'+
