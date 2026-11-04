@@ -144,3 +144,13 @@ test('Both app entry points load a shared tab and icon design system',()=>{
   assert.match(file(html),/src="workspace-navigation.js"/);
  }
 });
+
+test('Closeout deep links preserve the selected event and production tab context',()=>{
+ const h=harness();
+ h.env.hash='#/production/closeout/event-two';
+ const route=h.route();
+ assert.equal(route.key,'production:event-two');
+ assert.equal(route.href,'production.html#/production/closeout/event-two');
+ assert.match(route.label,/Closeout · Winter Festival/);
+ assert.equal(route.icon,'check');
+});
