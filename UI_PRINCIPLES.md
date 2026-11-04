@@ -43,21 +43,22 @@ A spatial 3D editor, long instructional document, full-width planning canvas, de
 
 This document describes enduring UI requirements, not a claim that every legacy view has already been converted to the ideal pattern.
 
-## Persistent workspace navigation (SlugSync-inspired)
+## Collection-first navigation (SlugSync-inspired)
 
-The main Studio and Production pages share one navigation contract:
+The Production and legacy Studio entry points share a single information architecture.
 
-- **Consistent line icons:** Every sidebar destination and expandable group uses the same stroke weight, sizing and colour treatment. Icons are semantic rather than mixed Unicode glyphs or unrelated symbols.
-- **Collapsible desktop sidebar:** The toggle in the sidebar header switches between named navigation and a slim icon rail. Native tooltips appear only for collapsed icons, not when labels are already visible. Clicking a group icon expands the sidebar so its nested destinations are accessible. The choice is stored locally and applies to both Studio and Production. Phone navigation stays a dedicated full drawer.
-- **Secondary navigation at the bottom:** The community noticeboard is a separate public-facing concept, not part of the everyday event-production workflow. In Production's sidebar it belongs after event, library and studio tools, close to the footer; keep it accessible in both full and icon-only modes.
-- **Workspace tabs directly under the global header:** Tabs show open views with an icon, workspace-first label, event context and a dismiss control. Home is an ordinary **closable** tab, never pinned or locked; it remains available in the sidebar and the **+** picker.
-- **Stable, compact floating pills:** Tabs are fully rounded, individually bordered surfaces, separated from each other and the bottom edge of the band. Do not join tabs to a continuous bottom rule. Explicit additional tabs appear to the right; crowded tabs scroll horizontally without shrinking. The **+** stays fixed on the right and opens a new-workspace picker, not the Create Event form.
-- **Consistent top-bar geometry:** Workspace tabs share a fixed 36px control height (34px on smaller screens), equal spacing and predictable widths; the + control is the same height. Desktop header buttons, event picker and Options align on a compact 38px row. Avoid stacking an extra visible caption above one control while the others sit on a single row.
-- **Intentional tab creation:** Ordinary sidebar navigation **replaces the active tab's destination**. No additional tabs appear unless the user explicitly chooses **+ → workspace**. Builder steps update that tab rather than creating another; clicking an existing tab restores its event and workspace. When the last tab is closed, show the dashboard with an empty strip instead of recreating Home. Users can reopen Home via the sidebar or **+** picker.
-- **Closing is non-destructive:** Dismissing **any** tab, including Home, closes only that shortcut/view; it never deletes bookings, design, equipment, cues, people or published packs. The intentionally empty strip after closing the final tab is preserved across refreshes. Tabs persist in browser-local storage; selection is per session. Earlier auto-generated v1 tabs are not migrated.
-- **Cross-workspace consistency:** The tab strip persists across navigation between `index.html` (Studio) and `production.html` (Production OS). It is a **persistent navigation system** over the existing page routers, not multiple simultaneously running 3D/design processes. Unsaved form input is not guaranteed to survive route changes, so users should save drafts before switching tabs.
+- **Sidebar = browse:** The sidebar has a stable order: Dashboard; Events & schedule; People & organisations; Venues & spaces; Equipment & fixtures; Finances. Community Noticeboard and Settings stay low-priority at the bottom. Event-specific operations such as 3D design, DMX, crew and closeout belong within their event, not the global sidebar.
+- **Dashboard = status:** Show useful totals, upcoming events and outstanding actions; do not add a competing grid of shortcuts for every specialist tool.
+- **Collections = search and review:** Each collection shows bounded, independently scrolling lists and a contextual New button. Its records retain canonical IDs. A collection is not an editor for one implicitly selected event.
+- **Tabs = records or drafts:** Opening a record creates a tab (or activates an already-open tab for that record); creating an item opens a dedicated unsaved draft tab. Switching sidebar collections reuses a browsing tab rather than replacing an open record/draft. Contextual tools for the *same event* share its tab. Avoid duplicate tabs for the same record.
+- **Unsaved new drafts:** Preserve new-record form values in browser session storage as Aaron navigates between tabs, including selects and date changes. Give confirmation before explicitly closing an unsaved draft; saving a draft creates the real record and then opens that record. This is not cloud-backed recovery.
+- **Non-destructive close:** Closing a record's tab never deletes the underlying entity, booking, venue, fixture or invoice. Home is an ordinary closable tab; after closing the last tab the Dashboard may be visible without a pinned Home tab.
+- **Consistent icons and collapsed rail:** Every collection has a semantic line icon, the sidebar can collapse to icon-only with accessible labels, and the same layout works in the older Studio area. Mobile uses Home/Events/People/Equipment/More rather than event-specific global shortcuts.
+- **Floating tab geometry:** Individual fully rounded tabs float above the band bottom; preserve consistent tab width, height, spacing and keyboard focus. The **+** picker provides an optional explicit shortcut to additional workspaces. It is not the only way to open a record.
+- **Simplified global header:** Show the current section and workspace Options; do not include a permanent global Switch Event selector or New Event control. Create actions belong to collection pages.
+- **Cross-workspace consistency:** Tabs persist when moving between `index.html` specialist Studio tools and `production.html` collections. Tab navigation does not run parallel instances of specialist planners. Existing unsaved legacy editor forms may still require explicit saving before navigation, even though new draft forms are session-preserved.
 
-The shared implementation lives in `workspace-navigation.js` and `workspace-navigation.css`. Avoid implementing a second incompatible sidebar, tab bar or menu-specific icon system for new features.
+Source: `workspace-navigation.js`, `workspace-navigation.css`, `collection-workspaces.js`, `collection-workspaces.css`. See [collection navigation architecture](COLLECTION_NAVIGATION.md).
 
 ## Event ownership and opportunity identity
 
