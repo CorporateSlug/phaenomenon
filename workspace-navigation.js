@@ -57,7 +57,7 @@
     if(/builder|planning|plan &/.test(x))return 'layers';
     if(/3d|design|fixture position/.test(x))return 'cube';
     if(/technical|connections|power|dmx/.test(x))return 'bolt';
-    if(/crew|installation|deliver/.test(x))return 'check';
+    if(/crew|installation|deliver|closeout/.test(x))return 'check';
     if(/production/.test(x))return 'briefcase';
     if(/library &|library|fixture library/.test(x))return 'library';
     if(/venue|spaces/.test(x))return 'venue';
@@ -85,7 +85,7 @@
     const segments=hash.replace(/^#\/?/,'').split('/').filter(Boolean),view=segments[0]||(prod?'dashboard':'overview');
     const detail=segments[1]||'';
     let id=activeEventId();
-    const productionTabs=['team','logistics','installation','show'];
+    const productionTabs=['team','logistics','installation','show','closeout'];
     if(prod){
       if(view==='home'&&detail==='venue')id=segments[2]||id;
       else if(view==='production'&&productionTabs.includes(detail))id=segments[2]||id;
@@ -106,7 +106,7 @@
         case 'technical':key='technical:'+id;label='Technical · '+eventName(id);icon='bolt';canonical='production.html#/technical/'+encoded;break;
         case 'crew':key='crew:'+id;label='Crew · '+eventName(id);icon='check';canonical='production.html#/crew/'+encoded;break;
         case 'production':
-          key='production:'+id;label='Production · '+eventName(id);icon='briefcase';
+          key='production:'+id;label=(detail==='closeout'?'Closeout':'Production')+' · '+eventName(id);icon=detail==='closeout'?'check':'briefcase';
           canonical='production.html#/production/'+(productionTabs.includes(detail)?detail+'/':'')+encoded;break;
         case 'entities':
           key=detail?'entity:'+detail:'directory';label=detail?'Entity profile':'Directory';icon='users';canonical='production.html#/entities'+(detail?'/'+encodeURIComponent(detail):'');break;
@@ -258,6 +258,7 @@
       ['production.html#/technical/'+id,'bolt','Technical connections'],
       ['production.html#/crew/'+id,'check','Crew installation'],
       ['production.html#/production/'+id,'briefcase','Production'],
+      ['production.html#/production/closeout/'+id,'check','Event closeout'],
       ['production.html#/entities','users','People & organisations'],
       ['index.html#/equipment','package','Equipment library'],
       ['index.html#/overview','grid','Studio overview']
