@@ -69,11 +69,11 @@ function harness(mode){
   };
 }
 
-test('Studio phone dock has four useful destinations and keeps the full desktop menu',()=>{
+test('Studio phone dock includes Home, Events, Build, 3D and More',()=>{
   const h=harness('studio'),markup=h.root.innerHTML;
   assert.match(markup,/<nav class="studio-mobile-dock"/);
-  assert.equal((markup.match(/class="studio-mobile-tab/g)||[]).length,4);
-  for(const label of ['Events','Build','3D','More'])assert.ok(markup.includes('>'+label+'</span>'),label);
+  assert.equal((markup.match(/class="studio-mobile-tab/g)||[]).length,5);
+  for(const label of ['Home','Events','Build','3D','More'])assert.ok(markup.includes('>'+label+'</span>'),label);
   assert.match(markup,/production\.html#\/builder\//);
   assert.match(markup,/class="nav-group"/);
   assert.match(markup,/id="studio-navigation"/);
@@ -102,7 +102,7 @@ test('Production phone navigation has five primary tasks and retains full naviga
   assert.match(markup,/class="mobile-tabbar production-mobile-tabs"/);
   assert.equal((markup.match(/<a class="mobile-tab/g)||[]).length,4);
   assert.match(markup,/class="mobile-tab mobile-more-tab/);
-  for(const label of ['Build','3D','Tech','Crew','More'])assert.ok(markup.includes('>'+label+'</span>'),label);
+  for(const label of ['Home','3D','Tech','Crew','More'])assert.ok(markup.includes('>'+label+'</span>'),label);
   assert.match(markup,/id="production-navigation"/);
   assert.match(markup,/rail-quick-new/);
   assert.match(markup,/data-act="builder-new"/);
