@@ -333,3 +333,7 @@ body:has(#app) .ph-tab-picker-hint{color:#728b86;border-color:#e2ebe6}
   .ph-tab-picker{max-height:min(390px,calc(100dvh - 90px));right:6px}
 }
 @media print{.ph-tab-picker{display:none!important}}
+
+/* Header option menus remain above the navigation band when opened. */
+body:has(#production-app) .header{z-index:50}
+body:has(#app) .topbar{position:relative;z-index:50}
