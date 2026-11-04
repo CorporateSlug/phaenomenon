@@ -9,6 +9,7 @@ const dayString=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-
 const hrefStep=(e,s)=>['brief','spaces','equipment','review'].includes(s.id)?link(e.id)+'/'+s.id:s.href||link(e.id);
 const isOpportunity=e=>!!e&&['idea','outreach','contacted','discussion','quoted','tentative','postponed'].includes(e.bookingStage)&&!e.closed;
 const isDelivered=e=>!!e&&e.productionStage==='delivered'&&!e.closed;
+const needsCloseout=e=>!!e&&(isDelivered(e)||e.closed&&e.closeoutRemaining>0);
 function render({events=[],activeId}={}){
  const now=new Date(),today=dayString(now),later=new Date(now.getFullYear(),now.getMonth(),now.getDate()+30),last=dayString(later);
  const active=events.find(e=>e.id===activeId)||events[0];
@@ -16,7 +17,7 @@ function render({events=[],activeId}={}){
  const planned=events.filter(e=>e.bookingStage==='confirmed'&&!e.closed&&e.date>=today&&e.productionStage!=='delivered')
    .sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title));
  const upcoming=planned.filter(e=>e.date<=last);
- const closeouts=events.filter(isDelivered);
+ const closeouts=events.filter(needsCloseout);
  const issues=events.reduce((n,e)=>n+(e.openIssues||0),0);
  const steps=active?.steps||[],done=steps.filter(s=>s.state==='complete').length,next=steps.find(s=>s.state!=='complete');
  const metric=(title,count,sub,dest)=>'<a class="home-metric" href="'+dest+'"><span class="home-metric-label">'+title+'</span><strong>'+count+'</strong><small>'+sub+' ↗</small></a>';
@@ -47,7 +48,7 @@ function render({events=[],activeId}={}){
  const alerts=[];
  const watched=[...new Map([active,...closeouts,...opportunities,...planned.slice(0,12)].filter(Boolean).map(e=>[e.id,e])).values()];
  for(const e of watched){
-   if(isDelivered(e))alerts.push({title:'Post-event closeout · '+e.closeoutRemaining+' remaining',detail:e.title,url:closeout(e.id),type:'issue'});
+   if(needsCloseout(e))alerts.push({title:(e.closed?'Closed event needs review':'Post-event closeout')+' · '+e.closeoutRemaining+' remaining',detail:e.title,url:closeout(e.id),type:'issue'});
    if(isOpportunity(e)&&(e.followUpDate&&e.followUpDate<=today||e.nextAction&&!e.followUpDate)){
      alerts.push({title:e.nextAction||'Follow up with organisers',detail:e.title+' · '+(e.followUpDate?fmt(e.followUpDate):'No follow-up date set'),url:link(e.id)+'/brief',type:'planning'});
    }
