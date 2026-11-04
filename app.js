@@ -594,7 +594,7 @@
         if(v){
           const result=VE().updateEvent(db,ev.id,v.id,spaceIds);
           if(result.error){alert(result.error);return;}
-        }else{ev.venueId='';ev.venue='';ev.spaceIds=[];}
+        }else{ev.venueId='';ev.venue='';ev.spaceIds=[];if(p)p.venueId='';}
         Object.assign(ev,{title:val('title').slice(0,120),
           clientId:db.clients.some(c=>c.id===val('clientId'))?val('clientId'):'',
           date:draft.date,lifecycle:draft.lifecycle,status:draft.status,
