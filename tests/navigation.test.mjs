@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 
 const source=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 function deps(window) {
-  for (const file of ['venue-geometry.js','multi-space.js','venue-workflow.js','event-builder.js','workspace-safety.js']) {
+  for (const file of ['venue-geometry.js','multi-space.js','venue-workflow.js','event-lifecycle.js','event-lifecycle-ui.js','event-builder.js','workspace-safety.js']) {
     runInNewContext(source(file),{window},{filename:file});
   }
 }
