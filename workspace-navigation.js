@@ -61,6 +61,7 @@
     if(/production/.test(x))return 'briefcase';
     if(/library &|library|fixture library/.test(x))return 'library';
     if(/venue|spaces/.test(x))return 'venue';
+    if(/community|noticeboard/.test(x))return 'calendar';
     if(/directory|people|clients/.test(x))return 'users';
     if(/equipment|stock/.test(x))return 'package';
     if(/fixtures|bulb/.test(x))return 'bulb';
@@ -110,6 +111,7 @@
           canonical='production.html#/production/'+(productionTabs.includes(detail)?detail+'/':'')+encoded;break;
         case 'entities':
           key=detail?'entity:'+detail:'directory';label=detail?'Entity profile':'Directory';icon='users';canonical='production.html#/entities'+(detail?'/'+encodeURIComponent(detail):'');break;
+        case 'community':key='community-review';label='Community submissions';icon='calendar';canonical='production.html#/community';break;
         default:key='home';label='Home';icon='home';canonical='production.html#/dashboard';
       }
     }else{
@@ -260,6 +262,7 @@
       ['production.html#/production/'+id,'briefcase','Production'],
       ['production.html#/production/closeout/'+id,'check','Event closeout'],
       ['production.html#/entities','users','People & organisations'],
+      ['production.html#/community','calendar','Community submissions'],
       ['index.html#/equipment','package','Equipment library'],
       ['index.html#/overview','grid','Studio overview']
     ];
