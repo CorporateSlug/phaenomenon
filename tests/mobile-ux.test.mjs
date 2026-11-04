@@ -69,13 +69,12 @@ function harness(mode){
   };
 }
 
-test('Studio phone dock includes Home, Events, Build, 3D and More',()=>{
+test('Studio phone dock reflects stable collection navigation',()=>{
   const h=harness('studio'),markup=h.root.innerHTML;
   assert.match(markup,/<nav class="studio-mobile-dock"/);
   assert.equal((markup.match(/class="studio-mobile-tab/g)||[]).length,5);
-  for(const label of ['Home','Events','Build','3D','More'])assert.ok(markup.includes('>'+label+'</span>'),label);
-  assert.match(markup,/production\.html#\/builder\//);
-  assert.match(markup,/class="nav-group"/);
+  for(const label of ['Home','Events','People','Equipment','More'])assert.ok(markup.includes('>'+label+'</span>'),label);
+  assert.match(markup,/production\.html#\/entities/);
   assert.match(markup,/id="studio-navigation"/);
 });
 test('Studio mobile menu opens, dismisses and resets on navigation',()=>{
@@ -97,16 +96,16 @@ test('Studio phone event chooser preserves the selected booking while keeping th
   assert.match(markup,/class="panel event-work"/);
   assert.match(markup,/data-action="select-booking"/);
 });
-test('Production phone navigation has five primary tasks and retains full navigation',()=>{
+test('Production phone navigation favours collections, without a global event picker',()=>{
   const h=harness('production'),markup=h.root.innerHTML;
   assert.match(markup,/class="mobile-tabbar production-mobile-tabs"/);
   assert.equal((markup.match(/<a class="mobile-tab/g)||[]).length,4);
   assert.match(markup,/class="mobile-tab mobile-more-tab/);
-  for(const label of ['Home','3D','Tech','Crew','More'])assert.ok(markup.includes('>'+label+'</span>'),label);
+  for(const label of ['Home','Events','People','Equipment','More'])assert.ok(markup.includes('>'+label+'</span>'),label);
   assert.match(markup,/id="production-navigation"/);
-  assert.match(markup,/rail-quick-new/);
-  assert.match(markup,/data-act="builder-new"/);
-  assert.match(markup,/id="event-picker"/);
+  assert.match(markup,/href="#\/finances"/);
+  assert.doesNotMatch(markup,/id="event-picker"/);
+  assert.doesNotMatch(markup,/rail-quick-new/);
 });
 test('Production mobile More can close by backdrop and navigation',()=>{
   const h=harness('production');
