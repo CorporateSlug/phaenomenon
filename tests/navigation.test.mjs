@@ -130,12 +130,17 @@ test('Production resolves selected event deep links from the Studio',()=>{
   h.navigate('#/technical/event-second');
   assert.equal(h.window.__test.current().id,'event-second');
 });
-test('Production home shows only four primary tasks and collapses detailed configuration',()=>{
+test('Production event workspace is stage-aware and preserves separate venue configuration',()=>{
   const h=production(),html=h.root.innerHTML;
-  assert.equal((html.match(/class="work-card"/g)||[]).length,4);
-  assert.match(html,/class="event-overview-more section"/);
-  assert.match(html,/id="event-venue-settings"/);
-  assert.doesNotMatch(html,/id="event-venue-settings" open/);
+  assert.match(html,/class="event-workspace"/);
+  assert.match(html,/RECOMMENDED NEXT/);
+  assert.match(html,/class="ew-facts"/);
+  assert.match(html,/class="ew-card-grid"/);
+  assert.match(html,/Production workspaces/);
+  assert.doesNotMatch(html,/id="event-venue-settings"/);
+  h.navigate('#/home/venue/ev-abbotsford-two-stage-demo');
+  assert.match(h.root.innerHTML,/id="event-venue-settings" open/);
+  assert.match(h.root.innerHTML,/Event workspace/);
 });
 test('Advanced forms are available inside disclosures but canonical Venue creation is separate',()=>{
   const h=production();
