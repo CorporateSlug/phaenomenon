@@ -34,7 +34,7 @@ function render({events=[],activeId}={}){
    (active?.closed?'<span class="home-warning">Closed</span>':active?.needsRevision?'<span class="home-warning">Revision needs review</span>':
    active?.openIssues?'<span class="home-warning">'+active.openIssues+' open issues</span>':'')+'</div>'+
    '<h2 id="home-active-heading">'+escape(active?.title||'No current event')+'</h2>'+
-   '<p class="muted">'+escape(active?((active.eventLead==='studio'?'Own production':'Client commission')+' · '+activeDate+' · '+(active.venue||'Venue unknown')+' · '+(active.bookingLabel||'Opportunity')):'Create an opportunity or event to start planning')+'</p>'+
+   '<p class="muted">'+escape(active?((active.eventLead==='studio'?'Own production':'Client-led event')+' · '+activeDate+' · '+(active.venue||'Venue unknown')+' · '+(active.bookingLabel||'Opportunity')):'Create an opportunity or event to start planning')+'</p>'+
    '<div class="home-progress-text"><strong>'+done+' of '+steps.length+' steps configured</strong><small>Planning progress only · not safety approval</small></div>'+
    '<div class="home-progress" role="progressbar" aria-label="Current event planning progress" aria-valuemin="0" aria-valuemax="'+steps.length+'" aria-valuenow="'+done+'"><span style="width:'+(steps.length?Math.round(done/steps.length*100):0)+'%"></span></div>'+
    '</div><div class="home-current-actions"><a class="btn primary" href="'+activeUrl+'">Open event builder →</a>'+
