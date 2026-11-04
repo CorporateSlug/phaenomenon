@@ -294,11 +294,19 @@
   let pending=false;
   function schedule(){if(pending)return;pending=true;queueMicrotask(()=>{pending=false;redraw()})}
   function visit(href){if(!/^(index|production)\.html#\//.test(href))return;location.href=href;}
-  function closeTab(key){
-    const i=tabs.findIndex(t=>t.key===key);if(i<0||key==='home')return;
-    const active=selected===key;tabs.splice(i,1);saveTabs();
-    if(active){const target=tabs[Math.min(i,tabs.length-1)]||home;visit(target.href)}
-    else schedule();
+  function closeTab(id){
+    const i=tabs.findIndex(t=>t.id===id);
+    if(i<0||id==='home')return;
+    const wasActive=selected===id;
+    tabs.splice(i,1);
+    if(lastWorking===id)lastWorking=tabs.find(t=>t.id!=='home')?.id||'';
+    if(wasActive){
+      const target=tabs[Math.min(i,tabs.length-1)]||home;
+      activate(target.id);
+      saveTabs();
+      visit(target.href);
+      schedule();
+    }else{saveTabs();schedule()}
   }
   document.addEventListener('click',ev=>{
     const collapse=ev.target.closest('.ph-rail-toggle');
@@ -317,14 +325,34 @@
       const btn=host()?.querySelector('.ph-rail-toggle');if(btn){btn.innerHTML=svg('chevronLeft');btn.title='Collapse sidebar';btn.setAttribute('aria-label',btn.title);btn.setAttribute('aria-expanded','true')}
       return;
     }
-    const close=ev.target.closest('.ph-tab-close');
-    if(close){ev.preventDefault();ev.stopPropagation();closeTab(close.dataset.closeKey);return}
-    const plus=ev.target.closest('.ph-tab-new');
-    if(plus){
-      ev.preventDefault();
-      const original=host()?.querySelector(isProduction()?'[data-act="builder-new"]':'[data-action="open-modal"][data-type="booking"]');
-      if(original)original.click();else visit('production.html#/dashboard');
+    const closing=ev.target.closest('.ph-tab-close');
+    if(closing){
+      ev.preventDefault();ev.stopPropagation();
+      closeWorkspacePicker();
+      closeTab(closing.dataset.closeId);
+      return;
     }
+    const newWorkspace=ev.target.closest('[data-ph-new-tab]');
+    if(newWorkspace){
+      ev.preventDefault();ev.stopPropagation();
+      const href=newWorkspace.dataset.phNewTab;
+      closeWorkspacePicker();
+      openExplicitTab(href);
+      return;
+    }
+    const plus=ev.target.closest('.ph-tab-new');
+    if(plus){ev.preventDefault();openWorkspacePicker(plus);return}
+    const tabLink=ev.target.closest('.ph-tab-link');
+    if(tabLink){
+      closeWorkspacePicker();
+      if(tabs.some(t=>t.id===tabLink.dataset.openTab)){
+        activate(tabLink.dataset.openTab);
+        saveTabs();
+        schedule();
+      }
+      return;
+    }
+    if(!ev.target.closest('.ph-tab-picker'))closeWorkspacePicker();
   },true);
   // Keyboard navigation for the workflow tab strip: arrows / Home / End / Delete.
   document.addEventListener('keydown',ev=>{
@@ -339,8 +367,8 @@
     else if(ev.key==='Home')target=0;
     else if(ev.key==='End')target=links.length-1;
     else if(ev.key==='Delete'){
-      const key=link.closest('.ph-workspace-tab')?.dataset.tabKey;
-      if(key&&key!=='home'){ev.preventDefault();closeTab(key)}
+      const id=link.closest('.ph-workspace-tab')?.dataset.tabId;
+      if(id&&id!=='home'){ev.preventDefault();closeTab(id)}
       return;
     }else return;
     ev.preventDefault();
@@ -349,6 +377,12 @@
   });
   // A vertical mouse-wheel gesture over the narrow tab strip scrolls its tabs,
   // not the work area; native horizontal trackpad gestures continue to work.
+  document.addEventListener('keydown',ev=>{
+    if(ev.key==='Escape'&&closeWorkspacePicker()){
+      document.querySelector('.ph-tab-new')?.focus();
+      ev.stopPropagation();
+    }
+  });
   document.addEventListener('wheel',ev=>{
     const track=ev.target.closest?.('.ph-tabs-track');
     if(!track||track.scrollWidth<=track.clientWidth)return;
@@ -359,7 +393,11 @@
   },{passive:false});
   window.addEventListener('hashchange',schedule);
   window.addEventListener('storage',ev=>{
-    if(ev.key===TABS_KEY){tabs=sanitize(parseJson(TABS_KEY,{tabs:[]}));if(!tabs.some(x=>x.key==='home'))tabs.unshift(home);tabs=[home,...tabs.filter(x=>x.key!=='home')];schedule()}
+    if(ev.key===TABS_KEY){
+      tabs=[home,...sanitize(parseJson(TABS_KEY,{tabs:[]})).filter(x=>x.id!=='home')];
+      if(!tabs.some(t=>t.id===selected))activate('home');
+      schedule();
+    }
     if(ev.key===RAIL_KEY){collapsed=parseJson(RAIL_KEY,false)===true;document.body.classList.toggle('ph-nav-collapsed',collapsed);schedule()}
   });
   const init=()=>{
