@@ -247,6 +247,37 @@
       if(original)original.click();else visit('production.html#/dashboard');
     }
   },true);
+  // Keyboard navigation for the workflow tab strip: arrows / Home / End / Delete.
+  document.addEventListener('keydown',ev=>{
+    const link=ev.target.closest?.('.ph-tab-link');
+    if(!link)return;
+    const track=link.closest('.ph-tabs-track');
+    if(!track)return;
+    const links=[...track.querySelectorAll('.ph-tab-link')],index=links.indexOf(link);
+    let target=index;
+    if(ev.key==='ArrowRight')target=Math.min(index+1,links.length-1);
+    else if(ev.key==='ArrowLeft')target=Math.max(0,index-1);
+    else if(ev.key==='Home')target=0;
+    else if(ev.key==='End')target=links.length-1;
+    else if(ev.key==='Delete'){
+      const key=link.closest('.ph-workspace-tab')?.dataset.tabKey;
+      if(key&&key!=='home'){ev.preventDefault();closeTab(key)}
+      return;
+    }else return;
+    ev.preventDefault();
+    links[target]?.focus();
+    links[target]?.scrollIntoView({block:'nearest',inline:'nearest'});
+  });
+  // A vertical mouse-wheel gesture over the narrow tab strip scrolls its tabs,
+  // not the work area; native horizontal trackpad gestures continue to work.
+  document.addEventListener('wheel',ev=>{
+    const track=ev.target.closest?.('.ph-tabs-track');
+    if(!track||track.scrollWidth<=track.clientWidth)return;
+    if(Math.abs(ev.deltaY)>Math.abs(ev.deltaX)){
+      track.scrollLeft+=ev.deltaY;
+      ev.preventDefault();
+    }
+  },{passive:false});
   window.addEventListener('hashchange',schedule);
   window.addEventListener('storage',ev=>{
     if(ev.key===TABS_KEY){tabs=sanitize(parseJson(TABS_KEY,{tabs:[]}));if(!tabs.some(x=>x.key==='home'))tabs.unshift(home);tabs=[home,...tabs.filter(x=>x.key!=='home')];schedule()}
