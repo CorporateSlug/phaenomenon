@@ -18,6 +18,10 @@
     ['lost','Not proceeding / lost'],
     ['cancelled','Cancelled']
   ];
+  const EVENT_LEADS=[
+    ['client','Client-led · external commission'],
+    ['studio','Phaenomenon-led · own event']
+  ];
   const PRODUCTION=[
     ['not-started','Not started'],['planning','Planning'],['preparing','Preparing'],
     ['ready','Ready for delivery'],['load-in','Load-in'],['live','Event underway'],
@@ -39,6 +43,7 @@
     {id:'recordsArchived',label:'Final records archived',group:'Admin'}
   ];
   const BOOKING_IDS=new Set(BOOKING.map(x=>x[0]));
+  const EVENT_LEAD_IDS=new Set(EVENT_LEADS.map(x=>x[0]));
   const PROD_IDS=new Set(PRODUCTION.map(x=>x[0]));
   const DATE_IDS=new Set(DATE.map(x=>x[0]));
   const TASK_IDS=new Set(TASKS.map(x=>x.id));
@@ -67,6 +72,9 @@
     let lc=event.lifecycle;
     if(!lc||typeof lc!=='object'||Array.isArray(lc)){lc={};event.lifecycle=lc;}
     if(!BOOKING_IDS.has(lc.bookingStage))lc.bookingStage=legacyBooking(event.status);
+    // Legacy records are treated as client-led unless explicitly marked otherwise;
+    // no organisation or invoice is invented for the studio's own productions.
+    if(!EVENT_LEAD_IDS.has(lc.eventLead))lc.eventLead='client';
     if(!PROD_IDS.has(lc.productionStage))lc.productionStage=event.status==='Completed'?'delivered':'not-started';
     if(!DATE_IDS.has(lc.dateCertainty))lc.dateCertainty=event.date?(event.status==='Confirmed'||event.status==='Completed'?'confirmed':'proposed'):'unknown';
     if(!event.date&&lc.dateCertainty==='confirmed')lc.dateCertainty='unknown';
@@ -93,6 +101,7 @@
     const day=text(fields.date),rawCertainty=text(fields.dateCertainty)||lc.dateCertainty,
       certainty=day&&rawCertainty==='unknown'?'proposed':rawCertainty;
     const stage=text(fields.bookingStage)||lc.bookingStage;
+    const lead=text(fields.eventLead)||lc.eventLead;
     const prod=text(fields.productionStage)||lc.productionStage;
     const month=text(fields.targetMonth);
     const follow=text(fields.followUpDate);
@@ -102,13 +111,14 @@
     if(month&&!exactMonth(month))return {error:'Enter a valid approximate month.'};
     if(follow&&!exactDate(follow))return {error:'Enter a valid follow-up date.'};
     if(!BOOKING_IDS.has(stage)||!PROD_IDS.has(prod))return {error:'Choose a valid booking and production stage.'};
-    if(lc.closedAt&&(stage!==lc.bookingStage||prod!==lc.productionStage||day!==event.date))
+    if(!EVENT_LEAD_IDS.has(lead))return {error:'Choose who is leading this event.'};
+    if(lc.closedAt&&(stage!==lc.bookingStage||prod!==lc.productionStage||lead!==lc.eventLead||day!==event.date))
       return {error:'Reopen the event before changing its booking, delivery or date information.'};
     event.date=day;lc.dateCertainty=certainty;lc.targetMonth=month;
     lc.dateNotes=text(fields.dateNotes).slice(0,350);
     lc.nextAction=text(fields.nextAction).slice(0,350);
     lc.followUpDate=follow;
-    lc.bookingStage=stage;lc.productionStage=prod;
+    lc.bookingStage=stage;lc.productionStage=prod;lc.eventLead=lead;
     event.status=statusFor(stage,prod,lc.closedAt);
     return {ok:true,lifecycle:lc};
   }
@@ -119,6 +129,9 @@
     return TASKS.map(task=>{
       const manual=lc.closeout[task.id];
       let status=manual.status,source='manual',note=manual.note||'';
+      if(lc.eventLead==='studio'&&!linked.length&&['invoiceIssued','paymentReceived'].includes(task.id)){
+        status='na';source='own-event';note='No external client invoice is needed for this own production.';
+      }
       if(linked.length&&task.id==='invoiceIssued'){
         status=linked.every(x=>['Issued externally','Paid'].includes(x.status))?'done':'pending';
         source='invoices';note=linked.length+' linked invoice'+(linked.length===1?'':'s')+' · '+(status==='done'?'all issued':'drafts remain');
@@ -135,6 +148,7 @@
     const done=items.filter(x=>x.status==='done'||x.status==='na').length;
     return {
       bookingStage:lc.bookingStage,bookingLabel:label(BOOKING,lc.bookingStage),
+      eventLead:lc.eventLead,eventLeadLabel:label(EVENT_LEADS,lc.eventLead),
       productionStage:lc.productionStage,productionLabel:label(PRODUCTION,lc.productionStage),
       dateCertainty:lc.dateCertainty,dateLabel:label(DATE,lc.dateCertainty),
       date: event.date||'',targetMonth:lc.targetMonth,nextAction:lc.nextAction,followUpDate:lc.followUpDate,
@@ -150,6 +164,7 @@
     if(!['pending','done','na'].includes(status))return {error:'Choose Pending, Done or Not applicable.'};
     const existing=effectiveCloseout(db,event).find(x=>x.id===taskId);
     if(existing?.source==='invoices')return {error:'This item is calculated from linked invoices. Update invoice statuses in Studio Billing.'};
+    if(existing?.source==='own-event')return {error:'Self-invoicing is not required for own events. Linked external invoices are tracked separately.'};
     if(status==='na'&&!text(note))return {error:'Explain why this item is not applicable.'};
     lc.closeout[taskId]={status,note:text(note).slice(0,350),updatedAt:new Date().toISOString()};
     return {ok:true};
@@ -175,8 +190,8 @@
     return lc?.targetMonth?lc.targetMonth+' (approx.)':'Date to be confirmed';
   };
   window.PhaenomenonLifecycle={
-    BOOKING,PRODUCTION,DATE,TASKS,ensureEvent,ensureAll,setDetails,
+    BOOKING,EVENT_LEADS,PRODUCTION,DATE,TASKS,ensureEvent,ensureAll,setDetails,
     effectiveCloseout,summary,updateTask,closeEvent,reopenEvent,
-    exactDate,dateDisplay,statusFor,label:(kind,id)=>label(kind==='booking'?BOOKING:kind==='production'?PRODUCTION:DATE,id)
+    exactDate,dateDisplay,statusFor,label:(kind,id)=>label(kind==='booking'?BOOKING:kind==='eventLead'?EVENT_LEADS:kind==='production'?PRODUCTION:DATE,id)
   };
 })();
