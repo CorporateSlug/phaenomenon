@@ -1195,6 +1195,7 @@
       const id=decodeURIComponent(parts[1]);if(ui.entityId!==id){ui.entityId=id;if(ui.history[ui.histIndex]!==id){ui.history=ui.history.slice(0,ui.histIndex+1);ui.history.push(id);ui.histIndex=ui.history.length-1;}}
     }
     savePreferences();render();
+    if(ui.publicListingOpen)document.getElementById('event-publication')?.scrollIntoView?.({behavior:'smooth',block:'start'});
   }
   function selectActiveEvent(id){
     if(!events().some(x=>x.id===id))return;
