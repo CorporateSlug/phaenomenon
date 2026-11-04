@@ -1,0 +1,257 @@
+/*
+ * Phaenomenon shared workspace navigation
+ * - SlugSync-like persistent, stable-width workflow tabs with independent close
+ * - same tab strip on Studio and Production pages
+ * - one collapsed icon rail setting for both entry points
+ * - links preserve the event (and current builder/production subview) they belong to
+ * - no processes, event data or technical planning states are modified by closing tabs
+ */
+(() => {
+  'use strict';
+  const TABS_KEY='phaenomenon-open-workspace-tabs-v1';
+  const RAIL_KEY='phaenomenon-icon-sidebar-v1';
+  const DB_KEY='phaenomenon-demo-v1';
+  const isProduction=()=>!!document.getElementById('production-app');
+  const host=()=>document.getElementById('production-app')||document.getElementById('app');
+  const safeString=v=>typeof v==='string'?v:'';
+  const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const icons={
+    home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
+    grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+    calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/>',
+    layers:'<path d="m12 2 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 17l9 5 9-5"/>',
+    brief:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+    cube:'<path d="m12 2 9 5v10l-9 5-9-5V7l9-5ZM3 7l9 5 9-5M12 12v10"/>',
+    bolt:'<path d="m13 2-9 12h7l-1 8 10-12h-7l0-8Z"/>',
+    users:'<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+    check:'<path d="m4 12 5 5L20 6"/><rect x="3" y="3" width="18" height="18" rx="3"/>',
+    box:'<path d="m3 7 9-4 9 4v10l-9 4-9-4V7ZM3 7l9 5 9-5M12 12v9"/>',
+    library:'<path d="M4 3v18M9 3v18M14 3v18M19 5v16M3 21h18M3 3h12"/>',
+    venue:'<path d="M3 21V8l9-5 9 5v13M9 21v-7h6v7M3 10h18"/>',
+    package:'<path d="m3 7 9-4 9 4v10l-9 4-9-4V7ZM3 7l9 5 9-5M12 12v9"/>',
+    bulb:'<path d="M9 18h6M10 21h4M8 14a7 7 0 1 1 8 0c-1 .8-1 1.5-1 3H9c0-1.5 0-2.2-1-3Z"/>',
+    briefcase:'<rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18"/>',
+    chart:'<path d="M3 3v18h18M7 16l5-6 4 3 5-7"/>',
+    receipt:'<path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3ZM9 8h6M9 12h6"/>',
+    settings:'<path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM19.4 15a1.8 1.8 0 0 0 .3 2l-1.7 1.7a1.8 1.8 0 0 0-2-.3l-1.2.5-1 2.1h-2.5l-1-2.1-1.2-.5a1.8 1.8 0 0 0-2 .3L5.4 17a1.8 1.8 0 0 0 .3-2l-.5-1.2L3 12.8v-2.5l2.2-1 .5-1.2a1.8 1.8 0 0 0-.3-2L7.1 4.4a1.8 1.8 0 0 0 2 .3l1.2-.5 1-2.2h2.5l1 2.2 1.2.5a1.8 1.8 0 0 0 2-.3l1.7 1.7a1.8 1.8 0 0 0-.3 2l.5 1.2 2.1 1v2.5l-2.1 1Z"/>',
+    chevronLeft:'<path d="m15 18-6-6 6-6"/>',
+    chevronRight:'<path d="m9 18 6-6-6-6"/>',
+    close:'<path d="M18 6 6 18M6 6l12 12"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>',
+    menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
+    file:'<path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM14 3v6h6M9 13h7M9 17h7"/>'
+  };
+  const svg=(name,size=18)=>'<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+(icons[name]||icons.grid)+'</svg>';
+  const iconFor=label=>{
+    const x=label.toLowerCase();
+    if(/home|dashboard|overview/.test(x))return 'home';
+    if(/schedule|calendar|event(s| &)?|bookings/.test(x))return 'calendar';
+    if(/builder|planning|plan &/.test(x))return 'layers';
+    if(/3d|design|fixture position/.test(x))return 'cube';
+    if(/technical|connections|power|dmx/.test(x))return 'bolt';
+    if(/crew|installation|deliver/.test(x))return 'check';
+    if(/production/.test(x))return 'briefcase';
+    if(/library &|library|fixture library/.test(x))return 'library';
+    if(/venue|spaces/.test(x))return 'venue';
+    if(/directory|people|clients/.test(x))return 'users';
+    if(/equipment|stock/.test(x))return 'package';
+    if(/fixtures|bulb/.test(x))return 'bulb';
+    if(/opportunities|pipeline/.test(x))return 'chart';
+    if(/invoices/.test(x))return 'receipt';
+    if(/projects|studio management/.test(x))return 'briefcase';
+    if(/settings|options/.test(x))return 'settings';
+    if(/details|notes|brief/.test(x))return 'brief';
+    return 'grid';
+  };
+  function parseJson(key,fallback){try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch{return fallback}}
+  function events(){return parseJson(DB_KEY,{eventJobs:[]}).eventJobs||[]}
+  function activeEventId(){
+    if(isProduction())return document.querySelector('#event-picker')?.value||parseJson('phaenomenon-production-prefs-v1',{}).eventId||events()[0]?.id||'';
+    return document.querySelector('.event-picker.chosen')?.dataset.id||
+      document.querySelector('[data-action="select-booking"].chosen')?.dataset.id||
+      parseJson('phaenomenon-production-prefs-v1',{}).eventId||events()[0]?.id||'';
+  }
+  const eventName=id=>events().find(e=>e.id===id)?.title||'Event';
+  function getRoute(){
+    const prod=isProduction(),base=prod?'production.html':'index.html',hash=location.hash|| (prod?'#/dashboard':'#/overview');
+    const segments=hash.replace(/^#\/?/,'').split('/').filter(Boolean),view=segments[0]||(prod?'dashboard':'overview');
+    const detail=segments[1]||'';
+    let id=activeEventId();
+    const productionTabs=['team','logistics','installation','show'];
+    if(prod){
+      if(view==='home'&&detail==='venue')id=segments[2]||id;
+      else if(view==='production'&&productionTabs.includes(detail))id=segments[2]||id;
+      else if(['builder','home','design','technical','crew','production'].includes(view))id=detail||id;
+    }else if(['spaces','bookings'].includes(view))id=detail||id;
+    const encoded=encodeURIComponent(id||'');
+    let key,label,icon,canonical;
+    if(prod){
+      switch(view){
+        case 'dashboard':key='home';label='Home';icon='home';canonical='production.html#/dashboard';break;
+        case 'events':key='events';label='Events & schedule';icon='calendar';canonical='production.html#/events';break;
+        case 'builder':key='builder:'+id;label=eventName(id)+' · Build';icon='layers';canonical='production.html#/builder/'+encoded+(segments[2]?'/'+segments[2]:'');break;
+        case 'home':
+          if(detail==='venue'){key='venue:'+id;label=eventName(id)+' · Venue';icon='venue';canonical='production.html#/home/venue/'+encoded;}
+          else{key='overview:'+id;label=eventName(id)+' · Overview';icon='home';canonical='production.html#/home/'+encoded;}
+          break;
+        case 'design':key='design:'+id;label=eventName(id)+' · Design';icon='cube';canonical='production.html#/design/'+encoded;break;
+        case 'technical':key='technical:'+id;label=eventName(id)+' · Technical';icon='bolt';canonical='production.html#/technical/'+encoded;break;
+        case 'crew':key='crew:'+id;label=eventName(id)+' · Crew';icon='check';canonical='production.html#/crew/'+encoded;break;
+        case 'production':
+          key='production:'+id;label=eventName(id)+' · Production';icon='briefcase';
+          canonical='production.html#/production/'+(productionTabs.includes(detail)?detail+'/':'')+encoded;break;
+        case 'entities':
+          key=detail?'entity:'+detail:'directory';label=detail?'Entity profile':'Directory';icon='users';canonical='production.html#/entities'+(detail?'/'+encodeURIComponent(detail):'');break;
+        default:key='home';label='Home';icon='home';canonical='production.html#/dashboard';
+      }
+    }else{
+      const titles={overview:'Studio overview',bookings:'Event details',spaces:'3D planner',equipment:'Equipment library',fixtures:'Fixture library',invoices:'Invoices',projects:'Projects',pipeline:'Opportunities',schedule:'Calendar',clients:'Clients',settings:'Settings',search:'Search'};
+      const iconMap={overview:'grid',bookings:'brief',spaces:'cube',equipment:'package',fixtures:'bulb',invoices:'receipt',projects:'briefcase',pipeline:'chart',schedule:'calendar',clients:'users',settings:'settings',search:'grid'};
+      icon=iconMap[view]||'grid';label=titles[view]||'Studio overview';canonical='index.html#/'+view;
+      if(['bookings','spaces'].includes(view)){
+        key=view+':'+id;label=eventName(id)+' · '+(view==='spaces'?'3D':'Details');canonical+='/'+encoded;
+      }else if((view==='projects'||view==='invoices')&&detail){
+        key=view+':'+detail;
+        label=(view==='projects'?'Project':'Invoice')+' · '+detail.slice(0,18);
+        canonical+='/'+encodeURIComponent(detail);
+      }else key='studio:'+view;
+    }
+    return {key,label,icon,href:canonical};
+  }
+  function sanitize(saved){
+    const all=Array.isArray(saved?.tabs)?saved.tabs:[];
+    const filtered=all.filter(x=>x&&typeof x.key==='string'&&x.key.length<180&&typeof x.href==='string'&&
+      /^(index|production)\.html#\/[a-z0-9_/%-]+$/i.test(x.href)&&typeof x.label==='string')
+      .slice(-50).map(x=>({key:x.key,href:x.href,label:x.label.slice(0,115),icon:icons[x.icon]?x.icon:'grid'}));
+    const unique=new Map(filtered.map(x=>[x.key,x]));
+    return [...unique.values()];
+  }
+  let tabs=sanitize(parseJson(TABS_KEY,{tabs:[]})),selected='',collapsed=parseJson(RAIL_KEY,false)===true;
+  const home={key:'home',label:'Home',icon:'home',href:'production.html#/dashboard'};
+  if(!tabs.some(x=>x.key==='home'))tabs.unshift(home);
+  else tabs=tabs.map(x=>x.key==='home'?home:x);
+  tabs=[tabs.find(x=>x.key==='home'),...tabs.filter(x=>x.key!=='home')];
+  const saveTabs=()=>{try{localStorage.setItem(TABS_KEY,JSON.stringify({version:1,tabs}))}catch{}};
+  function synchronize(){
+    const route=getRoute();selected=route.key;
+    const index=tabs.findIndex(x=>x.key===route.key);
+    if(index===-1){tabs.push(route);if(tabs.length>50)tabs.splice(1,1)}
+    else tabs[index]={...tabs[index],...route};
+    saveTabs();
+  }
+  function navIcons(sidebar){
+    if(!sidebar)return;
+    const prod=isProduction();
+    const targets=sidebar.querySelectorAll(prod?'.rail a.nav,.rail-group-title':'.nav-items a.nav-link,.nav-group-heading');
+    targets.forEach(el=>{
+      const text=el.textContent?.replace(/[⌄›]/g,'').trim()||'Navigation';
+      const symbol=iconFor(text);
+      const node=prod?el.querySelector('.nav-symbol'):el.querySelector('svg');
+      if(node){
+        if(prod)node.innerHTML=svg(symbol);
+        else node.outerHTML=svg(symbol);
+      }else if(!prod)el.insertAdjacentHTML('afterbegin',svg(symbol));
+      if(!el.title)el.title=text;
+      if(el.tagName==='SUMMARY')el.setAttribute('aria-label',text);
+    });
+  }
+  function sidebarControl(sidebar){
+    if(!sidebar)return;
+    const parent=sidebar.querySelector(isProduction()?'.rail-top':'.sidebar-heading');
+    if(!parent)return;
+    const btn=document.createElement('button');btn.type='button';btn.className='ph-rail-toggle';
+    btn.setAttribute('aria-controls',isProduction()?'production-navigation':'studio-navigation');
+    btn.innerHTML=svg(collapsed?'chevronRight':'chevronLeft',18);
+    btn.setAttribute('aria-label',collapsed?'Expand sidebar':'Collapse sidebar');
+    btn.setAttribute('aria-expanded',String(!collapsed));
+    btn.title=collapsed?'Expand sidebar':'Collapse sidebar';
+    parent.appendChild(btn);
+    document.body.classList.toggle('ph-nav-collapsed',collapsed);
+  }
+  function drawTabs(main){
+    if(!main)return;
+    let bar=main.querySelector(':scope > .ph-workspace-tabs');
+    if(!bar){
+      bar=document.createElement('nav');bar.className='ph-workspace-tabs';bar.setAttribute('aria-label','Open workspaces');
+      const header=main.querySelector(':scope > .header, :scope > .topbar');
+      if(header)header.after(bar);else main.prepend(bar);
+    }
+    bar.innerHTML='<div class="ph-tabs-track" role="tablist" aria-label="Open workspaces">'+tabs.map(t=>{
+      const active=t.key===selected,status=getTabStatus(t);
+      return '<div class="ph-workspace-tab'+(active?' is-active':'')+(t.key==='home'?' is-home':'')+'" data-tab-key="'+escape(t.key)+'">'+
+        '<a class="ph-tab-link" role="tab" aria-selected="'+active+'" href="'+escape(t.href)+'" title="'+escape(t.label)+'">'+
+          '<span class="ph-tab-icon">'+svg(t.icon,15)+'</span><span class="ph-tab-title">'+escape(t.label)+'</span>'+
+          (status?'<span class="ph-tab-status '+status.color+'" title="'+escape(status.label)+'" aria-label="'+escape(status.label)+'"></span>':'')+'</a>'+
+        (t.key==='home'?'':'<button type="button" class="ph-tab-close" data-close-key="'+escape(t.key)+'" aria-label="Close '+escape(t.label)+'" title="Close tab">'+svg('close',13)+'</button>')+
+        '</div>';
+    }).join('')+'</div><button type="button" class="ph-tab-new" aria-label="New event" title="New event">'+svg('plus',19)+'</button>';
+    const activeEl=bar.querySelector('.ph-workspace-tab.is-active');
+    activeEl?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
+    // Keep the track usable by Shift+wheel, touch and native horizontal trackpads.
+  }
+  function getTabStatus(tab){
+    const match=/^[^:]+:([^:]+)$/.exec(tab.key);
+    if(!match)return null;
+    const e=events().find(x=>x.id===match[1]);
+    if(!e)return null;
+    const status=safeString(e.status).toLowerCase();
+    return status==='enquiry'?{color:'is-amber',label:'Enquiry'}:
+      status==='confirmed'?{color:'is-teal',label:'Confirmed'}:
+      status==='cancelled'?{color:'is-red',label:'Cancelled'}:
+      status==='completed'?{color:'is-blue',label:'Completed'}:null;
+  }
+  function redraw(){
+    const root=host();if(!root)return;
+    const sidebar=root.querySelector(isProduction()?'#production-rail':'#studio-sidebar');
+    const main=root.querySelector('.main');
+    if(!main)return;
+    synchronize();navIcons(sidebar);sidebarControl(sidebar);drawTabs(main);
+  }
+  let pending=false;
+  function schedule(){if(pending)return;pending=true;queueMicrotask(()=>{pending=false;redraw()})}
+  function visit(href){if(!/^(index|production)\.html#\//.test(href))return;location.href=href;}
+  function closeTab(key){
+    const i=tabs.findIndex(t=>t.key===key);if(i<0||key==='home')return;
+    const active=selected===key;tabs.splice(i,1);saveTabs();
+    if(active){const target=tabs[Math.min(i,tabs.length-1)]||home;visit(target.href)}
+    else schedule();
+  }
+  document.addEventListener('click',ev=>{
+    const collapse=ev.target.closest('.ph-rail-toggle');
+    if(collapse){
+      ev.preventDefault();collapsed=!collapsed;try{localStorage.setItem(RAIL_KEY,JSON.stringify(collapsed))}catch{}
+      const sidebar=host()?.querySelector(isProduction()?'#production-rail':'#studio-sidebar');
+      document.body.classList.toggle('ph-nav-collapsed',collapsed);
+      const btn=sidebar?.querySelector('.ph-rail-toggle');if(btn){btn.innerHTML=svg(collapsed?'chevronRight':'chevronLeft');btn.title=collapsed?'Expand sidebar':'Collapse sidebar';btn.setAttribute('aria-label',btn.title);btn.setAttribute('aria-expanded',String(!collapsed))}
+      return;
+    }
+    const group=ev.target.closest('.rail-group-title,.nav-group-heading');
+    if(group&&collapsed&&matchMedia('(min-width:841px)').matches){
+      ev.preventDefault();collapsed=false;try{localStorage.setItem(RAIL_KEY,'false')}catch{}
+      document.body.classList.remove('ph-nav-collapsed');
+      group.closest('details').open=true;
+      const btn=host()?.querySelector('.ph-rail-toggle');if(btn){btn.innerHTML=svg('chevronLeft');btn.title='Collapse sidebar';btn.setAttribute('aria-label',btn.title);btn.setAttribute('aria-expanded','true')}
+      return;
+    }
+    const close=ev.target.closest('.ph-tab-close');
+    if(close){ev.preventDefault();ev.stopPropagation();closeTab(close.dataset.closeKey);return}
+    const plus=ev.target.closest('.ph-tab-new');
+    if(plus){
+      ev.preventDefault();
+      const original=host()?.querySelector(isProduction()?'[data-act="builder-new"]':'[data-action="open-modal"][data-type="booking"]');
+      if(original)original.click();else visit('production.html#/dashboard');
+    }
+  },true);
+  window.addEventListener('hashchange',schedule);
+  window.addEventListener('storage',ev=>{
+    if(ev.key===TABS_KEY){tabs=sanitize(parseJson(TABS_KEY,{tabs:[]}));if(!tabs.some(x=>x.key==='home'))tabs.unshift(home);tabs=[home,...tabs.filter(x=>x.key!=='home')];schedule()}
+    if(ev.key===RAIL_KEY){collapsed=parseJson(RAIL_KEY,false)===true;document.body.classList.toggle('ph-nav-collapsed',collapsed);schedule()}
+  });
+  const init=()=>{
+    const root=host();if(!root)return;
+    document.body.classList.toggle('ph-nav-collapsed',collapsed);
+    new MutationObserver(schedule).observe(root,{childList:true,subtree:false});
+    schedule();
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
