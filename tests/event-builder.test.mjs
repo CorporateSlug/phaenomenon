@@ -30,7 +30,9 @@ test('creation of a new client deduplicates names and rejects empty or malformed
   const b=model(),data=blank();
   assert.match(b.create(data,{title:'',date:'2026-12-09',clientId:'c1'}).error,/event name/);
   assert.match(b.create(data,{title:'Event',date:'bad',clientId:'c1'}).error,/valid date/);
-  assert.match(b.create(data,{title:'Event',date:'2026-12-09'}).error,/client/);
+  const early=b.create(data,{title:'Potential gig'});
+  assert.equal(early.event.date,'');
+  assert.equal(early.event.clientId,'');
   const first=b.create(data,{title:'Event',date:'2026-12-09',clientName:'  Community Crew '});
   const second=b.create(data,{title:'Event Two',date:'2026-12-10',clientName:'community crew'});
   assert.equal(first.event.clientId,second.event.clientId);
