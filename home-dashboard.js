@@ -11,7 +11,7 @@ const isOpportunity=e=>!!e&&['idea','outreach','contacted','discussion','quoted'
 const isDelivered=e=>!!e&&e.productionStage==='delivered'&&!e.closed;
 const needsCloseout=e=>!!e&&(isDelivered(e)||e.closed&&e.closeoutRemaining>0);
 function render({events=[],activeId}={}){
- const now=new Date(),today=dayString(now),later=new Date(now.getFullYear(),now.getMonth(),now.getDate()+30),last=dayString(later);
+ const now=new Date(),today=dayString(now),later=new Date(now.getFullYear(),now.getMonth(),now.getDate()+30),last=dayString(later),soon=dayString(new Date(now.getFullYear(),now.getMonth(),now.getDate()+7));
  const active=events.find(e=>e.id===activeId)||events[0];
  const opportunities=events.filter(isOpportunity);
  const planned=events.filter(e=>e.bookingStage==='confirmed'&&!e.closed&&e.date>=today&&e.productionStage!=='delivered')
@@ -49,7 +49,7 @@ function render({events=[],activeId}={}){
  const watched=[...new Map([active,...closeouts,...opportunities,...planned.slice(0,12)].filter(Boolean).map(e=>[e.id,e])).values()];
  for(const e of watched){
    if(needsCloseout(e))alerts.push({title:(e.closed?'Closed event needs review':'Post-event closeout')+' · '+e.closeoutRemaining+' remaining',detail:e.title,url:closeout(e.id),type:'issue'});
-   if(isOpportunity(e)&&(e.followUpDate&&e.followUpDate<=today||e.nextAction&&!e.followUpDate)){
+   if(isOpportunity(e)&&(e.followUpDate&&e.followUpDate<=soon||e.nextAction&&!e.followUpDate)){
      alerts.push({title:e.nextAction||'Follow up with organisers',detail:e.title+' · '+(e.followUpDate?fmt(e.followUpDate):'No follow-up date set'),url:link(e.id)+'/brief',type:'planning'});
    }
    if(e.openIssues)alerts.push({title:e.openIssues+' open production issue'+(e.openIssues===1?'':'s'),detail:e.title,url:'#/production/installation/'+encodeURIComponent(e.id),type:'issue'});
