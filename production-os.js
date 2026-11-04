@@ -655,7 +655,7 @@
   function dateKey(d){return monthKey(d)+'-'+String(d.getDate()).padStart(2,'0');}
   function validEventDate(value){return typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&!Number.isNaN(new Date(value+'T12:00:00').getTime());}
   function eventSchedule(){
-    const all=events(),today=dateKey(new Date()),L=window.PhaenomenonLifecycle;
+    const all=events().filter(x=>ui.eventScope==='all'||window.PhaenomenonLifecycle.ensureEvent(x).eventLead===ui.eventScope),today=dateKey(new Date()),L=window.PhaenomenonLifecycle;
     const state=x=>L.summary(db,x);
     const earlyStages=new Set(['idea','outreach','contacted','discussion','quoted','tentative','postponed']);
     const isEarly=x=>earlyStages.has(state(x).bookingStage);
@@ -674,7 +674,7 @@
     const eventRow=x=>'<a class="event-index-row'+(x.id===ui.eventId?' is-current':'')+'" href="#/builder/'+encodeURIComponent(x.id)+'">'+
       '<span class="event-index-date">'+esc(date(x.date)==='Unscheduled'?(state(x).targetMonth?state(x).targetMonth+' approx.':'No date'):date(x.date))+'</span>'+
       '<span class="event-index-main"><strong>'+esc(x.title)+'</strong><small>'+esc(venue(x)?.name||x.venue||'Venue not assigned')+
-      ' · '+esc(state(x).dateLabel)+' · '+esc(state(x).productionLabel)+(state(x).nextAction?' · Next: '+esc(state(x).nextAction):'')+'</small></span>'+
+      ' · '+esc(state(x).eventLead==='studio'?'Own production':'Client commission')+' · '+esc(state(x).dateLabel)+' · '+esc(state(x).productionLabel)+(state(x).nextAction?' · Next: '+esc(state(x).nextAction):'')+'</small></span>'+
       '<span class="event-index-status">'+pill(state(x).closed?'Closed':state(x).bookingLabel)+(x.id===ui.eventId?'<small class="event-index-active">Current</small>':'')+'</span><span class="event-index-chevron" aria-hidden="true">›</span></a>';
     const grouped=(name,list)=>list.length?'<section class="panel event-index-group"><h2>'+esc(name)+' <span class="muted">('+list.length+')</span></h2><div class="event-index-rows">'+list.map(eventRow).join('')+'</div></section>':'';
     const selected=current(),monthPattern=/^\d{4}-(0[1-9]|1[0-2])$/;
@@ -692,9 +692,9 @@
       return '<div class="calendar-day'+(stamp===today?' is-today':'')+'"><span class="calendar-date">'+d+'</span>'+
         matches.map(x=>'<a href="#/builder/'+encodeURIComponent(x.id)+'" title="'+esc(x.title)+'" class="calendar-event'+(x.id===ui.eventId?' is-current':'')+'">'+esc(x.title)+'</a>').join('')+'</div>';
     }).join('');
-    return hero('EVENTS & SCHEDULE','All events','Find a booking, review the schedule and open any event without leaving Production OS.',
+    return hero('EVENTS & SCHEDULE','All events','Track Phaenomenon-produced concepts separately from client commissions, from first idea to closeout.',
       '<button class="btn primary" data-act="builder-new">+ New event</button>')+
-      '<div class="event-index-actions section"><div class="row"><button type="button" class="btn'+(ui.scheduleMode==='list'?' primary':'')+'" data-act="schedule-mode" data-id="list" aria-pressed="'+(ui.scheduleMode==='list')+'">Event list</button>'+
+      '<div class="event-index-actions section"><div class="row ph-event-scope" role="group" aria-label="Filter events by organiser">'+[['all','All events'],['studio','Own events'],['client','Client work']].map(([id,title])=>'<button type="button" class="btn small'+(ui.eventScope===id?' primary':'')+'" data-act="event-scope" data-id="'+id+'" aria-pressed="'+(ui.eventScope===id)+'">'+title+'</button>').join('')+'</div><div class="row"><button type="button" class="btn'+(ui.scheduleMode==='list'?' primary':'')+'" data-act="schedule-mode" data-id="list" aria-pressed="'+(ui.scheduleMode==='list')+'">Event list</button>'+
       '<button type="button" class="btn'+(ui.scheduleMode==='calendar'?' primary':'')+'" data-act="schedule-mode" data-id="calendar" aria-pressed="'+(ui.scheduleMode==='calendar')+'">Month calendar</button></div>'+
       (selected?'<a class="btn" href="#/builder/'+encodeURIComponent(selected.id)+'">Continue '+esc(selected.title)+' →</a>':'')+'</div>'+
       (ui.scheduleMode==='calendar'?
@@ -1315,6 +1315,7 @@
       if(next>=0&&next<ui.history.length){ui.histIndex=next;navigateProfile(ui.history[next],true);}return;
     }
     if(action==='select-event'){selectActiveEvent(id);return;}
+    if(action==='event-scope'){ui.eventScope=['all','studio','client'].includes(id)?id:'all';savePreferences();render();return;}
     if(action==='schedule-mode'){ui.scheduleMode=id==='calendar'?'calendar':'list';savePreferences();render();return;}
     if(action==='schedule-today'){ui.scheduleMonth=monthKey(new Date());render();return;}
     if(action==='schedule-selected'){if(validEventDate(e?.date))ui.scheduleMonth=e.date.slice(0,7);render();return;}
