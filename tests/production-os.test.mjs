@@ -263,8 +263,7 @@ test('reporting structure is scoped to each event',()=>{
   );
   memory.set('phaenomenon-demo-v1',JSON.stringify(state));
   const second=harness(memory);
-  second.change({id:'event-picker',dataset:{},value:copy});
-  second.navigate('#/production');
+  second.navigate('#/production/'+copy);
   second.submit('team-hierarchy-form',{personId:'ent-demo-hand',position:'In charge',reportsTo:'',notes:'Leads the other event'});
   const updated=second.read().productionOS.teamHierarchy;
   assert.equal(updated[copy]['ent-demo-hand'].position,'In charge');
@@ -392,18 +391,18 @@ test('all events is a top-level destination with list and monthly schedule',()=>
   assert.match(h.ui.innerHTML,/Past events|Upcoming/);
 });
 
-test('switching active events updates builder route and persists without dropping bookings',()=>{
+test('opening an event by its URL preserves context without a global event selector',()=>{
   const memory=new Map(),first=harness(memory),saved=first.read();
   saved.eventJobs.push({id:'ev-second-test',title:'Second independent event',date:'2026-11-15',status:'Confirmed',venue:'Second venue',clientId:'c1',kit:[]});
   memory.set('phaenomenon-demo-v1',JSON.stringify(saved));
   const h=harness(memory);
-  h.navigate('#/builder/ev-abbotsford-two-stage-demo');
-  h.change({id:'event-picker',value:'ev-second-test'});
+  h.navigate('#/builder/ev-second-test');
   assert.equal(h.location.hash,'#/builder/ev-second-test');
   assert.match(h.ui.innerHTML,/Second independent event/);
   assert.equal(JSON.parse(memory.get('phaenomenon-production-prefs-v1')).eventId,'ev-second-test');
   h.navigate('#/production/ev-second-test');
-  assert.match(h.ui.innerHTML,/option value="ev-second-test" selected/);
+  assert.match(h.ui.innerHTML,/Second independent event/);
+  assert.doesNotMatch(h.ui.innerHTML,/id="event-picker"/);
   h.navigate('#/events');
   assert.match(h.ui.innerHTML,/Second independent event/);
   assert.equal(h.read().eventJobs.length,saved.eventJobs.length);
