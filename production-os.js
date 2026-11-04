@@ -394,7 +394,8 @@
   function openRecordTab(href){
     const full=/^(index|production)\.html#\//.test(href)?href:'production.html'+href;
     if(window.PhaenomenonWorkspaceTabs?.openRecord)window.PhaenomenonWorkspaceTabs.openRecord(full);
-    else{location.href=full;}
+    else if(full.startsWith('production.html#/')){location.hash=full.slice('production.html'.length);route();}
+    else location.href=full;
   }
   function openCollectionDraft(kind){
     if(!COLLECTION_KINDS.includes(kind))return;
