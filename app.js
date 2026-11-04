@@ -169,44 +169,43 @@
       icon(glyph,17)+'<span>'+label+'</span>'+(key==='pipeline'&&db.leads.length?'<b class="nav-count">'+db.leads.length+'</b>':'')+'</a>';
   };
   function sidebar(){
-    const group=(key,label,glyph,links,extra='')=>{
-      const active=links.includes(ui.view);
-      return '<details class="nav-group" data-group="'+key+'" '+(active?'open':'')+'><summary class="nav-group-heading" aria-label="'+label+'">'+
-        icon(glyph,17)+'<span>'+label+'</span><span class="nav-chevron" aria-hidden="true">⌄</span></summary>'+
-        '<div class="nav-subitems">'+links.map(navItem).join('')+extra+'</div></details>';
-    };
-    const activeEvent=ui.eventId&&db.eventJobs.some(x=>x.id===ui.eventId)?encodeURIComponent(ui.eventId):'';
+    const nav=(href,title,glyph,active=false)=>'<a href="'+href+'" class="nav-link'+(active?' active':'')+'" title="'+title+'"'+(active?' aria-current="page"':'')+'>'+
+      icon(glyph,17)+'<span>'+title+'</span></a>';
     return '<aside class="sidebar" id="studio-sidebar">'+
-      '<div class="sidebar-heading"><a class="logo" href="production.html#/dashboard" aria-label="Phaenomenon Home dashboard">'+
+      '<div class="sidebar-heading"><a class="logo" href="production.html#/dashboard" aria-label="Phaenomenon dashboard">'+
         '<span class="logo-mark">'+icon('lamp',21)+'</span><span><span class="logo-name">phaenomenon<span style="color:#d9b58c">.</span></span><span class="logo-tag">Event production studio</span></span></a>'+
         '<button type="button" class="nav-mobile-toggle" data-action="toggle-sidebar" aria-expanded="false" aria-controls="studio-navigation">'+icon('menu',18)+'<span>Menu</span></button></div>'+
-      '<nav class="nav-items" id="studio-navigation" aria-label="Studio navigation">'+
-        '<div class="nav-label">HOME</div><a class="nav-link nav-feature" href="production.html#/dashboard" title="Open studio Home dashboard">'+icon('grid',17)+'<span>Dashboard</span></a>'+
-         '<div class="nav-label">EVENT WORKSPACE</div>'+
-        '<a class="nav-link nav-feature" href="production.html#/builder/'+activeEvent+'" title="Continue the selected event’s guided workflow">'+icon('layers',17)+'<span>Event builder</span></a>'+
-        navItem('bookings')+navItem('overview')+
-        '<div class="nav-label">TOOLS &amp; RECORDS</div>'+
-        group('planning','Plan &amp; design','layers',['spaces'],
-          '<a class="nav-link" href="production.html#/technical/'+activeEvent+'" title="Review current event technical connections">'+icon('layers',14)+'<span>Technical connections</span></a>')+
-        group('library','Equipment library','bulb',['equipment','fixtures'])+
-        group('studio','Studio management','briefcase',['projects','pipeline','schedule','clients','invoices'])+
-        navItem('settings')+
+      '<nav class="nav-items" id="studio-navigation" aria-label="Collections navigation">'+
+        '<div class="nav-label">WORKSPACE</div>'+
+        nav('production.html#/dashboard','Dashboard','grid')+
+        nav('production.html#/events','Events & schedule','calendar')+
+        nav('production.html#/entities','People & organisations','users')+
+        nav('production.html#/venues','Venues & spaces','layers')+
+        nav('production.html#/equipment','Equipment & fixtures','bulb',['equipment','fixtures'].includes(ui.view))+
+        nav('production.html#/finances','Finances','file',ui.view==='invoices')+
+        '<div class="sidebar-collections-bottom"><div class="nav-label">OTHER</div>'+
+        nav('production.html#/community','Community noticeboard','calendar')+
+        nav('#/settings','Settings','settings',ui.view==='settings')+'</div>'+
       '</nav>'+
       '<div class="sidebar-bottom"><button class="nav-help" data-action="view-guide">'+icon('info',15)+'<span>Help &amp; guide</span></button>'+
-        '<p class="nav-disclaimer">Prototype · Browser-local data</p></div>'+
-      '</aside>';
+        '<p class="nav-disclaimer">Prototype · Browser-local data</p></div></aside>';
   }
-
-  function topbar(){const page=ui.view==='search'?'Search':navLinks.find(x=>x[0]===ui.view)?.[1]||'Overview';return `<header class="topbar"><div class="breadcrumbs"><span class="breadcrumbs-root">Studio</span><span class="breadcrumbs-divider" aria-hidden="true">/</span><span class="breadcrumbs-page">${page}</span></div><div class="top-actions"><label class="top-search">${icon('search',14)}<input id="global-search" aria-label="Search projects and leads" placeholder="Search workspace" value="${attr(ui.search)}" /></label><button class="button primary" data-action="open-modal" data-type="booking">${icon('plus',15)} New event</button></div></header>`;}
+  function topbar(){
+    const page=ui.view==='search'?'Search':navLinks.find(x=>x[0]===ui.view)?.[1]||'Workspace';
+    const back=({bookings:'events',spaces:'events',equipment:'equipment',fixtures:'equipment',
+      invoices:'finances',clients:'entities',projects:'dashboard',pipeline:'dashboard',schedule:'events'})[ui.view]||'dashboard';
+    return '<header class="topbar"><div class="breadcrumbs"><span class="breadcrumbs-root">Specialist tools</span>'+
+      '<span class="breadcrumbs-divider" aria-hidden="true">/</span><span class="breadcrumbs-page">'+safe(page)+'</span></div>'+
+      '<div class="top-actions"><a class="button small" href="production.html#/'+back+'">← Back to '+(back==='events'?'Events':back==='equipment'?'Equipment':back==='entities'?'People & organisations':back==='finances'?'Finances':'Dashboard')+'</a></div></header>';
+  }
   function mobileDock(){
-    const id=ui.eventId&&db.eventJobs.some(x=>x.id===ui.eventId)?encodeURIComponent(ui.eventId):'';
     const tab=(label,glyph,href,active)=>'<a class="studio-mobile-tab'+(active?' is-active':'')+'" href="'+href+'" '+(active?'aria-current="page"':'')+'>'+icon(glyph,19)+'<span>'+label+'</span></a>';
-    return '<nav class="studio-mobile-dock" aria-label="Quick workspace navigation">'+
+    return '<nav class="studio-mobile-dock" aria-label="Quick collection navigation">'+
       tab('Home','grid','production.html#/dashboard',false)+
-       tab('Events','calendar','#/bookings',ui.view==='bookings')+
-      tab('Build','layers','production.html#/builder/'+id,false)+
-      tab('3D','box','#/spaces/'+id,ui.view==='spaces')+
-      '<button type="button" class="studio-mobile-tab studio-mobile-more'+(!['bookings','spaces'].includes(ui.view)?' is-active':'')+'" data-action="toggle-sidebar" aria-controls="studio-navigation" aria-expanded="false">'+
+      tab('Events','calendar','production.html#/events',false)+
+      tab('People','users','production.html#/entities',false)+
+      tab('Equipment','bulb','production.html#/equipment',['equipment','fixtures'].includes(ui.view))+
+      '<button type="button" class="studio-mobile-tab studio-mobile-more'+(!['equipment','fixtures'].includes(ui.view)?' is-active':'')+'" data-action="toggle-sidebar" aria-controls="studio-navigation" aria-expanded="false">'+
       icon('menu',19)+'<span>More</span></button></nav>';
   }
   function layout(content){return `<div class="app-shell">${sidebar()}<button type="button" class="studio-mobile-backdrop" data-action="close-sidebar" aria-label="Close navigation"></button><main class="main">${topbar()}<div class="content">${content}</div></main></div>${mobileDock()}${ui.projectId?drawer():''}${ui.modal?modal():''}${ui.toast?`<div class="toast" role="status">${icon('check',15)} ${safe(ui.toast)}</div>`:''}${ui.projectId?printSheet():''}${ui.printInvoiceId?invoicePrintPage():''}`;}
