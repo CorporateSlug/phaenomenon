@@ -31,7 +31,7 @@ function harness(production=true){
  const storage={getItem:key=>map.get(key)||null,setItem:(key,s)=>map.set(key,s)};
  const sessionStorage={getItem:key=>session.get(key)||null,setItem:(key,s)=>session.set(key,s)};
  const raw=file('workspace-navigation.js').replace(/\}\)\(\);\s*$/,
-   'window.__test={getRoute,iconFor,sanitize,synchronize,openExplicitTab,closeTab,activate,tabs:()=>tabs,selected:()=>selected};})();');
+   'window.__test={getRoute,iconFor,sanitize,synchronize,openExplicitTab,openRecordTab,closeTab,activate,tabs:()=>tabs,selected:()=>selected};})();');
  assert.notEqual(raw,file('workspace-navigation.js'),'Test hooks must be injected');
  runInNewContext(raw,{
    window,document:doc,localStorage:storage,sessionStorage,location,
@@ -40,7 +40,7 @@ function harness(production=true){
  },{filename:'workspace-navigation.js'});
  const api=window.__test;
  return {env,map,session,route:api.getRoute,sync:api.synchronize,openNew:api.openExplicitTab,
-   close:api.closeTab,activate:api.activate,tabs:api.tabs,selected:api.selected,
+   close:api.closeTab,activate:api.activate,openRecord:api.openRecordTab,tabs:api.tabs,selected:api.selected,
    iconFor:api.iconFor,sanitize:api.sanitize};
 }
 test('Home is a normal closable workspace and sidebar icons remain consistent',()=>{
@@ -68,25 +68,37 @@ test('Home is a normal closable workspace and sidebar icons remain consistent',(
  assert.match(sheet,/border-radius:10px/);
  assert.match(js,/No open tabs/);
 });
-test('Ordinary navigation reuses the selected Home tab rather than accumulating tabs',()=>{
+test('Collection navigation reuses one browse tab while preserving open records',()=>{
  const h=harness();h.sync();
- const first=h.tabs()[0].id;
- h.env.hash='#/builder/event-one/brief';h.sync();
- assert.equal(h.tabs().length,1,'First navigation reuses the initial Home tab');
- assert.equal(h.tabs()[0].id,first);
- h.env.hash='#/builder/event-two';h.sync();
- h.env.hash='#/technical/event-one';h.sync();
- h.env.hash='#/production/team/event-one';h.sync();
- assert.equal(h.tabs().length,1,'Multiple sidebar clicks do not create new tabs');
- assert.equal(h.tabs()[0].id,first);
- assert.equal(h.tabs()[0].href,'production.html#/production/team/event-one');
- h.env.hash='#/dashboard';h.sync();
- assert.equal(h.tabs().length,1,'Returning Home does not create a pinned second tab');
- assert.equal(h.selected(),first);
- assert.equal(h.tabs()[0].key,'home');
+ const initial=h.tabs()[0].id;
  h.env.hash='#/events';h.sync();
- assert.equal(h.tabs().length,1,'Leaving Home reuses the same tab again');
- assert.equal(h.tabs()[0].id,first);
+ assert.equal(h.tabs().length,1);
+ assert.equal(h.tabs()[0].id,initial);
+ h.openRecord('production.html#/home/event-one');h.sync();
+ assert.equal(h.tabs().length,2);
+ assert.equal(h.tabs()[1].key,'overview:event-one');
+ h.env.hash='#/entities';h.sync();
+ assert.equal(h.tabs().length,2,'Sidebar browsing does not overwrite an event record tab');
+ assert.equal(h.tabs()[0].key,'directory');
+ assert.equal(h.tabs()[1].key,'overview:event-one');
+ h.env.hash='#/equipment';h.sync();
+ assert.equal(h.tabs().length,2);
+ assert.equal(h.tabs()[0].key,'equipment-library');
+});
+test('Existing record tabs are reused and a new draft keeps its own tab',()=>{
+ const h=harness();h.sync();
+ h.env.hash='#/equipment';h.sync();
+ h.openRecord('production.html#/equipment/equipment-one');h.sync();
+ const recordId=h.selected();
+ h.openRecord('production.html#/equipment/equipment-one');h.sync();
+ assert.equal(h.tabs().length,2);
+ assert.equal(h.selected(),recordId);
+ h.openRecord('production.html#/new/event/draft-one');h.sync();
+ assert.equal(h.tabs().length,3);
+ assert.equal(h.tabs()[2].key,'draft:event:draft-one');
+ h.env.hash='#/events';h.sync();
+ assert.equal(h.tabs().length,3);
+ assert.ok(h.tabs().some(t=>t.key==='draft:event:draft-one'),'Switching collections must not discard the draft');
 });
 test('Only explicit + creates another independently navigable workspace',()=>{
  const h=harness();h.sync();
@@ -144,8 +156,8 @@ test('Studio and Production share explicitly opened tabs with event-specific rou
  assert.equal(h.tabs().length,2);
  assert.equal(h.tabs()[1].href,'index.html#/spaces/event-two');
  h.env.hash='#/equipment';h.sync();
- assert.equal(h.tabs().length,2);
- assert.equal(h.tabs()[1].href,'index.html#/equipment');
+ assert.equal(h.tabs().length,3,'Studio equipment browsing gets a collection tab, preserving 3D record');
+ assert.equal(h.tabs()[2].href,'index.html#/equipment');
  assert.match(h.map.get('phaenomenon-open-workspace-tabs-v2'),/index.html#\/equipment/);
 });
 test('Legacy auto-generated history is ignored and unsafe destinations rejected',()=>{
@@ -180,18 +192,18 @@ test('Closeout deep links preserve the selected event and production tab context
  assert.equal(route.icon,'check');
 });
 
-test('Community Noticeboard is the final lower-priority item in the Production sidebar',()=>{
+test('Production navigation is a stable collection list with Community at the bottom',()=>{
  const src=file('production-os.js');
- const community=src.indexOf('rail-community-section');
- const studio=src.indexOf("navGroup('studio','Studio management'");
- const work=src.indexOf("navGroup('library','Library & people'");
- assert.ok(studio>work,'Studio management should come after regular workspace groups');
- assert.ok(community>studio,'Community must be last rather than between Events and Active event');
- assert.ok(src.includes('navItem(\'#/community\',\'Community noticeboard\''));
+ for(const label of ['Dashboard','Events & schedule','People & organisations',
+   'Venues & spaces','Equipment & fixtures','Finances','Community noticeboard']){
+   assert.ok(src.includes(label),label);
+ }
+ assert.ok(src.indexOf("navItem('#/equipment'")<src.indexOf("navItem('#/finances'"));
+ assert.ok(src.indexOf("navItem('#/finances'")<src.indexOf("rail-community-section"));
+ assert.match(src,/ui.view==='new'\?window.PhaenomenonCollections.create/);
+ assert.doesNotMatch(src,/id="event-picker"/);
  const css=file('production.css');
  assert.match(css,/\.rail-community-section\s*\{\s*margin-top:auto/);
- assert.match(css,/\.rail #production-navigation\s*\{[^}]*flex:1 1 auto/);
- assert.match(css,/\.rail-community-section\{[^}]*border-top:1px solid/);
 });
 test('Floating tabs and desktop header controls follow a consistent sizing rhythm',()=>{
  const css=file('workspace-navigation.css'),production=file('production.css');
@@ -201,7 +213,7 @@ test('Floating tabs and desktop header controls follow a consistent sizing rhyth
  assert.match(css,/\.ph-workspace-tabs\s*\{[^}]*padding:7px 16px/);
  assert.match(css,/\.ph-workspace-tab\s*\{[^}]*border:1px solid #334752/);
  assert.match(css,/border-radius:10px/);
- assert.match(production,/\.header-tools>\.btn,[\s\S]*?height:38px;min-height:38px/);
- assert.match(production,/\.event-header-select select\s*\{[^}]*height:38px;min-height:38px/);
- assert.match(file('production-os.js'),/ui.view==='events'\?'':'<a class="btn header-events-link"/);
+ assert.match(production,/\.header-more/);
+ assert.match(file('production-os.js'),/class="header-tools"><details class="header-more"/);
+ assert.doesNotMatch(file('production-os.js'),/id="event-picker"/);
 });
