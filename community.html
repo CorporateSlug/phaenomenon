@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#151a20">
+  <meta name="description" content="A simple local queer community events noticeboard concept. Browse what's on and submit something to share.">
+  <title>Community noticeboard · Phaenomenon</title>
+  <link rel="stylesheet" href="community.css">
+  <link rel="stylesheet" href="shared-ui.css">
+  <script src="community-data.js" defer></script>
+  <script src="community-public.js" defer></script>
+  <script src="shared-ui.js" defer></script>
+</head>
+<body>
+  <header class="community-top">
+    <a href="community.html" class="community-brand" aria-label="Community noticeboard home"><span class="brand-mark" aria-hidden="true">✳</span><span>phaenomenon<span class="brand-sep"> / </span><strong>community</strong></span></a>
+    <nav aria-label="Community navigation"><a href="#whats-on">What's on</a><button type="button" data-open-submit>Post an event <span aria-hidden="true">↗</span></button></nav>
+  </header>
+  <main class="community-main" id="whats-on">
+    <section class="community-intro">
+      <div>
+        <p class="community-eyebrow"><span class="status-pulse"></span> NEIGHBOURHOOD NOTICEBOARD · MELBOURNE</p>
+        <h1>Good things happen<br><em>when we find each other.</em></h1>
+        <p class="community-lead">A small, easy place to find and share queer community events. No promotion required. Just the essentials.</p>
+        <div class="community-hero-buttons"><button type="button" class="community-primary" data-open-submit>+ Add an event</button><a href="#whats-on" class="community-quiet">See what's on ↓</a></div>
+      </div>
+      <div class="community-stamp" aria-hidden="true"><span>COME AS<br>YOU ARE</span><span class="stamp-star">✳</span><span>SHOW UP<br>FOR EACH OTHER</span></div>
+    </section>
+    <section class="community-board" aria-labelledby="board-heading">
+      <div class="community-board-heading"><div><p class="community-eyebrow">THE BOARD</p><h2 id="board-heading">Coming up</h2></div><div class="community-board-flag"><span id="community-count">0 events</span> <span class="muted-dot">·</span> always low-key</div></div>
+      <div class="community-filters">
+        <label class="community-search"><span class="sr-only">Search events</span><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg><input type="search" id="community-search" placeholder="Find something…" autocomplete="off"></label>
+        <label class="community-category"><span class="sr-only">Filter category</span><select id="community-category"><option value="all">All sorts of things</option></select></label>
+      </div>
+      <div class="community-list" id="community-list" tabindex="0" role="region" aria-label="Upcoming community events"><p class="community-empty">Loading the noticeboard…</p></div>
+      <p class="community-board-note">A community noticeboard, not an official event organiser. Please check details with organisers before heading out.</p>
+    </section>
+    <section class="community-bottom" aria-labelledby="community-bottom-heading">
+      <div><p class="community-eyebrow">HAVE SOMETHING ON?</p><h2 id="community-bottom-heading">Put it on the board.</h2><p>A meetup, a workshop, a gig or just a good excuse to get together. A few details are enough.</p></div>
+      <button type="button" class="community-primary" data-open-submit>Share an event <span aria-hidden="true">↗</span></button>
+    </section>
+  </main>
+  <footer class="community-footer"><span>phaenomenon · community noticeboard concept</span><span>Made for connection, not promotion.</span></footer>
+  <div class="community-demo-bar" role="note">DEMO ONLY · Example events · Submissions and approvals stay in this browser and are not shared with other visitors.</div>
+  <dialog id="community-submit-dialog" aria-labelledby="community-submit-heading">
+    <div class="community-dialog-head"><div><p class="community-eyebrow">A FEW DETAILS, THAT'S ALL</p><h2 id="community-submit-heading">Post a community event</h2></div><button type="button" class="community-icon-btn" data-close-submit aria-label="Close submission form">✕</button></div>
+    <p class="community-dialog-desc">This prototype saves your submission locally for review. It does not post anything to a public server yet.</p>
+    <form id="community-submit-form">
+      <label>What's the event called? <span aria-hidden="true">*</span><input name="title" maxlength="120" required placeholder="e.g. Community movie night"></label>
+      <div class="community-form-grid"><label>Date <span aria-hidden="true">*</span><input name="date" type="date" required></label><label>Time <span class="form-optional">(optional)</span><input name="time" type="time"></label></div>
+      <div class="community-form-grid"><label>Neighbourhood <span aria-hidden="true">*</span><input name="area" maxlength="80" placeholder="e.g. Brunswick" required></label><label>Type of event <span aria-hidden="true">*</span><select name="category" required></select></label></div>
+      <label>Venue or meeting point <span class="form-optional">(optional)</span><input name="venue" maxlength="120" placeholder="Only share locations intended to be public"></label>
+      <label>A short description <span aria-hidden="true">*</span><textarea name="description" maxlength="420" rows="3" required placeholder="What's happening? Who might enjoy coming along?"></textarea></label>
+      <label>Organiser name <span class="form-optional">(optional)</span><input name="organiser" maxlength="100" placeholder="Community group or public name"></label>
+      <label>More info or tickets <span class="form-optional">(optional)</span><input name="url" type="url" maxlength="500" placeholder="https://…"></label>
+      <p class="community-form-warning">Please don't share private addresses, identifying attendee details or anything that isn't intended to be public.</p>
+      <p id="community-form-message" class="community-form-message" role="status" aria-live="polite" hidden></p>
+      <div class="community-dialog-actions"><button type="button" class="community-secondary" data-close-submit>Cancel</button><button type="submit" class="community-primary">Submit for review ↗</button></div>
+    </form>
+  </dialog>
+  <noscript>Enable JavaScript to browse example events or submit a demo listing.</noscript>
+</body>
+</html>
