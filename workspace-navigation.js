@@ -8,7 +8,10 @@
  */
 (() => {
   'use strict';
-  const TABS_KEY='phaenomenon-open-workspace-tabs-v1';
+  // v2 deliberately starts with one workspace instead of restoring the old
+  // auto-generated v1 tabs that accumulated during ordinary navigation.
+  const TABS_KEY='phaenomenon-open-workspace-tabs-v2';
+  const ACTIVE_KEY='phaenomenon-active-workspace-tab-v2';
   const RAIL_KEY='phaenomenon-icon-sidebar-v1';
   const DB_KEY='phaenomenon-demo-v1';
   const isProduction=()=>!!document.getElementById('production-app');
@@ -124,24 +127,60 @@
   }
   function sanitize(saved){
     const all=Array.isArray(saved?.tabs)?saved.tabs:[];
-    const filtered=all.filter(x=>x&&typeof x.key==='string'&&x.key.length<180&&typeof x.href==='string'&&
-      /^(index|production)\.html#\/[a-z0-9_/%-]+$/i.test(x.href)&&typeof x.label==='string')
-      .slice(-50).map(x=>({key:x.key,href:x.href,label:x.label.slice(0,115),icon:icons[x.icon]?x.icon:'grid'}));
-    const unique=new Map(filtered.map(x=>[x.key,x]));
-    return [...unique.values()];
+    const filtered=all.filter(x=>x&&typeof x.id==='string'&&/^[a-z0-9_-]{1,90}$/i.test(x.id)&&
+      typeof x.href==='string'&&/^(index|production)\.html#\/[a-z0-9_/%-]+$/i.test(x.href)&&
+      typeof x.label==='string').slice(-24).map(x=>({
+        id:x.id,key:safeString(x.key).slice(0,180),href:x.href,
+        label:x.label.slice(0,115),icon:icons[x.icon]?x.icon:'grid'
+      }));
+    const ids=new Set();
+    return filtered.filter(x=>{if(ids.has(x.id))return false;ids.add(x.id);return true;});
   }
-  let tabs=sanitize(parseJson(TABS_KEY,{tabs:[]})),selected='',collapsed=parseJson(RAIL_KEY,false)===true;
-  const home={key:'home',label:'Home',icon:'home',href:'production.html#/dashboard'};
-  if(!tabs.some(x=>x.key==='home'))tabs.unshift(home);
-  else tabs=tabs.map(x=>x.key==='home'?home:x);
-  tabs=[tabs.find(x=>x.key==='home'),...tabs.filter(x=>x.key!=='home')];
-  const saveTabs=()=>{try{localStorage.setItem(TABS_KEY,JSON.stringify({version:1,tabs}))}catch{}};
+  const home={id:'home',key:'home',label:'Home',icon:'home',href:'production.html#/dashboard'};
+  let tabs=[home,...sanitize(parseJson(TABS_KEY,{tabs:[]})).filter(x=>x.id!=='home')];
+  let collapsed=parseJson(RAIL_KEY,false)===true;
+  const session=()=>{
+    try{return sessionStorage}catch{return localStorage}
+  };
+  const getActive=()=>{try{return session().getItem(ACTIVE_KEY)||'home'}catch{return 'home'}};
+  const setActive=id=>{try{session().setItem(ACTIVE_KEY,id)}catch{}};
+  let selected=getActive(),lastWorking=selected!=='home'?selected:'';
+  const newId=()=> 'work-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);
+  const saveTabs=()=>{try{localStorage.setItem(TABS_KEY,JSON.stringify({version:2,tabs}))}catch{}};
+  function activate(id){
+    selected=id;
+    if(id!=='home')lastWorking=id;
+    setActive(id);
+  }
   function synchronize(){
-    const route=getRoute();selected=route.key;
-    const index=tabs.findIndex(x=>x.key===route.key);
-    if(index===-1){tabs.push(route);if(tabs.length>50)tabs.splice(1,1)}
-    else tabs[index]={...tabs[index],...route};
+    const route=getRoute();
+    // Home is pinned; coming home never erases the last working tab.
+    if(route.key==='home'){
+      activate('home');
+      saveTabs();
+      return;
+    }
+    let slot=tabs.find(t=>t.id===selected&&t.id!=='home');
+    // Clicking an ordinary sidebar link while Home is active reuses a working
+    // slot, rather than spawning another tab on each navigation.
+    if(!slot)slot=tabs.find(t=>t.id===lastWorking)||tabs.find(t=>t.id!=='home');
+    if(!slot){
+      slot={id:newId(),...route};
+      tabs.push(slot);
+    }else Object.assign(slot,route);
+    activate(slot.id);
     saveTabs();
+  }
+  // A new tab is created only by the explicit '+' menu. Nav changes always
+  // update the selected working slot, so there is no passive tab accumulation.
+  function openExplicitTab(href){
+    if(!/^(index|production)\.html#\/[a-z0-9_/%-]+$/i.test(href))return;
+    const slot={id:newId(),key:'new',label:'Workspace',icon:'grid',href};
+    tabs.push(slot);
+    activate(slot.id);
+    saveTabs();
+    visit(href);
+    schedule();
   }
   function navIcons(sidebar){
     if(!sidebar)return;
