@@ -199,8 +199,10 @@
         if(prod)node.innerHTML=svg(symbol);
         else node.outerHTML=svg(symbol);
       }else if(!prod)el.insertAdjacentHTML('afterbegin',svg(symbol));
-      if(!el.title)el.title=text;
-      if(el.tagName==='SUMMARY')el.setAttribute('aria-label',text);
+      // Native tooltips are useful for icon-only mode, but visually noisy
+      // when the expanded navigation already shows the full label.
+      el.title=collapsed?text:'';
+      if(collapsed||el.tagName==='SUMMARY')el.setAttribute('aria-label',text);
     });
   }
   function sidebarControl(sidebar){
@@ -323,6 +325,7 @@
       const sidebar=host()?.querySelector(isProduction()?'#production-rail':'#studio-sidebar');
       document.body.classList.toggle('ph-nav-collapsed',collapsed);
       const btn=sidebar?.querySelector('.ph-rail-toggle');if(btn){btn.innerHTML=svg(collapsed?'chevronRight':'chevronLeft');btn.title=collapsed?'Expand sidebar':'Collapse sidebar';btn.setAttribute('aria-label',btn.title);btn.setAttribute('aria-expanded',String(!collapsed))}
+      navIcons(sidebar);
       return;
     }
     const group=ev.target.closest('.rail-group-title,.nav-group-heading');
@@ -331,6 +334,7 @@
       document.body.classList.remove('ph-nav-collapsed');
       group.closest('details').open=true;
       const btn=host()?.querySelector('.ph-rail-toggle');if(btn){btn.innerHTML=svg('chevronLeft');btn.title='Collapse sidebar';btn.setAttribute('aria-label',btn.title);btn.setAttribute('aria-expanded','true')}
+      navIcons(host()?.querySelector(isProduction()?'#production-rail':'#studio-sidebar'));
       return;
     }
     const closing=ev.target.closest('.ph-tab-close');
