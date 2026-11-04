@@ -40,7 +40,7 @@ function harness(kind){
   callbacks.click({target:{closest:selector=>selector===(kind==='production'?'[data-act]':'[data-action]')?element:null},preventDefault(){}});
  };
  const visit=hash=>{location.hash=hash;callbacks['window.hashchange']?.();};
- const rows=()=>[...root.innerHTML.matchAll(/<a class="event-index-row[^"]*" href="#\/home\/([^"]+)"/g)].map(x=>x[1]);
+ const rows=()=>[...root.innerHTML.matchAll(/<a data-ph-record class="event-index-row[^"]*" href="#\/home\/([^"]+)"/g)].map(x=>x[1]);
  return {callbacks,memory,root,window,document,location,read,submit,click,visit,rows};
 }
 
