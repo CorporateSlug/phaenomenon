@@ -43,3 +43,10 @@ body:has(#app) .ph-closeout-derived{background:#e2f2eb;color:#2d7866}
 @media(max-width:920px){.ph-closeout-row{grid-template-columns:minmax(140px,1fr) minmax(120px,.6fr)}.ph-closeout-reason,.ph-closeout-note{grid-column:1/-1}.ph-closeout-row{gap:7px}}
 @media(max-width:600px){.ph-stage-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.ph-lifecycle-fields{grid-template-columns:1fr}.ph-lifecycle-fields .ph-lifecycle-wide{grid-column:auto}.ph-closeout-row{grid-template-columns:minmax(0,1fr) 120px}.ph-closeout-group{margin:10px 0}}
 @media print{.ph-closeout-row{break-inside:avoid}.ph-lifecycle-closeout .btn{display:none}}
+
+/* Independently scrollable closeout grid; keep actions visible. */
+.ph-closeout-list{max-height:clamp(270px,51dvh,570px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-gutter:stable;padding-right:6px;border-top:1px solid #3b4d56;border-bottom:1px solid #3b4d56}
+.ph-closeout-list:focus-visible{outline:2px solid #8cddcf;outline-offset:1px}
+.ph-closeout-group h3{position:sticky;top:0;z-index:2;background:#19232d;padding:8px 0;margin:0}
+body:has(#app) .ph-closeout-group h3{background:#fff}
+@media print{.ph-closeout-list{max-height:none;overflow:visible}.ph-closeout-group h3{position:static}}
