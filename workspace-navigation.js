@@ -174,32 +174,48 @@
     try{session().setItem(LAST_WORK_KEY,lastWorking)}catch{}
     setActive(id);
   }
+  const collectionKeys=new Set(['home','events','directory','venue-library','equipment-library','finances','community-review',
+    'studio:overview','studio:equipment','studio:fixtures','studio:clients','studio:invoices','studio:projects','studio:pipeline','studio:schedule','studio:settings']);
+  const eventTabKey=key=>/^(overview|builder|design|technical|crew|production|spaces|bookings):/.test(key||'')?
+    String(key).split(':').slice(1).join(':'):null;
   function synchronize(){
     const route=getRoute();
     if(emptyHome&&!tabs.length&&route.key==='home')return;
     emptyHome=false;
-    let slot=tabs.find(t=>t.id===selected);
-    // Ordinary sidebar navigation reuses the selected tab.
-    if(!slot)slot=tabs.find(t=>t.id===lastWorking)||tabs[0];
-    if(!slot){
-      slot={id:newId(),...route};
-      tabs.push(slot);
-    }else Object.assign(slot,route);
-    activate(slot.id);
-    saveTabs();
+    // Collections are browse destinations. They reuse one browsing slot, never
+    // silently repurpose an open record/draft editor.
+    if(collectionKeys.has(route.key)){
+      let slot=tabs.find(t=>t.key===route.key)||tabs.find(t=>collectionKeys.has(t.key));
+      if(!slot){slot={id:newId(),...route};tabs.push(slot);}
+      else Object.assign(slot,route);
+      activate(slot.id);saveTabs();return;
+    }
+    let slot=tabs.find(t=>t.key===route.key)||tabs.find(t=>t.id===selected);
+    if(!slot){slot={id:newId(),...route};tabs.push(slot);}
+    else Object.assign(slot,route);
+    activate(slot.id);saveTabs();
   }
-  // A new tab is created only by the explicit '+' menu. Nav changes always
-  // update the selected working slot, so there is no passive tab accumulation.
+  // Creation and opening a record are explicit tab-opening actions.
+  // An already-open record focuses the original tab; there are no duplicates.
+  function openRecordTab(href){
+    if(!/^(index|production)\.html#\/[a-z0-9_/%-]+$/i.test(href))return false;
+    const route=getRoute(href),eventId=eventTabKey(route.key);
+    let existing=tabs.find(t=>t.key===route.key);
+    if(!existing&&eventId)existing=tabs.find(t=>eventTabKey(t.key)===eventId);
+    if(existing){Object.assign(existing,route);activate(existing.id);}
+    else {const slot={id:newId(),...route};tabs.push(slot);activate(slot.id);}
+    emptyHome=false;saveTabs();visit(href);schedule();return true;
+  }
   function openExplicitTab(href){
     if(!/^(index|production)\.html#\/[a-z0-9_/%-]+$/i.test(href))return;
-    const slot={id:newId(),key:'new',label:'Workspace',icon:'grid',href};
-    tabs.push(slot);
-    emptyHome=false;
-    activate(slot.id);
-    saveTabs();
-    visit(href);
-    schedule();
+    const route=getRoute(href);
+    if(/^(draft|entity|venue-record|equipment-record|fixture-record|overview|builder|design|technical|crew|production|spaces|bookings|invoices):/.test(route.key)){
+      openRecordTab(href);return;
+    }
+    const slot={id:newId(),...route};
+    tabs.push(slot);emptyHome=false;activate(slot.id);saveTabs();visit(href);schedule();
   }
+  window.PhaenomenonWorkspaceTabs={openRecord:openRecordTab,openNew:openExplicitTab};
   function navIcons(sidebar){
     if(!sidebar)return;
     const prod=isProduction();
@@ -311,6 +327,11 @@
   function closeTab(id){
     const i=tabs.findIndex(t=>t.id===id);
     if(i<0)return;
+    const closing=tabs[i];
+    if(window.PhaenomenonCollectionDrafts?.hasDraft?.(closing.href)){
+      if(!confirm('Close this unsaved draft? The draft has not been added to the collection.'))return;
+      window.PhaenomenonCollectionDrafts.discard(closing.href);
+    }
     const wasActive=selected===id;
     tabs.splice(i,1);
     if(lastWorking===id)lastWorking=tabs[0]?.id||'';
@@ -349,6 +370,11 @@
       const btn=host()?.querySelector('.ph-rail-toggle');if(btn){btn.innerHTML=svg('chevronLeft');btn.title='Collapse sidebar';btn.setAttribute('aria-label',btn.title);btn.setAttribute('aria-expanded','true')}
       navIcons(host()?.querySelector(isProduction()?'#production-rail':'#studio-sidebar'));
       return;
+    }
+    const record=ev.target.closest?.('[data-ph-record]');
+    if(record&&record.getAttribute?.('href')){
+      const raw=record.getAttribute('href'),href=raw.startsWith('#/')?(isProduction()?'production.html':'index.html')+raw:raw;
+      if(openRecordTab(href)){ev.preventDefault();ev.stopPropagation();return;}
     }
     const closing=ev.target.closest('.ph-tab-close');
     if(closing){
