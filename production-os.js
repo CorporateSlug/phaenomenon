@@ -168,6 +168,7 @@
   }
   function ensure(){
     demoSeed();
+    window.PhaenomenonLifecycle?.ensureAll(db);
     window.PhaenomenonVenueWorkflow?.ensureAll(db);
     if(!db.productionOS||typeof db.productionOS!=='object')db.productionOS={};
     const o=org();o.version=1;
@@ -554,14 +555,14 @@
 
   function builderBasics(e){
     const eventTypes=['Other','Performance','Live music','Festival','Wedding','Corporate','Private','Exhibition'];
-    const statuses=['Enquiry','Quoted','Confirmed','Completed','Cancelled'];
     return '<section class="panel section builder-inline-form"><div class="section-head"><h2>Event details</h2><span class="form-note">Edit the event without leaving the guided workflow</span></div>'+
+      window.PhaenomenonLifecycleUI.stageStrip(e,db)+
       '<form id="builder-basics-form" class="form-grid">'+
       '<label class="wide">Event name<input class="input" name="title" required maxlength="120" value="'+esc(e.title)+'"></label>'+
-      '<label>Event date<input class="input" name="date" type="date" required value="'+esc(e.date)+'"></label>'+
+      window.PhaenomenonLifecycleUI.fields(e,{compact:true})+
       '<label>Client<select name="clientId" required>'+db.clients.map(x=>'<option value="'+esc(x.id)+'" '+(e.clientId===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label>'+
       '<label>Event type<select name="eventType">'+eventTypes.map(x=>'<option value="'+esc(x)+'" '+(e.eventType===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></label>'+
-      '<label>Status<select name="status">'+statuses.map(x=>'<option value="'+esc(x)+'" '+(e.status===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></label>'+
+
       '<details class="wide workspace-disclosure builder-assumptions"><summary>Planning assumptions &amp; estimated costs</summary><div class="disclosure-body form-grid">'+
       '<label>Expected guests<input class="input" name="guests" type="number" min="1" max="5000" value="'+Math.max(1,Math.floor(num(e.guests,1)))+'"></label>'+
       '<label>Lighting zones (kit estimate)<input class="input" name="zones" type="number" min="1" max="12" value="'+Math.max(1,Math.floor(num(e.zones,1)))+'"></label>'+
@@ -631,8 +632,8 @@
       '<button class="btn" type="button" data-act="builder-new-close" aria-label="Close">×</button></header>'+
       '<form id="builder-new-event-form" class="venue-quick-form">'+
       '<label>Event name<input class="input" name="title" required maxlength="120" placeholder="e.g. Saturday warehouse party"></label>'+
-      '<label>Date<input class="input" name="date" required type="date"></label>'+
-      '<label>Existing client<select name="clientId"><option value="">Choose or add a client…</option>'+
+      window.PhaenomenonLifecycleUI.fields(null,{create:true,compact:true})+
+      '<label>Existing client (optional)<select name="clientId"><option value="">Not known yet…</option>'+
       (db.clients||[]).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
       '<label>Or new client name<input class="input" name="clientName" maxlength="120" placeholder="Only needed if not in the list"></label>'+
       '<div class="venue-quick-actions"><button class="btn" type="button" data-act="builder-new-close">Cancel</button>'+
@@ -1425,7 +1426,10 @@
     if(f.id==='builder-new-event-form'){
       ev.preventDefault();
       const data=new FormData(f),fields={title:clean(data.get('title')),date:clean(data.get('date')),
-        clientId:clean(data.get('clientId')),clientName:clean(data.get('clientName'))};
+        clientId:clean(data.get('clientId')),clientName:clean(data.get('clientName')),
+        bookingStage:clean(data.get('bookingStage')),dateCertainty:clean(data.get('dateCertainty')),
+        targetMonth:clean(data.get('targetMonth')),dateNotes:clean(data.get('dateNotes')),
+        followUpDate:clean(data.get('followUpDate')),nextAction:clean(data.get('nextAction'))};
       const result=window.PhaenomenonEventBuilder?.create(db,fields);
       if(!result||result.error){alert(result?.error||'Unable to create event.');return;}
       ui.eventId=result.event.id;ui.area='all';ui.crewPerson='all';
@@ -1457,14 +1461,17 @@
     ev.preventDefault();const d=new FormData(f),val=k=>clean(d.get(k)),e=current(),o=org();
     if(f.id==='builder-basics-form'){
       const title=val('title').slice(0,120),day=val('date');
-      if(!title||!/^\d{4}-\d{2}-\d{2}$/.test(day)||!db.clients.some(x=>x.id===val('clientId'))){
-        notice('Enter an event name, valid date and client.');return;
-      }
-      e.title=title;e.date=day;e.clientId=val('clientId');
+      if(!title){notice('Enter an event name.');return;}
+      const result=window.PhaenomenonLifecycle.setDetails(e,{
+        date:day,bookingStage:val('bookingStage'),dateCertainty:val('dateCertainty'),
+        targetMonth:val('targetMonth'),dateNotes:val('dateNotes'),
+        nextAction:val('nextAction'),followUpDate:val('followUpDate'),
+        productionStage:val('productionStage')
+      });
+      if(result.error){notice(result.error);return;}
+      e.title=title;e.clientId=db.clients.some(x=>x.id===val('clientId'))?val('clientId'):'';
       const allowed=['Other','Performance','Live music','Festival','Wedding','Corporate','Private','Exhibition'];
       e.eventType=allowed.includes(val('eventType'))?val('eventType'):'Other';
-      const statuses=['Enquiry','Quoted','Confirmed','Completed','Cancelled'];
-      e.status=statuses.includes(val('status'))?val('status'):'Enquiry';
       e.guests=Math.max(1,Math.min(5000,Math.floor(num(val('guests'),1))));
       e.zones=Math.max(1,Math.min(12,Math.floor(num(val('zones'),1))));
       e.environment=val('environment')==='Outdoor'?'Outdoor':'Indoor';
