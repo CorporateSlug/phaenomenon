@@ -14,3 +14,29 @@
 .community-admin-empty{padding:13px 3px}
 @media(max-width:980px){.community-admin-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.community-admin-secondary{grid-template-columns:1fr}}
 @media(max-width:600px){.community-admin-row{align-items:flex-start;flex-direction:column}.community-admin-actions{width:100%}.community-admin-actions .btn{flex:1}}
+
+/* Community listing creation is collapsed by default to preserve workspace density. */
+.community-admin-create{padding:0;overflow:hidden}
+.community-admin-create>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;font-size:13px;font-weight:750;color:#dff5ed}
+.community-admin-create>summary::-webkit-details-marker{display:none}
+.community-admin-create>summary small{margin-left:auto;font-size:10px;font-weight:450;color:#a5bac0}
+.community-admin-create>summary::after{content:'+';font-size:18px;font-weight:400;color:#a4d8ca}
+.community-admin-create[open]>summary::after{content:'−'}
+.community-admin-create>summary:hover{background:#263740}
+.community-admin-create-body{padding:12px 16px 16px;border-top:1px solid #3d4d55}
+.community-admin-create-body>.form-note{margin:0 0 12px}
+.community-admin-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px 13px;align-items:end}
+.community-admin-form label{font-size:11px;min-width:0}
+.community-admin-form label.wide{grid-column:1/-1}
+.community-admin-form input,.community-admin-form select,.community-admin-form textarea{width:100%;min-width:0}
+.community-admin-form textarea{min-height:64px}
+.community-admin-create-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-bottom:1px}
+.community-admin-demo{border-color:#7c5f63!important;color:#f3c9c8!important}
+.community-admin-own{border-color:#477a68!important;color:#b5e5d4!important}
+@media(max-width:640px){
+.community-admin-form{grid-template-columns:1fr}
+.community-admin-form label.wide{grid-column:auto}
+.community-admin-create>summary{flex-wrap:wrap;gap:5px 10px}
+.community-admin-create>summary small{margin-left:0}
+.community-admin-create>summary::after{margin-left:auto}
+}
