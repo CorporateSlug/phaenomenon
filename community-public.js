@@ -46,7 +46,7 @@ form.addEventListener('submit',e=>{
 e.preventDefault();
 const data=new FormData(form),result=C.submit(Object.fromEntries(data.entries()));
 if(result.error){status(result.error);return;}
-form.reset();status('Saved for review in this browser demo. This has NOT been sent to a server or shared with other visitors.',true);render();
+form.reset();form.querySelector('.ph-date-display')?.setAttribute('value','');const visualDate=form.querySelector('.ph-date-display');if(visualDate)visualDate.value='';status('Saved for review in this browser demo. This has NOT been sent to a server or shared with other visitors.',true);render();
 });
 window.addEventListener('storage',e=>{if(e.key===C.KEY)render()});
 render();
