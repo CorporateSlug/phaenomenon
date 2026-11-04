@@ -6,7 +6,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 
 const src=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const shared=['event-lifecycle.js','event-lifecycle-ui.js','event-builder.js','home-dashboard.js'];
+const shared=['event-lifecycle.js','event-lifecycle-ui.js','event-builder.js','home-dashboard.js','event-workspace.js'];
 class FormValues {
  constructor(form){this.data=form.values||{};}
  get(key){return this.data[key]??null;}
@@ -40,7 +40,7 @@ function harness(kind){
   callbacks.click({target:{closest:selector=>selector===(kind==='production'?'[data-act]':'[data-action]')?element:null},preventDefault(){}});
  };
  const visit=hash=>{location.hash=hash;callbacks['window.hashchange']?.();};
- const rows=()=>[...root.innerHTML.matchAll(/<a class="event-index-row[^"]*" href="#\/builder\/([^"]+)"/g)].map(x=>x[1]);
+ const rows=()=>[...root.innerHTML.matchAll(/<a class="event-index-row[^"]*" href="#\/home\/([^"]+)"/g)].map(x=>x[1]);
  return {callbacks,memory,root,window,document,location,read,submit,click,visit,rows};
 }
 
