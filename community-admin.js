@@ -12,10 +12,11 @@ function render(){
  const own=all.filter(x=>x.source==='admin');
  const ownPublished=published.filter(x=>x.source==='admin');
  const communityPublished=published.filter(x=>x.source!=='admin');
+ const visibleCommunity=[...model.examples().map(x=>({...x,readonly:true})),...communityPublished];
  const esc=model.escape;
  const line=entry=>{
  const description=entry.description||'';
- const actions=entry.status==='pending'?
+ const actions=entry.readonly?'<span class="pill community-admin-demo">Built-in example · read-only</span>':entry.status==='pending'?
   '<div class="community-admin-actions"><button type="button" class="btn small primary" data-act="community-review" data-id="'+esc(entry.id)+'" data-status="approved">Approve for board</button>'+
   '<button type="button" class="btn small" data-act="community-review" data-id="'+esc(entry.id)+'" data-status="rejected">Decline</button></div>':
   entry.status==='approved'?'<div class="community-admin-actions"><button type="button" class="btn small" data-act="community-review" data-id="'+esc(entry.id)+'" data-status="rejected">Unpublish</button></div>':
@@ -58,7 +59,7 @@ function render(){
  createForm+
  group('Waiting for review',pending,'Practice approving or declining the example submissions.')+
  '<div class="community-admin-secondary">'+group('Your published listings',ownPublished,'Listings created from this admin workspace, including a labelled demo example.')+
- group('Approved community submissions',communityPublished,'External submissions approved for the public board.')+'</div>'+
+ group('Community listings on the board',visibleCommunity,'Built-in examples are read-only. Approved public submissions can be unpublished.')+'</div>'+
  group('Declined or unpublished',rejected,'Hidden from the public board. You can return these to review.')+
  '<p class="footnote">Future launch requires an authenticated review service, server-side validation and abuse controls. The internal event database is never exported to the public page.</p>'+
  '</section>';
