@@ -79,6 +79,19 @@ const entry={id:uid(),...check.data,status:publishMode,source:'admin',sample:fal
 db.entries.push(entry);const result=write(db,storage);
 return result.error?result:{ok:true,entry};
 }
+/* Update a manually created public listing in place. This never imports any
+   private event fields; callers supply only explicit public form values. */
+function updateAdmin(id,input,publishMode='pending',storage=localStorage){
+if(!['approved','pending'].includes(publishMode))return {error:'Choose Publish now or Save for review.'};
+const check=validate(input);if(check.error)return check;
+const db=read(storage),entry=db.entries.find(x=>x.id===id&&x.source==='admin'&&!x.sample);
+if(!entry)return {error:'This editable community listing could not be found.'};
+const next={...entry,...check.data,status:publishMode,updatedAt:new Date().toISOString()};
+const index=db.entries.findIndex(x=>x.id===id);
+db.entries[index]=next;
+const result=write(db,storage);
+return result.error?result:{ok:true,entry:next};
+}
 function review(id,status,storage=localStorage){
 if(!['approved','rejected','pending'].includes(status))return {error:'Invalid review status.'};
 const db=read(storage),entry=db.entries.find(x=>x.id===id);
@@ -92,5 +105,5 @@ return [...examples(),...read(storage).entries.filter(x=>x.status==='approved')]
 .sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||'')||a.title.localeCompare(b.title));
 }
 function pending(storage=localStorage){return read(storage).entries.filter(x=>x.status==='pending').sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));}
-window.PhaenomenonCommunity={KEY,CATEGORIES,escape,isDay,safeUrl:urlOrEmpty,validate,read,submit,createAdmin,review,published,pending,examples,ensureDemo,demoReviewExamples};
+window.PhaenomenonCommunity={KEY,CATEGORIES,escape,isDay,safeUrl:urlOrEmpty,validate,read,submit,createAdmin,updateAdmin,review,published,pending,examples,ensureDemo,demoReviewExamples};
 })();
