@@ -31,6 +31,8 @@ d.querySelector('[name="title"]')?.focus();
 }
 function closeDialog(){const d=$('community-submit-dialog');if(typeof d.close==='function')d.close();else d.removeAttribute('open');}
 function init(){
+// Add a few clearly labelled local demo submissions and an own listing once.
+C.ensureDemo();
 const select=$('community-category'),form=$('community-submit-form');
 C.CATEGORIES.forEach(cat=>{const o=document.createElement('option');o.value=cat;o.textContent=cat;select.appendChild(o)});
 const selectInForm=form.querySelector('[name="category"]');
