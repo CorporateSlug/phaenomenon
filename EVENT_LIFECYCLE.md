@@ -13,7 +13,7 @@ The existing event identifier, title, date, venue, client, event kit and technic
   targetMonth: '',               // YYYY-MM, optional
   dateNotes: '',
   nextAction: '',                // optional short outreach / next-step text
-  followUpDate: '',              // YYYY-MM or blank? NO — exact YYYY-MM-DD or blank
+  followUpDate: '',              // exact YYYY-MM-DD or blank
   productionStage: 'not-started',
   closeout: {                   // one status record per task ID below
     equipmentReturned: {status:'pending',note:'',updatedAt:''},
