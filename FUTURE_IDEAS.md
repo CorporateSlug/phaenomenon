@@ -4,9 +4,13 @@ This is a parking place for ideas worth retaining, **not a commitment to add the
 
 ## Community queer events noticeboard
 
-**Status:** Parked / explore later  
+**Status:** Public-facing static demo implemented · live shared service still deferred  
 **Origin:** Aaron's idea, discussed 4 November 2026  
-**Product boundary:** Potential standalone, community-facing project; not part of the current private Phaenomenon production management workflows.
+**Product boundary:** A separate public demo page is now linked from Phaenomenon, with a local review workspace. Public listings remain distinct from private production events; multi-user publication is deferred.
+
+### Demo now implemented
+
+The first version is available at [community.html](community.html) with browsing, search, categories and a minimal submission form. Aaron can review local submissions via [Production → Community noticeboard](production.html#/community). Approval status is demonstrated in separate browser-local storage, **not** via a public server. Implementation boundaries and production prerequisites are documented in [COMMUNITY_BOARD.md](COMMUNITY_BOARD.md).
 
 ### The idea
 
@@ -41,4 +45,4 @@ If developed separately in future, an **explicit opt-in publishing/linking workf
 
 Native ticket sales, payments, heavy promotion, algorithms and feeds, social profiles, follower networks, messaging, complex organiser accounts, 3D production planning, analytics and automated marketing.
 
-**When to revisit:** Only after the core Phaenomenon event lifecycle, design and delivery workflows are stable, or if Aaron independently decides the noticeboard is worth making as a small standalone experiment.
+**When to revisit:** Before any real public launch: choose hosting, authentication and shared moderation storage, while keeping the public noticeboard as minimal as possible. Do not expand the production-management scope unnecessarily.
