@@ -97,3 +97,63 @@ test('Phaenomenon exposes separate internal moderation and public preview',()=>{
  assert.match(home,/community.html/);
  assert.match(tabs,/community-review/);
 });
+
+test('demo seeding adds public and review examples once, retaining existing submissions',()=>{
+ const {C,storage}=setup();
+ const external=C.submit(valid(),storage).entry;
+ assert.equal(C.ensureDemo(storage).ok,true);
+ const all=C.read(storage).entries;
+ assert.equal(all.length,4,'existing submission + 2 review examples + 1 own listing');
+ assert.equal(all.find(x=>x.id===external.id)?.status,'pending');
+ assert.equal(all.filter(x=>x.sample&&x.status==='pending').length,2);
+ assert.equal(all.filter(x=>x.sample&&x.status==='approved'&&x.source==='admin').length,1);
+ assert.equal(C.published(storage).length,4,'3 built-in examples plus approved own listing');
+ const first=JSON.stringify(C.read(storage));
+ assert.equal(C.ensureDemo(storage).added,0);
+ assert.equal(JSON.stringify(C.read(storage)),first,'subsequent visits must not reset moderation or duplicate seeds');
+ const queued=all.find(x=>x.id==='demo-review-dance');
+ assert.ok(queued);
+ C.review(queued.id,'rejected',storage);
+ C.ensureDemo(storage);
+ assert.equal(C.read(storage).entries.find(x=>x.id===queued.id).status,'rejected');
+});
+test('Aaron can publish his own listing directly or save it for review',()=>{
+ const {C,storage}=setup();C.ensureDemo(storage);
+ const pub=C.createAdmin({...valid(),title:'Phaenomenon night',organiser:''},'approved',storage);
+ assert.equal(pub.ok,true);
+ assert.equal(pub.entry.source,'admin');
+ assert.equal(pub.entry.organiser,'Phaenomenon');
+ assert.equal(pub.entry.status,'approved');
+ assert.equal(pub.entry.sample,false);
+ assert.ok(C.published(storage).some(x=>x.id===pub.entry.id));
+ const draft=C.createAdmin({...valid(),title:'Possible craft night'},'pending',storage);
+ assert.equal(draft.ok,true);
+ assert.equal(draft.entry.status,'pending');
+ assert.ok(C.pending(storage).some(x=>x.id===draft.entry.id));
+ assert.equal(C.published(storage).some(x=>x.id===draft.entry.id),false);
+ assert.match(C.createAdmin({...valid(),url:'javascript:alert(1)'},'approved',storage).error,/valid http/i);
+ assert.match(C.createAdmin(valid(),'rejected',storage).error,/publish now/i);
+});
+test('Aaron sees example events on both sides and has a functional create-listing form',()=>{
+ const {C,storage,window}=setup();
+ runInNewContext(src('community-admin.js'),{window,localStorage:storage,Date,JSON},{filename:'community-admin.js'});
+ const page=window.PhaenomenonCommunityAdmin.render();
+ assert.match(page,/Small dancefloor meetup · demo/);
+ assert.match(page,/Queer craft & repair circle · demo/);
+ assert.match(page,/Phaenomenon open decks · demo/);
+ assert.match(page,/Community listening night/);
+ assert.match(page,/Built-in example · read-only/);
+ assert.match(page,/id="community-admin-create-form"/);
+ assert.match(page,/name="publishMode"/);
+ assert.match(page,/value="approved"/);
+ assert.match(page,/value="pending"/);
+ assert.match(page,/data-act="community-review"/);
+ assert.equal(C.pending(storage).length,2);
+});
+test('Production creates admin listings through a distinct form, not the private production booking form',()=>{
+ const script=src('production-os.js');
+ assert.match(script,/f.id==='community-admin-create-form'/);
+ assert.match(script,/model.createAdmin\(fields/);
+ assert.match(script,/publishMode/);
+ assert.doesNotMatch(src('community-public.js'),/createAdmin\(/);
+});
