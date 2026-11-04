@@ -84,7 +84,7 @@ function render({events=[],activeId}={}){
   ['#/community','◎','Submission review','Approve local demo posts']
  ];
  const shortPanel='<section class="home-shortcuts"><div class="home-shortcuts-heading"><h2>Go to workspace</h2><small>Quick access to your tools</small></div>'+
-   '<div class="home-shortcut-grid">'+shortcuts.map(x=>'<a class="home-shortcut" href="'+x[0]+'"><span class="home-shortcut-icon" aria-hidden="true">'+x[1]+'</span>'+
+   '<div class="home-shortcut-grid">'+shortcuts.map(x=>'<a class="home-shortcut" href="'+x[0]+'"'+(x[0]==='community.html'?' target="_blank" rel="noopener noreferrer"':'')+'><span class="home-shortcut-icon" aria-hidden="true">'+x[1]+'</span>'+
    '<span><strong>'+x[2]+'</strong><small>'+x[3]+'</small></span><span aria-hidden="true" class="home-row-chevron">›</span></a>').join('')+'</div></section>';
  return '<div class="home-dashboard"><div class="home-top"><div><span class="eyebrow">PHAENOMENON / HOME</span>'+
   '<h1>Your studio at a glance</h1><p class="muted">'+escape(now.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+' · Opportunities, production and closeout</p></div>'+
