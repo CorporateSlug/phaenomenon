@@ -563,7 +563,6 @@
   function builderBasics(e){
     const eventTypes=['Other','Performance','Live music','Festival','Wedding','Corporate','Private','Exhibition'];
     return '<section class="panel section builder-inline-form"><div class="section-head"><h2>Event details</h2><span class="form-note">Edit the event without leaving the guided workflow</span></div>'+
-      window.PhaenomenonLifecycleUI.stageStrip(e,db)+
       '<form id="builder-basics-form" class="form-grid">'+
       '<label class="wide">Event name<input class="input" name="title" required maxlength="120" value="'+esc(e.title)+'"></label>'+
       window.PhaenomenonLifecycleUI.fields(e,{compact:true})+
