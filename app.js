@@ -478,12 +478,12 @@
       return;
     }
     if(action==='open-space'){e.preventDefault();ui.eventId=el.dataset.id;location.hash='#/spaces';renderRoute();return;}
-    if(action==='select-booking'){ui.bookingTab='details';ui.eventId=el.dataset.id;const href='production.html#/home/'+encodeURIComponent(ui.eventId);if(!window.PhaenomenonWorkspaceTabs?.openRecord?.(href)){location.href=href;}return;}
+    if(action==='select-booking'){ui.bookingTab='details';ui.eventId=el.dataset.id;const href='production.html#/home/'+encodeURIComponent(ui.eventId);if(!window.PhaenomenonWorkspaceTabs?.openRecord?.(href)){location.hash='#/bookings/'+encodeURIComponent(ui.eventId);renderRoute();}return;}
     if(action==='select-invoice'){ui.invoiceId=el.dataset.id;const href='index.html#/invoices/'+encodeURIComponent(ui.invoiceId);if(!window.PhaenomenonWorkspaceTabs?.openRecord?.(href)){location.hash='#/invoices/'+encodeURIComponent(ui.invoiceId);renderRoute();}return;}
     if(action==='duplicate-booking'){const original=getBooking(el.dataset.id);if(original){const copy={...original,id:id('ev'),title:original.title+' (new booking)',date:addDays(30),status:'Enquiry',lifecycle:undefined,kit:original.kit.map(k=>({...k})),notes:original.notes};window.PhaenomenonLifecycle.ensureEvent(copy);mutate(()=>{db.eventJobs.push(copy);if(db.venuePlans?.[original.id]){const p=db.venuePlans[original.id];const remap=Object.fromEntries((p.items||[]).map(x=>[x.id,id('obj')]));db.venuePlans[copy.id]={venueId:p.venueId,items:(p.items||[]).map(x=>({...x,id:remap[x.id]})),runs:(p.runs||[]).map(r=>({...r,id:id('run'),from:remap[r.from],to:remap[r.to]}))};}ui.eventId=copy.id;location.hash='#/bookings/'+copy.id;},'Repeat booking copied. Check the new date and kit.');}}
     if(action==='apply-kit'){const ev=getBooking(el.dataset.id);if(ev&&(!(ev.kit||[]).length||confirm('Replace assigned equipment quantities with the suggested starting kit?'))){mutate(()=>{ev.kit=Object.entries(recommendEquipment(ev)).filter(([_,qty])=>qty>0&&db.equipment.some(g=>g.id===_)).map(([id,qty])=>({id,qty}));},'Suggested kit applied. Review stock and suitability.');}}
     if(action==='invoice-from-booking')newInvoice(el.dataset.id);
-    if(action==='new-invoice'){const href='production.html#/new/invoice/'+id('draft');if(!window.PhaenomenonWorkspaceTabs?.openRecord?.(href))location.href=href;}
+    if(action==='new-invoice'){const href='production.html#/new/invoice/'+id('draft');if(!window.PhaenomenonWorkspaceTabs?.openRecord?.(href))newInvoice();}
     if(action==='add-invoice-line'){const inv=db.invoices.find(x=>x.id===el.dataset.id);if(inv)mutate(()=>inv.lines.push({id:id('il'),description:'New service / equipment',qty:1,rate:0}),'Line added. Save your invoice details before adding another.');}
     if(action==='delete-invoice-line'){const inv=db.invoices.find(x=>x.id===el.dataset.id),idx=Number(el.dataset.index);if(inv&&inv.lines.length>1&&Number.isInteger(idx)&&idx>=0&&idx<inv.lines.length)mutate(()=>inv.lines.splice(idx,1),'Line removed');else if(inv)flash('Keep at least one line item');}
     if(action==='print-invoice'){ui.printInvoiceId=el.dataset.id;render();window.print();}
@@ -496,7 +496,7 @@
     if(action==='drawer-tab'){ui.tab=el.dataset.tab;render();}
     if(action==='open-modal'){
       const kind=({booking:'event',equipment:'equipment',fixture:'fixture',client:'entity'})[el.dataset.type];
-      if(kind){const href='production.html#/new/'+kind+'/'+id('draft');if(!window.PhaenomenonWorkspaceTabs?.openRecord?.(href))location.href=href;return;}
+      if(kind&&window.PhaenomenonWorkspaceTabs?.openRecord){const href='production.html#/new/'+kind+'/'+id('draft');window.PhaenomenonWorkspaceTabs.openRecord(href);return;}
       ui.modal=el.dataset.type;render();document.querySelector('.modal input')?.focus();
     }
     if(action==='close-modal'||action==='modal-backdrop'){ui.modal=null;render();}
