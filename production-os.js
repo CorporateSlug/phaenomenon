@@ -707,7 +707,7 @@
     const unscheduled=all.filter(x=>!used.has(x.id)&&!validEventDate(x.date)).sort((a,b)=>a.title.localeCompare(b.title));
     unscheduled.forEach(x=>used.add(x.id));
     const remaining=all.filter(x=>!used.has(x.id));
-    const eventRow=x=>'<a class="event-index-row'+(x.id===ui.eventId?' is-current':'')+'" href="#/home/'+encodeURIComponent(x.id)+'">'+
+    const eventRow=x=>'<a data-ph-record class="event-index-row'+(x.id===ui.eventId?' is-current':'')+'" href="#/home/'+encodeURIComponent(x.id)+'">'+
       '<span class="event-index-date">'+esc(date(x.date)==='Unscheduled'?(state(x).targetMonth?state(x).targetMonth+' approx.':'No date'):date(x.date))+'</span>'+
       '<span class="event-index-main"><strong>'+esc(x.title)+'</strong><small>'+esc(venue(x)?.name||x.venue||'Venue not assigned')+
       ' · '+esc(state(x).eventLead==='studio'?'Own production':'Client-led event')+' · '+esc(state(x).dateLabel)+' · '+esc(state(x).productionLabel)+(state(x).nextAction?' · Next: '+esc(state(x).nextAction):'')+'</small></span>'+
@@ -726,13 +726,13 @@
       const stamp=key+'-'+String(d).padStart(2,'0');
       const matches=monthEvents.filter(x=>x.date===stamp);
       return '<div class="calendar-day'+(stamp===today?' is-today':'')+'"><span class="calendar-date">'+d+'</span>'+
-        matches.map(x=>'<a href="#/home/'+encodeURIComponent(x.id)+'" title="'+esc(x.title)+'" class="calendar-event'+(x.id===ui.eventId?' is-current':'')+'">'+esc(x.title)+'</a>').join('')+'</div>';
+        matches.map(x=>'<a data-ph-record href="#/home/'+encodeURIComponent(x.id)+'" title="'+esc(x.title)+'" class="calendar-event'+(x.id===ui.eventId?' is-current':'')+'">'+esc(x.title)+'</a>').join('')+'</div>';
     }).join('');
     return hero('EVENTS & SCHEDULE','All events','Track Phaenomenon-produced concepts separately from client commissions, from first idea to closeout.',
       '<button class="btn primary" data-act="builder-new">+ New event</button>')+
       '<div class="event-index-actions section"><div class="row ph-event-scope" role="group" aria-label="Filter events by organiser">'+[['all','All events'],['studio','Own events'],['client','Client work']].map(([id,title])=>'<button type="button" class="btn small'+(ui.eventScope===id?' primary':'')+'" data-act="event-scope" data-id="'+id+'" aria-pressed="'+(ui.eventScope===id)+'">'+title+'</button>').join('')+'</div><div class="row"><button type="button" class="btn'+(ui.scheduleMode==='list'?' primary':'')+'" data-act="schedule-mode" data-id="list" aria-pressed="'+(ui.scheduleMode==='list')+'">Event list</button>'+
       '<button type="button" class="btn'+(ui.scheduleMode==='calendar'?' primary':'')+'" data-act="schedule-mode" data-id="calendar" aria-pressed="'+(ui.scheduleMode==='calendar')+'">Month calendar</button></div>'+
-      (selected?'<a class="btn" href="#/home/'+encodeURIComponent(selected.id)+'">Open '+esc(selected.title)+' →</a>':'')+'</div>'+
+      '</div>'+
       (ui.scheduleMode==='calendar'?
         '<section class="panel section event-calendar"><div class="event-calendar-head"><h2>'+esc(monthTitle)+'</h2>'+
         '<div class="row"><button type="button" class="btn small" data-act="schedule-month" data-id="-1" aria-label="Previous month">←</button>'+
@@ -745,7 +745,7 @@
         (all.length?grouped('Opportunities & discussions',opportunities)+grouped('Upcoming confirmed',upcoming)+
           grouped('Delivered · closeout outstanding',outstanding)+grouped('Past events',past)+grouped('Without a date',unscheduled)+grouped('Other events',remaining)+grouped('Closed / archive',closed):
         '<div class="empty">No events yet. Select + New event to create your first production.</div>'))+
-      '<div class="row section"><a class="btn" href="index.html#/schedule">Open full studio calendar ↗</a><a class="btn" href="index.html#/bookings">Manage bookings in classic workspace ↗</a></div>';
+      '';
   }
 
   function home(e,c){
@@ -1290,7 +1290,8 @@
       return;
     }
     if(action==='builder-new-close'){closeBuilderEvent();return;}
-    if(action==='builder-new'){openBuilderEvent();return;}
+    if(action==='collection-new'){openCollectionDraft(el.dataset.kind);return;}
+    if(action==='builder-new'){openCollectionDraft('event');return;}
     if(action==='builder-reconcile-kit'){
       const result=window.PhaenomenonEventBuilder?.reconcileKit(db,e.id);
       if(!result||result.error){notice(result?.error||'Unable to update event kit.');return;}
@@ -1362,12 +1363,12 @@
       return;
     }
     if(action==='review-changes'){location.hash='#/design';route();return;}
-    if(action==='profile'){navigateProfile(id);return;}
+    if(action==='profile'){openRecordTab('#/entities/'+encodeURIComponent(id));return;}
     if(action==='entity-back'||action==='entity-forward'){
       const next=ui.histIndex+(action==='entity-back'?-1:1);
       if(next>=0&&next<ui.history.length){ui.histIndex=next;navigateProfile(ui.history[next],true);}return;
     }
-    if(action==='select-event'){selectActiveEvent(id);return;}
+    if(action==='select-event'){openRecordTab('#/home/'+encodeURIComponent(id));return;}
     if(action==='event-scope'){ui.eventScope=['all','studio','client'].includes(id)?id:'all';savePreferences();render();return;}
     if(action==='schedule-mode'){ui.scheduleMode=id==='calendar'?'calendar':'list';savePreferences();render();return;}
     if(action==='schedule-today'){ui.scheduleMonth=monthKey(new Date());render();return;}
@@ -1497,7 +1498,9 @@
   });
   document.addEventListener('input',ev=>{
     const el=ev.target;if(!$.contains(el))return;
-    if(el.id==='entity-search'){ui.query=el.value;const start=el.selectionStart;render();const next=document.getElementById('entity-search');next?.focus();next?.setSelectionRange(start,start);}
+    if(el.id==='entity-search'){ui.query=el.value;const start=el.selectionStart;render();const next=document.getElementById('entity-search');next?.focus();next?.setSelectionRange?.(start,start);}
+    if(el.id==='collection-search'){ui.collectionSearch=el.value;const start=el.selectionStart;render();const next=document.getElementById('collection-search');next?.focus();next?.setSelectionRange?.(start,start);}
+    if(el.closest?.('#collection-create-form'))saveCollectionDraft(el.closest('#collection-create-form'));
   });
   document.addEventListener('submit',ev=>{
     const f=ev.target;
