@@ -61,11 +61,11 @@
     if(/library &|library|fixture library/.test(x))return 'library';
     if(/venue|spaces/.test(x))return 'venue';
     if(/community|noticeboard/.test(x))return 'calendar';
-    if(/directory|people|clients/.test(x))return 'users';
+    if(/directory|people|organisations|clients/.test(x))return 'users';
     if(/equipment|stock/.test(x))return 'package';
     if(/fixtures|bulb/.test(x))return 'bulb';
     if(/opportunities|pipeline/.test(x))return 'chart';
-    if(/invoices/.test(x))return 'receipt';
+    if(/invoices|finances/.test(x))return 'receipt';
     if(/projects|studio management/.test(x))return 'briefcase';
     if(/settings|options/.test(x))return 'settings';
     if(/details|notes|brief/.test(x))return 'brief';
@@ -80,8 +80,9 @@
       parseJson('phaenomenon-production-prefs-v1',{}).eventId||events()[0]?.id||'';
   }
   const eventName=id=>events().find(e=>e.id===id)?.title||'Event';
-  function getRoute(){
-    const prod=isProduction(),base=prod?'production.html':'index.html',hash=location.hash|| (prod?'#/dashboard':'#/overview');
+  const recordName=(view,id)=>{const db=parseJson(DB_KEY,{}),record=({entities:db.productionOS?.entities,venues:db.venues,equipment:db.equipment,fixtures:db.fixtures})[view];return (Array.isArray(record)?record.find(x=>x.id===id)?.name:'')||id||'Record';};
+  function getRoute(override){
+    const prod=override?String(override).startsWith('production.html'):isProduction(),base=prod?'production.html':'index.html',hash=override?String(override).slice(String(override).indexOf('#')):(location.hash|| (prod?'#/dashboard':'#/overview'));
     const segments=hash.replace(/^#\/?/,'').split('/').filter(Boolean),view=segments[0]||(prod?'dashboard':'overview');
     const detail=segments[1]||'';
     let id=activeEventId();
@@ -109,7 +110,21 @@
           key='production:'+id;label=(detail==='closeout'?'Closeout':'Production')+' · '+eventName(id);icon=detail==='closeout'?'check':'briefcase';
           canonical='production.html#/production/'+(productionTabs.includes(detail)?detail+'/':'')+encoded;break;
         case 'entities':
-          key=detail?'entity:'+detail:'directory';label=detail?'Entity profile':'Directory';icon='users';canonical='production.html#/entities'+(detail?'/'+encodeURIComponent(detail):'');break;
+          key=detail?'entity:'+detail:'directory';label=detail?'Person · '+recordName('entities',detail):'People & organisations';icon='users';canonical='production.html#/entities'+(detail?'/'+encodeURIComponent(detail):'');break;
+        case 'venues':
+          key=detail?'venue-record:'+detail:'venue-library';label=detail?'Venue · '+recordName('venues',detail):'Venues & spaces';icon='venue';canonical='production.html#/venues'+(detail?'/'+encodeURIComponent(detail):'');break;
+        case 'equipment':
+          key=detail?'equipment-record:'+detail:'equipment-library';label=detail?'Equipment · '+recordName('equipment',detail):'Equipment & fixtures';icon='package';canonical='production.html#/equipment'+(detail?'/'+encodeURIComponent(detail):'');break;
+        case 'fixtures':
+          key=detail?'fixture-record:'+detail:'equipment-library';label=detail?'Fixture · '+recordName('fixtures',detail):'Equipment & fixtures';icon='bulb';canonical='production.html#/fixtures'+(detail?'/'+encodeURIComponent(detail):'');break;
+        case 'finances':
+          key='finances';label='Finances';icon='receipt';canonical='production.html#/finances';break;
+        case 'new':{
+          const kind=detail,draft=segments[2]||'draft';
+          const named={event:'Event',entity:'Person / organisation',venue:'Venue',equipment:'Equipment',fixture:'Fixture',invoice:'Invoice'};
+          key='draft:'+kind+':'+draft;label='New '+(named[kind]||'record');icon=({event:'calendar',entity:'users',venue:'venue',equipment:'package',fixture:'bulb',invoice:'receipt'})[kind]||'plus';
+          canonical='production.html#/new/'+encodeURIComponent(kind)+'/'+encodeURIComponent(draft);break;
+        }
         case 'community':key='community-review';label='Community submissions';icon='calendar';canonical='production.html#/community';break;
         default:key='home';label='Home';icon='home';canonical='production.html#/dashboard';
       }
