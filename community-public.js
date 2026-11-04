@@ -12,7 +12,7 @@ let previous='';
 const html=filtered.map(e=>{
 const date=stamp(e.date),heading=previous===date.group?'':'<div class="community-date-group">'+esc(date.group)+'</div>';
 previous=date.group;
-const external=e.url?'<div class="community-row-action"><a href="'+esc(e.url)+'" target="_blank" rel="noopener noreferrer nofollow ugc" aria-label="More information about '+esc(e.title)+'">More info / tickets ↗</a></div>':'';
+const safeLink=C.safeUrl(e.url);const external=safeLink?'<div class="community-row-action"><a href="'+esc(safeLink)+'" target="_blank" rel="noopener noreferrer nofollow ugc" aria-label="More information about '+esc(e.title)+'">More info / tickets ↗</a></div>':'';
 return heading+'<article class="community-row"><div class="community-row-date"><small>'+esc(date.month)+'</small><b>'+esc(date.day)+'</b></div>'+
 '<div class="community-row-detail"><h3>'+esc(e.title)+'</h3><div class="community-row-meta">'+esc(time(e.time))+' · '+esc(e.area)+(e.venue?' · '+esc(e.venue):'')+'</div>'+
 '<p>'+esc(e.description)+'</p><div class="community-row-flags"><span class="community-chip">'+esc(e.category)+'</span>'+
