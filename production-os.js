@@ -649,12 +649,26 @@
   function dateKey(d){return monthKey(d)+'-'+String(d.getDate()).padStart(2,'0');}
   function validEventDate(value){return typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&!Number.isNaN(new Date(value+'T12:00:00').getTime());}
   function eventSchedule(){
-    const all=events(),today=dateKey(new Date()),upcoming=all.filter(x=>validEventDate(x.date)&&x.date>=today).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title));
-    const past=all.filter(x=>validEventDate(x.date)&&x.date<today).sort((a,b)=>b.date.localeCompare(a.date)||a.title.localeCompare(b.title));
-    const unscheduled=all.filter(x=>!validEventDate(x.date)).sort((a,b)=>a.title.localeCompare(b.title));
+    const all=events(),today=dateKey(new Date()),L=window.PhaenomenonLifecycle;
+    const state=x=>L.summary(db,x);
+    const earlyStages=new Set(['idea','outreach','contacted','discussion','quoted','tentative']);
+    const isEarly=x=>earlyStages.has(state(x).bookingStage);
+    const opportunities=all.filter(isEarly).sort((a,b)=>(state(a).followUpDate||'9999').localeCompare(state(b).followUpDate||'9999')||a.title.localeCompare(b.title));
+    const upcoming=all.filter(x=>state(x).bookingStage==='confirmed'&&!state(x).closed&&
+      validEventDate(x.date)&&x.date>=today&&state(x).productionStage!=='delivered')
+      .sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title));
+    const outstanding=all.filter(x=>state(x).productionStage==='delivered'&&!state(x).closed);
+    const used=new Set([...opportunities,...upcoming,...outstanding].map(x=>x.id));
+    const past=all.filter(x=>!used.has(x.id)&&validEventDate(x.date)&&x.date<today).sort((a,b)=>b.date.localeCompare(a.date)||a.title.localeCompare(b.title));
+    past.forEach(x=>used.add(x.id));
+    const unscheduled=all.filter(x=>!used.has(x.id)&&!validEventDate(x.date)).sort((a,b)=>a.title.localeCompare(b.title));
+    unscheduled.forEach(x=>used.add(x.id));
+    const remaining=all.filter(x=>!used.has(x.id));
     const eventRow=x=>'<a class="event-index-row'+(x.id===ui.eventId?' is-current':'')+'" href="#/builder/'+encodeURIComponent(x.id)+'">'+
-      '<span class="event-index-date">'+esc(date(x.date))+'</span><span class="event-index-main"><strong>'+esc(x.title)+'</strong><small>'+esc(venue(x)?.name||x.venue||'Venue not assigned')+'</small></span>'+
-      '<span class="event-index-status">'+pill(x.status||'Enquiry')+(x.id===ui.eventId?'<small class="event-index-active">Current</small>':'')+'</span><span class="event-index-chevron" aria-hidden="true">›</span></a>';
+      '<span class="event-index-date">'+esc(date(x.date)==='Unscheduled'?(state(x).targetMonth?state(x).targetMonth+' approx.':'No date'):date(x.date))+'</span>'+
+      '<span class="event-index-main"><strong>'+esc(x.title)+'</strong><small>'+esc(venue(x)?.name||x.venue||'Venue not assigned')+
+      ' · '+esc(state(x).productionLabel)+(state(x).nextAction?' · Next: '+esc(state(x).nextAction):'')+'</small></span>'+
+      '<span class="event-index-status">'+pill(state(x).closed?'Closed':state(x).bookingLabel)+(x.id===ui.eventId?'<small class="event-index-active">Current</small>':'')+'</span><span class="event-index-chevron" aria-hidden="true">›</span></a>';
     const grouped=(name,list)=>list.length?'<section class="panel event-index-group"><h2>'+esc(name)+' <span class="muted">('+list.length+')</span></h2><div class="event-index-rows">'+list.map(eventRow).join('')+'</div></section>':'';
     const selected=current(),monthPattern=/^\d{4}-(0[1-9]|1[0-2])$/;
     const key=monthPattern.test(ui.scheduleMonth)?ui.scheduleMonth:monthKey(new Date());
@@ -685,7 +699,8 @@
         '<div class="calendar-grid" aria-label="'+esc(monthTitle)+'">'+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>'<div class="calendar-weekday">'+x+'</div>').join('')+grid+'</div>'+
         '<p class="form-note">Event dates from your saved bookings. Select an event to open its builder. For the broader studio diary, use <a href="index.html#/schedule">Studio calendar ↗</a>.</p></section>'+
         (monthEvents.length?grouped('Events this month',monthEvents.slice().sort((a,b)=>a.date.localeCompare(b.date))):'<p class="muted">No events scheduled this month. Use the arrows to browse other months or switch to Event list for every booking.</p>'):
-        (all.length?grouped('Upcoming',upcoming)+grouped('Past events',past)+grouped('Without a date',unscheduled):
+        (all.length?grouped('Opportunities & discussions',opportunities)+grouped('Upcoming confirmed',upcoming)+
+          grouped('Delivered · closeout outstanding',outstanding)+grouped('Past events',past)+grouped('Without a date',unscheduled)+grouped('Other events',remaining):
         '<div class="empty">No events yet. Select + New event to create your first production.</div>'))+
       '<div class="row section"><a class="btn" href="index.html#/schedule">Open full studio calendar ↗</a><a class="btn" href="index.html#/bookings">Manage bookings in classic workspace ↗</a></div>';
   }
