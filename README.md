@@ -1,5 +1,13 @@
 # Phaenomenon
 
+## Home dashboard (default landing screen)
+
+Open **[Phaenomenon Home](production.html#/dashboard)** to see the compact, connected overview. Opening the app root (the repository's `index.html` without a hash route) redirects to this dashboard; direct links to the classic Studio pages, Event Builder and all Production views remain available.
+
+The Home screen uses existing browser-local records to show four at-a-glance metrics (events in the next 30 days, open enquiries, open production issues and crew packs with unpublished design changes), the selected event with its seven-step planning progress, a scrollable upcoming-events directory, actionable planning/production warnings and direct shortcuts to the main workspaces. It does not invent activity dates or treat planning completion as technical approval.
+
+The Dashboard/Home link is available from Production's sidebar and brand, plus the Studio sidebar/brand and mobile navigation. Longer datasets scroll inside their panels rather than increasing the entire page height. The dashboard's responsive presentation lives in `home-dashboard.css`, the data-driven rendering in `home-dashboard.js` and the application integration in `production-os.js`.
+
 ## Interface-wide compactness and scrolling
 
 **Standing rule:** Phaenomenon is a dense, task-first workspace. On desktop the header and navigation stay visible while the central workspace scrolls independently. Long equipment, technical and other data tables scroll within bounded panels, with sticky column headings. Long event directories and record collections have internal scrolling rather than indefinitely extending the page. Forms and mobile views retain natural scrolling where appropriate.
