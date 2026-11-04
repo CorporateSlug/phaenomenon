@@ -378,7 +378,6 @@
     const navigation=
       '<div class="rail-label">HOME</div>'+navItem('#/dashboard','Dashboard','⌂',ui.view==='dashboard')+
       '<div class="rail-label">EVENTS</div>'+navItem('#/events','All events & schedule','▦',ui.view==='events')+
-      '<div class="rail-label">COMMUNITY</div>'+navItem('#/community','Community noticeboard','✳',ui.view==='community')+
       '<div class="rail-label">ACTIVE EVENT</div>'+
       navItem('#/builder/'+eventId,'Event builder','◈',ui.view==='builder')+
       navItem('#/home/'+eventId,'Event workspace','⌂',ui.view==='home'&&!ui.homeVenueOpen)+
@@ -407,7 +406,9 @@
         navItem('index.html#/clients','Clients','♧',false),
         navItem('index.html#/invoices','Invoices','▤',false),
         navItem('index.html#/settings','Settings','⚙',false)
-      ],false);
+      ],false)+
+      '<div class="rail-community-section"><div class="rail-label">COMMUNITY</div>'+
+        navItem('#/community','Community noticeboard','✳',ui.view==='community')+'</div>';
     const mobileTab=(href,label,glyph,active)=>'<a class="mobile-tab'+(active?' is-active':'')+'" href="'+href+'" '+(active?'aria-current="page"':'')+'><span aria-hidden="true" class="mobile-tab-icon">'+glyph+'</span><span>'+label+'</span></a>';
     const mobileNavigation='<nav class="mobile-tabbar production-mobile-tabs" aria-label="Quick event navigation">'+
       mobileTab('#/dashboard','Home','⌂',ui.view==='dashboard')+
@@ -425,7 +426,7 @@
       '<p>Local prototype · Role views are not security permissions.</p></div></aside>'+
       '<button type="button" class="mobile-nav-backdrop" data-act="close-rail" aria-label="Close navigation"></button>'+
       '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / '+(ui.view==='dashboard'?'Home':'Event')+'</div><div class="header-title"><span class="header-title-desktop">'+viewName()+'</span><span class="header-title-mobile">'+({dashboard:'Home',builder:'Build',home:'Event',events:'Events',design:'Design',technical:'Tech',crew:'Crew',production:'Production',entities:'Directory',community:'Community'}[ui.view]||'Event')+'</span></div></div>'+
-      '<div class="header-tools"><a class="btn header-events-link" href="#/events">All events</a><button type="button" class="btn primary" data-act="builder-new">+ New event</button><label class="event-header-select">SWITCH EVENT<select id="event-picker" aria-label="Switch active event">'+
+      '<div class="header-tools">'+(ui.view==='events'?'':'<a class="btn header-events-link" href="#/events">All events</a>')+'<button type="button" class="btn primary" data-act="builder-new">+ New event</button><label class="event-header-select"><span class="event-header-select-label">Switch event</span><select id="event-picker" aria-label="Switch active event">'+
       events().map(x=>'<option value="'+esc(x.id)+'" '+(x.id===e?.id?'selected':'')+'>'+esc(x.title)+'</option>').join('')+
       '</select></label><details class="header-more"><summary class="btn" aria-label="More workspace options">Options ▾</summary>'+
       '<div class="header-more-menu"><label>Default starting view<select id="role-picker">'+
