@@ -1437,6 +1437,7 @@
       return;
     }
     if(!$.contains(el))return;
+    if(el.closest?.('#collection-create-form'))saveCollectionDraft(el.closest('#collection-create-form'));
     if(el.id==='role-picker'){ui.role=el.value;store();location.hash='#/'+({lead:'home',tech:'technical',crew:'crew',manager:'production'}[ui.role]||'home');route();}
     if(el.id==='production-venue-select'){
       if(el.value==='__create__'){el.value=el.dataset.currentVenue||'';productionQuickOpen('venue');}
