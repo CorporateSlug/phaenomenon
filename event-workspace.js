@@ -110,7 +110,7 @@ function render(db,e,ctx={}){
   {title:'Event details',desc:'Concept, organiser, date and next steps',href:builder(e.id),iconName:'details',meta:life.nextAction?'Action recorded':'Edit details',highlight:m.early},
   {title:'Venue & spaces',desc:'Location, stages and venue setup',href:'#/home/venue/'+id,iconName:'calendar',meta:m.venue?m.venue.name:'Not assigned'},
   {title:'People & crew',desc:'People, roles, responsibilities',href:'#/production/team/'+id,iconName:'people',meta:m.assignmentCount+' assigned'},
-  {title:'Budget & invoices',desc:'Costs, client billing and payment status',href:'index.html#/invoices',iconName:'finance',meta:m.invoices.length+' linked invoice'+(m.invoices.length===1?'':'s')}
+  {title:life.eventLead==='studio'?'External invoices & costs':'Budget & invoices',desc:life.eventLead==='studio'?'Review external invoices; own-event budgeting is a future feature':'Client billing, cost assumptions and payment status',href:'index.html#/invoices',iconName:'finance',meta:m.invoices.length+' linked invoice'+(m.invoices.length===1?'':'s')}
  ];
  const publicCard={title:'Public community listing',desc:'Preview and choose exactly what goes public',
  href:'#/home/'+id+'/publish',iconName:'public',meta:m.publicEntry?
