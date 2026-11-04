@@ -179,3 +179,29 @@ test('Closeout deep links preserve the selected event and production tab context
  assert.match(route.label,/Closeout · Winter Festival/);
  assert.equal(route.icon,'check');
 });
+
+test('Community Noticeboard is the final lower-priority item in the Production sidebar',()=>{
+ const src=file('production-os.js');
+ const community=src.indexOf('rail-community-section');
+ const studio=src.indexOf("navGroup('studio','Studio management'");
+ const work=src.indexOf("navGroup('library','Library & people'");
+ assert.ok(studio>work,'Studio management should come after regular workspace groups');
+ assert.ok(community>studio,'Community must be last rather than between Events and Active event');
+ assert.ok(src.includes('navItem(\'#/community\',\'Community noticeboard\''));
+ const css=file('production.css');
+ assert.match(css,/\.rail-community-section\s*\{\s*margin-top:auto/);
+ assert.match(css,/\.rail #production-navigation\s*\{[^}]*flex:1 1 auto/);
+ assert.match(css,/\.rail-community-section\{[^}]*border-top:1px solid/);
+});
+test('Floating tabs and desktop header controls follow a consistent sizing rhythm',()=>{
+ const css=file('workspace-navigation.css'),production=file('production.css');
+ assert.match(css,/flex:0 0 202px;\s*width:202px;min-width:202px;max-width:202px/);
+ assert.match(css,/min-height:36px;height:36px/);
+ assert.match(css,/width:36px;height:36px/);
+ assert.match(css,/\.ph-workspace-tabs\s*\{[^}]*padding:7px 16px/);
+ assert.match(css,/\.ph-workspace-tab\s*\{[^}]*border:1px solid #334752/);
+ assert.match(css,/border-radius:10px/);
+ assert.match(production,/\.header-tools>\.btn,[\s\S]*?height:38px;min-height:38px/);
+ assert.match(production,/\.event-header-select select\s*\{[^}]*height:38px;min-height:38px/);
+ assert.match(file('production-os.js'),/ui.view==='events'\?'':'<a class="btn header-events-link"/);
+});
