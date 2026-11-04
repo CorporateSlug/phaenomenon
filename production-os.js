@@ -663,7 +663,8 @@
       validEventDate(x.date)&&x.date>=today&&state(x).productionStage!=='delivered')
       .sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title));
     const outstanding=all.filter(x=>state(x).productionStage==='delivered'&&!state(x).closed);
-    const used=new Set([...opportunities,...upcoming,...outstanding].map(x=>x.id));
+    const closed=all.filter(x=>state(x).closed);
+    const used=new Set([...opportunities,...upcoming,...outstanding,...closed].map(x=>x.id));
     const past=all.filter(x=>!used.has(x.id)&&validEventDate(x.date)&&x.date<today).sort((a,b)=>b.date.localeCompare(a.date)||a.title.localeCompare(b.title));
     past.forEach(x=>used.add(x.id));
     const unscheduled=all.filter(x=>!used.has(x.id)&&!validEventDate(x.date)).sort((a,b)=>a.title.localeCompare(b.title));
@@ -705,7 +706,7 @@
         '<p class="form-note">Event dates from your saved bookings. Select an event to open its builder. For the broader studio diary, use <a href="index.html#/schedule">Studio calendar ↗</a>.</p></section>'+
         (monthEvents.length?grouped('Events this month',monthEvents.slice().sort((a,b)=>a.date.localeCompare(b.date))):'<p class="muted">No events scheduled this month. Use the arrows to browse other months or switch to Event list for every booking.</p>'):
         (all.length?grouped('Opportunities & discussions',opportunities)+grouped('Upcoming confirmed',upcoming)+
-          grouped('Delivered · closeout outstanding',outstanding)+grouped('Past events',past)+grouped('Without a date',unscheduled)+grouped('Other events',remaining):
+          grouped('Delivered · closeout outstanding',outstanding)+grouped('Past events',past)+grouped('Without a date',unscheduled)+grouped('Other events',remaining)+grouped('Closed / archive',closed):
         '<div class="empty">No events yet. Select + New event to create your first production.</div>'))+
       '<div class="row section"><a class="btn" href="index.html#/schedule">Open full studio calendar ↗</a><a class="btn" href="index.html#/bookings">Manage bookings in classic workspace ↗</a></div>';
   }
