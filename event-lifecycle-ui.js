@@ -60,7 +60,7 @@
      '<p class="muted">Track returns, people and money after delivery. Recorded completion does not transfer funds or verify actual returns.</p></div>'+
      '<div class="ph-closeout-summary"><strong>'+m.done+' / '+m.total+'</strong><small>'+ (m.closed?'Closed':m.remaining+' remaining')+'</small></div></div>'+
      '<div class="ph-closeout-progress"><span style="width:'+Math.round(m.done/m.total*100)+'%"></span></div>'+
-     '<p class="form-note">'+(m.productionStage==='delivered'?'Event marked delivered.':'Set Production stage to Delivered before closing the event.')+
+     '<p class="form-note">'+(m.productionStage==='delivered'?'Event marked delivered.':['cancelled','declined','lost'].includes(m.bookingStage)?'Booking no longer proceeding.':'Set production to Delivered (or record a declined or cancelled booking) before closing.')+
      ' Invoice issue and payment statuses are automatically determined from linked invoices where present. Other items require explicit confirmation.</p>'+
      '<form id="event-closeout-form">'+groups+
      '<div class="row ph-closeout-actions"><button class="btn primary" type="submit" '+(m.closed?'disabled':'')+'>Save checklist</button>'+
@@ -70,7 +70,7 @@
      '</div></form>'+
      (m.closed?'<p class="ph-closed-caption">Closed '+esc(new Date(m.closedAt).toLocaleString('en-AU'))+'. Reopen to amend the lifecycle or checklist.</p>':
        m.readyToClose?'<p class="ph-closed-caption">Everything is recorded as complete or not applicable. You can close the event.</p>':
-       '<p class="ph-closed-caption">Closing remains unavailable until the delivery stage and all applicable closeout items are complete.</p>')+
+       '<p class="ph-closed-caption">Closing remains unavailable until delivery or a final booking outcome is recorded and all closeout items are complete.</p>')+
      '</section>';
  }
  window.PhaenomenonLifecycleUI={fields,stageStrip,closeoutPanel};
