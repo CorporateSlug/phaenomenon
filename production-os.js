@@ -389,8 +389,8 @@
       ],['design','technical'].includes(ui.view))+
       navGroup('deliver','Deliver the event','✓',[
         navItem('#/crew','Crew installation','☑',ui.view==='crew'),
-        navItem('#/production','Production','▦',ui.view==='production')+
-        ','+navItem('#/production/closeout/'+eventId,'Closeout','✓',ui.view==='production'&&ui.productionTab==='closeout')
+        navItem('#/production','Production','▦',ui.view==='production'),
+        navItem('#/production/closeout/'+eventId,'Closeout','✓',ui.view==='production'&&ui.productionTab==='closeout')
       ],['crew','production'].includes(ui.view))+
       navGroup('library','Library & people','◇',[
         navItem('#/home/venue/'+eventId,'Venues & spaces','⌘',ui.view==='home'&&ui.homeVenueOpen),
