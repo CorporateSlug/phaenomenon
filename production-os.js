@@ -411,9 +411,10 @@
       '<a class="btn" href="index.html#/settings">Studio settings ↗</a></div></details>'+
       '<small id="save-status" class="save-status" title="This is local browser storage, not cloud sync.">Saved in this browser</small></div></header>'+
       '<div class="content">'+(ui.notice?'<div id="message" class="notice good section" role="status">'+esc(ui.notice)+'</div>':'')+
-      (ui.view==='dashboard'?studioDashboard():ui.view==='events'?eventSchedule():ui.view==='builder'?builderPage(e,c):ui.view==='home'?home(e,c):ui.view==='design'?design(e,c):ui.view==='technical'?technical(e,c):ui.view==='crew'?crew(e,c):ui.view==='production'?production(e,c):ui.view==='community'?window.PhaenomenonCommunityAdmin.render():entities(e))+
+      (ui.view==='dashboard'?studioDashboard():ui.view==='events'?eventSchedule():ui.view==='builder'?builderPage(e,c):ui.view==='home'?home(e,c):ui.view==='design'?design(e,c):ui.view==='technical'?technical(e,c):ui.view==='crew'?crew(e,c):ui.view==='production'?production(e,c):ui.view==='community'?window.PhaenomenonCommunityAdmin.render():ui.view==='entities'?entities(e):ui.view==='new'?window.PhaenomenonCollections.create(ui.draftKind,ui.draftId,db):['equipment','fixtures','venues'].includes(ui.view)&&ui.recordId?window.PhaenomenonCollections.detail(ui.view,db,ui.recordId):['equipment','venues','finances'].includes(ui.view)?window.PhaenomenonCollections.browse(ui.view,db,ui):entities(e))+
       '<p class="footnote">Phaenomenon prototype · Single-browser storage only · Data and technical calculations are provisional · Role views are not security permissions.</p></div></main></div>'+mobileNavigation;
     $.innerHTML=html;
+    restoreCollectionDraft();
     renderPublicationPreview();
     document.title=viewName()+' · Phaenomenon';
   }
@@ -1164,13 +1165,18 @@
   function route(){
     document.body?.classList?.remove('ph-mobile-menu-open');
     const parts=location.hash.replace(/^#\/?/,'').split('/'),view=parts[0];
-    ui.view=['dashboard','events','builder','home','design','technical','crew','production','entities','community'].includes(view)?view:'dashboard';
+    ui.view=['dashboard','events','builder','home','design','technical','crew','production','entities','venues','equipment','fixtures','finances','new','community'].includes(view)?view:'dashboard';
+    ui.recordId=['venues','equipment','fixtures'].includes(ui.view)?decodeURIComponent(parts[1]||''):'';
+    ui.draftKind=ui.view==='new'?decodeURIComponent(parts[1]||''):'';
+    ui.draftId=ui.view==='new'?decodeURIComponent(parts[2]||''):'';
+    if(['dashboard','events','equipment','venues','finances','entities'].includes(ui.view)&&!parts[1])ui.collectionSearch='';
     ui.builderFocus=ui.view==='builder'&&['brief','spaces','design','equipment','connections','team','review'].includes(parts[2])?parts[2]:'';
     ui.homeVenueOpen=(ui.view==='home'&&parts[1]==='venue')||(ui.view==='builder'&&ui.builderFocus==='spaces');
     ui.publicListingOpen=ui.view==='home'&&parts[2]==='publish'&&!ui.homeVenueOpen;
-    const routeEvent=ui.view==='home'&&parts[1]==='venue'?parts[2]:ui.view==='production'&&['team','logistics','installation','show','closeout'].includes(parts[1])?parts[2]:['entities','events','community'].includes(ui.view)?null:parts[1];
+    const routeEvent=ui.view==='home'&&parts[1]==='venue'?parts[2]:ui.view==='production'&&['team','logistics','installation','show','closeout'].includes(parts[1])?parts[2]:['entities','events','community','equipment','fixtures','venues','finances','new','dashboard'].includes(ui.view)?null:parts[1];
     if(ui.view==='production'&&['team','logistics','installation','show','closeout'].includes(parts[1]))ui.productionTab=parts[1];
     if(routeEvent&&events().some(x=>x.id===decodeURIComponent(routeEvent)))ui.eventId=decodeURIComponent(routeEvent);
+    if(ui.view==='entities'&&!parts[1])ui.entityId=null;
     if(ui.view==='entities'&&parts[1]&&entity(decodeURIComponent(parts[1]))){
       const id=decodeURIComponent(parts[1]);if(ui.entityId!==id){ui.entityId=id;if(ui.history[ui.histIndex]!==id){ui.history=ui.history.slice(0,ui.histIndex+1);ui.history.push(id);ui.histIndex=ui.history.length-1;}}
     }
