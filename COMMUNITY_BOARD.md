@@ -10,7 +10,9 @@
 An intentionally low-effort local queer-community event noticeboard. People should be able to find gatherings, performances and casual meetups without creating a promotional campaign, a social profile or an elaborate event page. The concept is associated with Phaenomenon but distinct from the production management tool.
 
 The demo includes:
-- A responsive public page with compact date-ordered example listings, search and category filter.
+- A responsive public page with compact date-ordered, explicitly fictional example listings, search and category filter.
+- Two seeded fictional submissions **awaiting review**, plus one approved example of a Phaenomenon-led event. Built-in public examples are also visible in admin as read-only rows.
+- A collapsed **Create event listing** form in Aaron's admin workspace, with **Publish now** or **Save for review**. These listings are independent of internal production bookings.
 - A short, optional-details submission form: title, date, optional time, neighbourhood, optional venue, category, description, optional public organiser name and an optional external ticket/information URL.
 - All submitted entries default to **Pending**, not published.
 - A dedicated internal review screen for Aaron to approve, decline or unpublish local submissions.
@@ -33,7 +35,7 @@ Start a local server from the repository root:
 python3 -m http.server 8000
 ```
 
-Visit `http://localhost:8000/community.html` to browse example listings and submit an event, then open `http://localhost:8000/production.html#/community` in **the same browser and origin** to approve it. Refresh the public page to see the approved submission. Using another browser, device, origin or computer will not sync the submission.
+Visit `http://localhost:8000/community.html` to browse clearly labelled fictional examples, including a Phaenomenon-run example. Open `http://localhost:8000/production.html#/community` **in the same browser and origin** to see two fictional community submissions already awaiting review. Try approving or declining one, or expand **Create event listing** to enter Aaron's own example and choose **Publish now** or **Save for review**. Refresh the public page to see approved listings. Existing user entries are preserved; demo examples are seeded once per browser and won't reset after moderation. Using another browser, device, origin or computer will not sync the submission.
 
 ## Before accepting actual community submissions
 
