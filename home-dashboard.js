@@ -79,7 +79,9 @@ function render({events=[],activeId}={}){
   [active?closeout(active.id):'#/events','✓','Event closeout','Returns, crew and invoices'],
   ['#/entities','♧','Directory','People and suppliers'],
   ['index.html#/equipment','▤','Equipment library','Stock and catalogue'],
-  ['index.html#/overview','⌂','Studio management','Projects and billing']
+  ['index.html#/overview','⌂','Studio management','Projects and billing'],
+  ['community.html','✳','Community noticeboard','View the public page'],
+  ['#/community','◎','Submission review','Approve local demo posts']
  ];
  const shortPanel='<section class="home-shortcuts"><div class="home-shortcuts-heading"><h2>Go to workspace</h2><small>Quick access to your tools</small></div>'+
    '<div class="home-shortcut-grid">'+shortcuts.map(x=>'<a class="home-shortcut" href="'+x[0]+'"><span class="home-shortcut-icon" aria-hidden="true">'+x[1]+'</span>'+
