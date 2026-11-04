@@ -296,7 +296,7 @@ body:has(#app) .ph-tab-new{border-color:#cadbd5;color:#3b786e}
   gap:10px;
   padding:7px 10px;
   text-align:left;
-  font:600 12px inherit;
+  font-size:12px;font-weight:600;font-family:inherit;
   background:transparent;
   border:0;
   border-radius:7px;
