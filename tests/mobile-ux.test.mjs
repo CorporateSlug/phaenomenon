@@ -33,7 +33,7 @@ function harness(mode){
     querySelector(){return null},querySelectorAll(){return []},
     addEventListener:(name,fn)=>(events[name]??=[]).push(fn)
   };
-  for(const source of ['venue-geometry.js','multi-space.js','venue-workflow.js','event-builder.js','workspace-safety.js']){
+  for(const source of ['venue-geometry.js','multi-space.js','venue-workflow.js','event-lifecycle.js','event-lifecycle-ui.js','event-builder.js','workspace-safety.js']){
     runInNewContext(file(source),{window},{filename:source});
   }
   if(mode==='studio')window.PhaenomenonSpacePlanner={ensure(){},mount(){}};
