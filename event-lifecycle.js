@@ -89,14 +89,15 @@
   function ensureAll(db){for(const e of own(db?.eventJobs))ensureEvent(e);return db;}
   function setDetails(event,fields={}){
     const lc=ensureEvent(event);if(!lc)return {error:'Event not found.'};
-    const day=text(fields.date),certainty=text(fields.dateCertainty)||lc.dateCertainty;
+    const day=text(fields.date),rawCertainty=text(fields.dateCertainty)||lc.dateCertainty,
+      certainty=day&&rawCertainty==='unknown'?'proposed':rawCertainty;
     const stage=text(fields.bookingStage)||lc.bookingStage;
     const prod=text(fields.productionStage)||lc.productionStage;
     const month=text(fields.targetMonth);
     const follow=text(fields.followUpDate);
     if(day&&!exactDate(day))return {error:'Enter a valid event date.'};
     if(!DATE_IDS.has(certainty))return {error:'Choose a valid date certainty.'};
-    if(certainty==='confirmed'&&!day)return {error:'Choose an event date before marking it confirmed.'};
+    if(['proposed','confirmed'].includes(certainty)&&!day)return {error:'Choose an event date or change the date certainty to Unknown / Indicative.'};
     if(month&&!exactMonth(month))return {error:'Enter a valid approximate month.'};
     if(follow&&!exactDate(follow))return {error:'Enter a valid follow-up date.'};
     if(!BOOKING_IDS.has(stage)||!PROD_IDS.has(prod))return {error:'Choose a valid booking and production stage.'};
