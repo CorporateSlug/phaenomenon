@@ -56,3 +56,11 @@ The main Studio and Production pages share one navigation contract:
 - **Cross-workspace consistency:** The tab strip persists across navigation between `index.html` (Studio) and `production.html` (Production OS). It is a **persistent navigation system** over the existing page routers, not multiple simultaneously running 3D/design processes. Unsaved form input is not guaranteed to survive route changes, so users should save drafts before switching tabs.
 
 The shared implementation lives in `workspace-navigation.js` and `workspace-navigation.css`. Avoid implementing a second incompatible sidebar, tab bar or menu-specific icon system for new features.
+
+## Event ownership and opportunity identity
+
+- **Separate lead from stage.** An event's organising model (**Phaenomenon-led own production** or **Client-led external commission**) must remain independent of booking stage, scheduling certainty, production stage and closeout.
+- **Concepts are genuine events.** An own-event idea with no confirmed date, venue or client is a valid record; do not force it into a client booking or create a duplicate when it becomes confirmed.
+- **No fictitious transactions.** An own-produced event is not an external invoice addressed to the studio. Client-invoice closeout is not applicable without a linked external invoice; if a genuine external invoice is linked, its recorded issue/payment states apply.
+- **Compact discoverability.** Keep own events and client work recognisable in event rows and accessible through a simple filter; don't split them into unrelated data stores or multiply dashboards.
+- **Future collaborators.** Sponsors, co-producers, promoters and suppliers should be linkable through the existing entity and role systems, without overriding the primary event-lead distinction.
