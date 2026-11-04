@@ -32,6 +32,9 @@ function harness(state) {
     alert:()=>{},confirm:()=>true,prompt:()=>'Example site discrepancy',setTimeout:()=>{},
     console,Date,Math,JSON,Map,Set,Array,Object,Number,String,Intl,encodeURIComponent,decodeURIComponent
   };
+  for(const file of ['event-lifecycle.js','event-lifecycle-ui.js']){
+    runInNewContext(readFileSync(new URL('../'+file,import.meta.url),'utf8'),{window},{filename:file});
+  }
   runInNewContext(script,sandbox,{filename:'production-os.js'});
   const read=()=>JSON.parse(storage.get('phaenomenon-demo-v1'));
   const click=(act,id='')=>{
