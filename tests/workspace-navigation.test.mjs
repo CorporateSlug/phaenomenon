@@ -43,94 +43,119 @@ function harness(production=true){
    close:api.closeTab,activate:api.activate,tabs:api.tabs,selected:api.selected,
    iconFor:api.iconFor,sanitize:api.sanitize};
 }
-test('Home stays pinned and sidebar destinations use the same line icon scheme',()=>{
+test('Home is a normal closable workspace and sidebar icons remain consistent',()=>{
  const h=harness();
  h.sync();
  assert.equal(h.route().key,'home');
- assert.deepEqual(Array.from(h.tabs(),t=>t.id),['home']);
+ assert.equal(h.tabs().length,1,'Initial dashboard opens one ordinary workspace');
+ assert.equal(h.tabs()[0].key,'home');
+ assert.notEqual(h.tabs()[0].id,'home','New sessions never generate a special pinned Home ID');
  for(const [name,icon] of [['Event builder','layers'],['Equipment library','package'],
   ['Plan & design','layers'],['Studio management','briefcase'],
   ['All events & schedule','calendar'],['Technical connections','bolt']]){
   assert.equal(h.iconFor(name),icon);
  }
- const sheet=file('workspace-navigation.css');
+ const js=file('workspace-navigation.js'),sheet=file('workspace-navigation.css');
+ assert.doesNotMatch(js,/if\(i<0\|\|id==='home'\)/,'Home must not be protected from close');
+ assert.match(js,/data-close-id/);
+ assert.match(js,/Home dashboard/,'Home is available via the deliberate new-tab menu');
  assert.match(sheet,/ph-nav-collapsed/);
  assert.match(sheet,/\.ph-tab-picker/);
  assert.match(sheet,/\.ph-tabs-track/);
  assert.match(sheet,/overflow-x:auto/);
  assert.match(sheet,/\.ph-tab-new/);
+ assert.match(sheet,/\.ph-tabs-empty/);
+ assert.match(sheet,/border-radius:10px/);
+ assert.match(js,/No open tabs/);
 });
-test('Ordinary navigation reuses the current tab instead of automatically adding tabs',()=>{
- const h=harness();
- h.sync();
+test('Ordinary navigation reuses the selected Home tab rather than accumulating tabs',()=>{
+ const h=harness();h.sync();
+ const first=h.tabs()[0].id;
  h.env.hash='#/builder/event-one/brief';h.sync();
- const slot=h.tabs()[1].id;
- assert.equal(h.tabs().length,2,'Initial navigation uses one working slot alongside Home');
+ assert.equal(h.tabs().length,1,'First navigation reuses the initial Home tab');
+ assert.equal(h.tabs()[0].id,first);
  h.env.hash='#/builder/event-two';h.sync();
  h.env.hash='#/technical/event-one';h.sync();
  h.env.hash='#/production/team/event-one';h.sync();
- assert.equal(h.tabs().length,2,'Multiple sidebar clicks must not grow the tab strip');
- assert.equal(h.tabs()[1].id,slot);
- assert.equal(h.tabs()[1].href,'production.html#/production/team/event-one');
+ assert.equal(h.tabs().length,1,'Multiple sidebar clicks do not create new tabs');
+ assert.equal(h.tabs()[0].id,first);
+ assert.equal(h.tabs()[0].href,'production.html#/production/team/event-one');
  h.env.hash='#/dashboard';h.sync();
- assert.equal(h.selected(),'home');
- assert.equal(h.tabs()[1].id,slot,'Navigating Home keeps the last workspace');
- h.env.hash='#/events';h.sync();
- assert.equal(h.tabs().length,2,'Leaving Home reuses the previous working slot');
- assert.equal(h.tabs()[1].id,slot);
-});
-test('Only an explicit new-tab action creates an additional independently navigable view',()=>{
- const h=harness();h.sync();
- h.env.hash='#/builder/event-one';h.sync();
- const first=h.tabs()[1].id;
- h.openNew('production.html#/technical/event-two');h.sync();
- assert.equal(h.tabs().length,3);
- const second=h.tabs()[2].id;
- assert.notEqual(first,second);
- assert.equal(h.tabs()[1].href,'production.html#/builder/event-one');
- assert.equal(h.tabs()[2].href,'production.html#/technical/event-two');
- h.env.hash='#/crew/event-two';h.sync();
- assert.equal(h.tabs().length,3);
- assert.equal(h.tabs()[2].id,second);
- assert.equal(h.tabs()[2].href,'production.html#/crew/event-two');
- h.activate(first);h.env.hash='#/builder/event-one';h.sync();
- assert.equal(h.tabs()[1].href,'production.html#/builder/event-one');
- assert.equal(h.tabs()[2].href,'production.html#/crew/event-two');
-});
-test('Closing an active tab chooses another without deleting event data',()=>{
- const h=harness();h.sync();
- h.env.hash='#/builder/event-one';h.sync();
- const first=h.tabs()[1].id;
- h.openNew('production.html#/crew/event-two');h.sync();
- const second=h.tabs()[2].id;
- h.close(second);
- assert.equal(h.tabs().length,2);
+ assert.equal(h.tabs().length,1,'Returning Home does not create a pinned second tab');
  assert.equal(h.selected(),first);
- assert.equal(h.env.href,'production.html#/builder/event-one');
- assert.match(h.map.get('phaenomenon-demo-v1'),/event-two/);
- h.close(first);
- assert.equal(h.tabs().length,1);
- assert.equal(h.selected(),'home');
- assert.equal(h.env.href,'production.html#/dashboard');
+ assert.equal(h.tabs()[0].key,'home');
+ h.env.hash='#/events';h.sync();
+ assert.equal(h.tabs().length,1,'Leaving Home reuses the same tab again');
+ assert.equal(h.tabs()[0].id,first);
 });
-test('Studio and Production share explicit tabs while preserving scoped event routes',()=>{
+test('Only explicit + creates another independently navigable workspace',()=>{
+ const h=harness();h.sync();
+ h.env.hash='#/builder/event-one';h.sync();
+ const first=h.tabs()[0].id;
+ h.openNew('production.html#/technical/event-two');h.sync();
+ assert.equal(h.tabs().length,2);
+ const second=h.tabs()[1].id;
+ assert.notEqual(first,second);
+ assert.equal(h.tabs()[0].href,'production.html#/builder/event-one');
+ assert.equal(h.tabs()[1].href,'production.html#/technical/event-two');
+ h.env.hash='#/crew/event-two';h.sync();
+ assert.equal(h.tabs().length,2);
+ assert.equal(h.tabs()[1].id,second);
+ assert.equal(h.tabs()[1].href,'production.html#/crew/event-two');
+ h.activate(first);h.env.hash='#/builder/event-one';h.sync();
+ assert.equal(h.tabs()[0].href,'production.html#/builder/event-one');
+ assert.equal(h.tabs()[1].href,'production.html#/crew/event-two');
+});
+test('Closing Home and last remaining tab never removes event data or re-pins Home',()=>{
+ const h=harness();h.sync();
+ const first=h.tabs()[0].id;
+ h.openNew('production.html#/crew/event-two');h.sync();
+ const second=h.tabs()[1].id;
+ h.close(first);
+ assert.equal(h.tabs().length,1,'Home and other workspaces have equal close permissions');
+ assert.equal(h.selected(),second);
+ h.close(second);
+ assert.equal(h.tabs().length,0);
+ assert.equal(h.selected(),'');
+ assert.equal(h.env.href,'production.html#/dashboard','Closing last tab shows dashboard');
+ assert.match(h.map.get('phaenomenon-demo-v1'),/event-two/);
+ assert.equal(JSON.parse(h.map.get('phaenomenon-open-workspace-tabs-v2')).emptyHome,true);
+ h.sync();
+ assert.equal(h.tabs().length,0,'Dashboard must not silently recreate a tab after final close');
+ h.env.hash='#/events';h.sync();
+ assert.equal(h.tabs().length,1,'An explicit navigation can open a new working slot');
+});
+test('Home can be deliberately reopened in a fresh tab',()=>{
+ const h=harness();h.sync();
+ const first=h.tabs()[0].id;
+ h.close(first);h.sync();
+ assert.equal(h.tabs().length,0);
+ h.openNew('production.html#/dashboard');h.sync();
+ assert.equal(h.tabs().length,1);
+ assert.equal(h.tabs()[0].key,'home');
+ assert.equal(h.selected(),h.tabs()[0].id);
+ assert.equal(JSON.parse(h.map.get('phaenomenon-open-workspace-tabs-v2')).emptyHome,false);
+});
+test('Studio and Production share explicitly opened tabs with event-specific routes',()=>{
  const h=harness();h.sync();
  h.env.hash='#/builder/event-one';h.sync();
  h.openNew('index.html#/spaces/event-two');h.sync();
  assert.equal(h.route().key,'spaces:event-two');
- assert.equal(h.tabs().length,3);
- assert.equal(h.tabs()[2].href,'index.html#/spaces/event-two');
+ assert.equal(h.tabs().length,2);
+ assert.equal(h.tabs()[1].href,'index.html#/spaces/event-two');
  h.env.hash='#/equipment';h.sync();
- assert.equal(h.tabs().length,3);
- assert.equal(h.tabs()[2].href,'index.html#/equipment');
+ assert.equal(h.tabs().length,2);
+ assert.equal(h.tabs()[1].href,'index.html#/equipment');
  assert.match(h.map.get('phaenomenon-open-workspace-tabs-v2'),/index.html#\/equipment/);
 });
-test('Legacy auto-generated tab history is ignored and unsafe tab URLs are rejected',()=>{
+test('Legacy auto-generated history is ignored and unsafe destinations rejected',()=>{
  const h=harness();
  h.map.set('phaenomenon-open-workspace-tabs-v1',JSON.stringify({tabs:[
   {key:'builder:event-one',href:'production.html#/builder/event-one',label:'Old automatic tab'}
  ]}));
- assert.equal(h.tabs().length,1,'Old automatic tab history does not clutter the new bar');
+ assert.equal(h.tabs().length,0,'Old history does not clutter a fresh session');
+ h.sync();
+ assert.equal(h.tabs().length,1,'Fresh dashboard opens a single ordinary tab');
  const safe=h.sanitize({tabs:[
   {id:'bad',key:'unsafe',href:'javascript:alert(1)',label:'Bad'},
   {id:'valid',key:'equipment',href:'index.html#/equipment',label:'Equipment',icon:'package'}
