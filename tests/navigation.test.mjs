@@ -73,19 +73,20 @@ function production(memory=storage(),hash='#/home'){
     click:(act,id='')=>handlers.click({target:{closest:()=>({dataset:{act,id}})},preventDefault(){}})
   };
 }
-test('Studio sidebar groups advanced destinations without hiding Events and Studio overview',()=>{
+test('Studio sidebar is a stable collection browser rather than an event-tool hierarchy',()=>{
   const h=classic(),html=h.root.innerHTML;
-  assert.equal((html.match(/class="nav-group"/g)||[]).length,3);
-  assert.match(html,/Plan &amp; design/);
-  assert.match(html,/Equipment library/);
-  assert.match(html,/Studio management/);
-  assert.match(html,/Event builder/);
-  assert.match(html,/production\.html#\/technical\//);
-  assert.match(html,/Studio overview/);
-  assert.match(html,/data-action="toggle-sidebar"/);
-  assert.doesNotMatch(html,/More studio tools/);
+  for(const href of ['production.html#/dashboard','production.html#/events',
+    'production.html#/entities','production.html#/venues',
+    'production.html#/equipment','production.html#/finances']){
+    assert.ok(html.includes(href),href);
+  }
+  assert.match(html,/Community noticeboard/);
+  assert.match(html,/sidebar-collections-bottom/);
+  assert.match(html,/id="studio-navigation"/);
+  assert.doesNotMatch(html,/data-group="planning"/);
+  assert.doesNotMatch(html,/Event builder/);
   h.navigate('#/equipment');
-  assert.match(h.root.innerHTML,/data-group="library" open/);
+  assert.match(h.root.innerHTML,/Equipment/);
 });
 test('Event bookings use focused tabs and switching does not re-render unsaved forms',()=>{
   const h=classic(),before=h.root.innerHTML;
