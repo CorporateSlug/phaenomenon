@@ -54,5 +54,5 @@ return [...examples(),...read(storage).entries.filter(x=>x.status==='approved')]
 .sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||'')||a.title.localeCompare(b.title));
 }
 function pending(storage=localStorage){return read(storage).entries.filter(x=>x.status==='pending').sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));}
-window.PhaenomenonCommunity={KEY,CATEGORIES,escape,isDay,validate,read,submit,review,published,pending,examples};
+window.PhaenomenonCommunity={KEY,CATEGORIES,escape,isDay,safeUrl:urlOrEmpty,validate,read,submit,review,published,pending,examples};
 })();
