@@ -25,7 +25,7 @@
     catch(e){return starter();}
   }
   const storedRaw=()=>{try{return localStorage.getItem(KEY);}catch(e){return null;}};
-  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'home',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',homeVenueOpen:false,builderFocus:'',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,scheduleMode:'list',scheduleMonth:'',notice:''};
+  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'dashboard',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',homeVenueOpen:false,builderFocus:'',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,scheduleMode:'list',scheduleMonth:'',notice:''};
   try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.crewPerson=saved.crewPerson||'all';ui.role=saved.role||'lead';ui.productionTab=saved.productionTab||'team';ui.scheduleMode=saved.scheduleMode==='calendar'?'calendar':'list';}catch(e){}
   function savePreferences(){
     try{localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,crewPerson:ui.crewPerson,role:ui.role,productionTab:ui.productionTab,scheduleMode:ui.scheduleMode}));}catch(e){}
@@ -366,7 +366,7 @@
     return {all:t.length,installed:t.filter(x=>x.state!=='pending').length,verified:t.filter(x=>x.state==='verified').length,issues:org().issues.filter(x=>x.eventId===e?.id&&x.status!=='Resolved').length};
   }
   function notice(message){if(saveConflict){message='Another tab updated the event. Your latest edit was not saved. Please retry it.';saveConflict=false;}ui.notice=message;render();setTimeout(()=>{if(ui.notice===message){ui.notice='';document.querySelector('#message')?.remove();}},4200);}
-  function viewName(){return ({builder:'Event builder',home:'Event overview',events:'Events & schedule',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'Directory'}[ui.view]||'Event overview');}
+  function viewName(){return ({dashboard:'Home',builder:'Event builder',home:'Event overview',events:'Events & schedule',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'Directory'}[ui.view]||'Event overview');}
   function render(){
     const e=current(),c=counts(e);
     const navItem=(href,label,glyph,active)=>'<a href="'+href+'" class="nav'+(active?' active':'')+'"'+(active?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+glyph+'</span><span>'+esc(label)+'</span></a>';
@@ -375,6 +375,7 @@
       '<div class="rail-subnav">'+rows.join('')+'</div></details>';
     const eventId=e?.id?encodeURIComponent(e.id):'';
     const navigation=
+      '<div class="rail-label">HOME</div>'+navItem('#/dashboard','Dashboard','⌂',ui.view==='dashboard')+
       '<div class="rail-label">EVENTS</div>'+navItem('#/events','All events & schedule','▦',ui.view==='events')+
       '<div class="rail-label">ACTIVE EVENT</div>'+
       navItem('#/builder/'+eventId,'Event builder','◈',ui.view==='builder')+
@@ -406,21 +407,21 @@
       ],false);
     const mobileTab=(href,label,glyph,active)=>'<a class="mobile-tab'+(active?' is-active':'')+'" href="'+href+'" '+(active?'aria-current="page"':'')+'><span aria-hidden="true" class="mobile-tab-icon">'+glyph+'</span><span>'+label+'</span></a>';
     const mobileNavigation='<nav class="mobile-tabbar production-mobile-tabs" aria-label="Quick event navigation">'+
-      mobileTab('#/events','Events','▦',ui.view==='events')+
+      mobileTab('#/dashboard','Home','⌂',ui.view==='dashboard')+
       mobileTab('index.html#/spaces/'+eventId,'3D','▧',false)+
       mobileTab('#/technical/'+eventId,'Tech','⚡',ui.view==='technical')+
       mobileTab('#/crew/'+eventId,'Crew','✓',ui.view==='crew')+
       '<button type="button" class="mobile-tab mobile-more-tab'+(['production','entities','design'].includes(ui.view)?' is-active':'')+'" data-act="toggle-rail" aria-controls="production-navigation" aria-expanded="false">'+
       '<span class="mobile-tab-icon" aria-hidden="true">☰</span><span>More</span></button></nav>';
     const html='<div class="shell"><aside class="rail" id="production-rail">'+
-      '<div class="rail-top"><a class="brand" href="#/home">phaenomenon<span>.</span></a>'+
+      '<div class="rail-top"><a class="brand" href="#/dashboard">phaenomenon<span>.</span></a>'+
       '<button type="button" class="rail-mobile-toggle" data-act="toggle-rail" aria-expanded="false" aria-controls="production-navigation">☰ <span>Menu</span></button></div>'+
       '<button type="button" class="rail-quick-new" data-act="builder-new">+ New event</button>'+
       '<nav id="production-navigation" aria-label="Production navigation">'+navigation+'</nav>'+
       '<div class="rail-bottom"><strong>ALL EVENTS · CONNECTED WORK</strong><p>Browse the schedule or switch events at any time.</p>'+
       '<p>Local prototype · Role views are not security permissions.</p></div></aside>'+
       '<button type="button" class="mobile-nav-backdrop" data-act="close-rail" aria-label="Close navigation"></button>'+
-      '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / Event</div><div class="header-title"><span class="header-title-desktop">'+viewName()+'</span><span class="header-title-mobile">'+({builder:'Build',home:'Event',events:'Events',design:'Design',technical:'Tech',crew:'Crew',production:'Production',entities:'Directory'}[ui.view]||'Event')+'</span></div></div>'+
+      '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / '+(ui.view==='dashboard'?'Home':'Event')+'</div><div class="header-title"><span class="header-title-desktop">'+viewName()+'</span><span class="header-title-mobile">'+({dashboard:'Home',builder:'Build',home:'Event',events:'Events',design:'Design',technical:'Tech',crew:'Crew',production:'Production',entities:'Directory'}[ui.view]||'Event')+'</span></div></div>'+
       '<div class="header-tools"><a class="btn header-events-link" href="#/events">All events</a><button type="button" class="btn primary" data-act="builder-new">+ New event</button><label class="event-header-select">SWITCH EVENT<select id="event-picker" aria-label="Switch active event">'+
       events().map(x=>'<option value="'+esc(x.id)+'" '+(x.id===e?.id?'selected':'')+'>'+esc(x.title)+'</option>').join('')+
       '</select></label><details class="header-more"><summary class="btn" aria-label="More workspace options">Options ▾</summary>'+
@@ -432,11 +433,29 @@
       '<a class="btn" href="index.html#/bookings/'+eventId+'">Edit event booking ↗</a></div></details>'+
       '<small id="save-status" class="save-status" title="This is local browser storage, not cloud sync.">Saved in this browser</small></div></header>'+
       '<div class="content">'+(ui.notice?'<div id="message" class="notice good section" role="status">'+esc(ui.notice)+'</div>':'')+
-      (ui.view==='events'?eventSchedule():ui.view==='builder'?builderPage(e,c):ui.view==='home'?home(e,c):ui.view==='design'?design(e,c):ui.view==='technical'?technical(e,c):ui.view==='crew'?crew(e,c):ui.view==='production'?production(e,c):entities(e))+
+      (ui.view==='dashboard'?studioDashboard():ui.view==='events'?eventSchedule():ui.view==='builder'?builderPage(e,c):ui.view==='home'?home(e,c):ui.view==='design'?design(e,c):ui.view==='technical'?technical(e,c):ui.view==='crew'?crew(e,c):ui.view==='production'?production(e,c):entities(e))+
       '<p class="footnote">Phaenomenon prototype · Single-browser storage only · Data and technical calculations are provisional · Role views are not security permissions.</p></div></main></div>'+mobileNavigation;
     $.innerHTML=html;
     document.title=viewName()+' · Phaenomenon';
   }
+
+  function studioDashboard(){
+    const model=window.PhaenomenonEventBuilder;
+    const rows=events().map(e=>{
+      const revision=!!published(e)&&isChanged(e);
+      const steps=model?.steps(db,e,{changed:revision})||[];
+      return {
+        id:e.id,title:e.title,date:e.date,status:e.status,
+        venue:venue(e)?.name||e.venue||'Venue to be confirmed',
+        needsRevision:revision,
+        openIssues:org().issues.filter(i=>i.eventId===e.id&&i.status!=='Resolved').length,
+        steps:steps.map(s=>({id:s.id,title:s.title,state:s.state,summary:s.summary,href:s.href}))
+      };
+    });
+    return window.PhaenomenonHome?.render({events:rows,activeId:current()?.id})||
+      hero('HOME','Your studio at a glance','Open an event to continue.','<a class="btn primary" href="#/events">All events →</a>');
+  }
+
   function hero(ey,title,sub,right){
     return '<div class="hero"><div><div class="eyebrow">'+esc(ey)+'</div><h1>'+esc(title)+'</h1><p class="muted">'+esc(sub)+'</p></div>'+(right||'')+'</div>';
   }
@@ -1140,7 +1159,7 @@
   function route(){
     document.body?.classList?.remove('ph-mobile-menu-open');
     const parts=location.hash.replace(/^#\/?/,'').split('/'),view=parts[0];
-    ui.view=['events','builder','home','design','technical','crew','production','entities'].includes(view)?view:'home';
+    ui.view=['dashboard','events','builder','home','design','technical','crew','production','entities'].includes(view)?view:'dashboard';
     ui.builderFocus=ui.view==='builder'&&['brief','spaces','design','equipment','connections','team','review'].includes(parts[2])?parts[2]:'';
     ui.homeVenueOpen=(ui.view==='home'&&parts[1]==='venue')||(ui.view==='builder'&&ui.builderFocus==='spaces');
     const routeEvent=ui.view==='home'&&parts[1]==='venue'?parts[2]:ui.view==='production'&&['team','logistics','installation','show'].includes(parts[1])?parts[2]:['entities','events'].includes(ui.view)?null:parts[1];
