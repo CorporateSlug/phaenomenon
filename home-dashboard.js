@@ -74,7 +74,7 @@ function render({events=[],activeId}={}){
    '<div class="home-panel-list" tabindex="0" role="region" aria-label="Work requiring attention">'+(alerts.length?alerts.slice(0,10).map(alertRow).join(''):'<p class="home-empty">No recorded follow-ups or outstanding items. Human safety and payment checks are still required.</p>')+'</div></section>';
  const shortcuts=[
   ['#/events','▦','Events & pipeline','Opportunities and diary'],
-  [activeUrl,'◈','Event builder','Plan the active event'],
+  [activeUrl,'◈','Event workspace','Everything connected to the event'],
   ['index.html#/spaces/'+encodeURIComponent(active?.id||''),'◫','3D planner','Venue and fixtures'],
   ['#/technical/'+encodeURIComponent(active?.id||''),'⚡','Technical plans','Patching and power'],
   [active?closeout(active.id):'#/events','✓','Event closeout','Returns, crew and invoices'],
