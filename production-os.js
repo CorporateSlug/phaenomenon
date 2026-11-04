@@ -443,6 +443,18 @@
     document.title=viewName()+' · Phaenomenon';
   }
 
+  function publicListingFields(form){
+    const data=new FormData(form),get=key=>String(data.get(key)||'').trim();
+    return {title:get('title'),date:get('date'),time:get('time'),area:get('area'),
+      venue:get('venue'),category:get('category'),description:get('description'),
+      organiser:get('organiser'),url:get('url')};
+  }
+  function renderPublicationPreview(){
+    const form=document.getElementById('event-publication-form');
+    const preview=document.getElementById('event-public-preview');
+    if(form&&preview&&window.PhaenomenonEventWorkspace)
+      preview.innerHTML=window.PhaenomenonEventWorkspace.preview(publicListingFields(form));
+  }
   function studioDashboard(){
     const model=window.PhaenomenonEventBuilder;
     const rows=events().map(e=>{
@@ -1225,6 +1237,18 @@
       if(store())notice('Event reopened for additional changes.');
       return;
     }
+    if(action==='event-public-unpublish'){
+      const C=window.PhaenomenonCommunity;
+      const linkedId=e?.lifecycle?.publicListingId;
+      const existing=C?.read().entries.find(x=>x.id===linkedId&&x.source==='admin'&&!x.sample);
+      if(!existing){notice('No linked editable community listing found in this browser.');return;}
+      if(!confirm('Unpublish "'+existing.title+'" from the local community demo? This does not delete the event or its production details.'))return;
+      const result=C.review(existing.id,'rejected');
+      if(result.error){notice(result.error);return;}
+      ui.publicListingOpen=true;
+      notice('The community listing is now unpublished in this browser demo.');
+      return;
+    }
     if(action==='community-review'){
       const status=el.dataset.status;
       if(!['approved','rejected','pending'].includes(status))return;
@@ -1448,6 +1472,50 @@
   });
   document.addEventListener('submit',ev=>{
     const f=ev.target;
+    if(f.id==='event-publication-form'){
+      ev.preventDefault();
+      if(!$.contains(f))return;
+      const e=current(),C=window.PhaenomenonCommunity;
+      if(!e||e.id!==f.dataset.eventId||!C){alert('The selected event has changed. Reopen its publication form.');return;}
+      const data=new FormData(f),fields=publicListingFields(f);
+      if(String(data.get('publishConsent')||'')!=='yes'){
+        alert('Please confirm you have permission to publish the details shown in the preview.');
+        return;
+      }
+      if(e.lifecycle?.eventLead!=='studio'&&!fields.organiser){
+        alert('For client-led events, enter an authorised public organiser name before publishing.');
+        return;
+      }
+      const mode=String(data.get('publishMode')||'pending');
+      if(!['pending','approved'].includes(mode)){alert('Choose a valid publication state.');return;}
+      const check=C.validate(fields);
+      if(check.error){alert(check.error);return;}
+      if(storedRaw()!==storageBaseline){
+        refreshFromStorage();
+        alert('Another tab changed the event. Review the latest details before publishing.');
+        return;
+      }
+      if(mode==='approved'&&!confirm('Publish "'+fields.title+'" on the local community demo with ONLY the fields shown in your public preview?'))return;
+      const linked=e.lifecycle?.publicListingId;
+      const existing=C.read().entries.find(x=>x.id===linked&&x.source==='admin'&&!x.sample);
+      const result=existing?C.updateAdmin(existing.id,fields,mode):C.createAdmin(fields,mode);
+      if(result.error){alert(result.error);return;}
+      // Public listings never carry internal event IDs. The link lives only
+      // in the private production record, and is saved through conflict guard.
+      if(!existing){
+        const previous=e.lifecycle.publicListingId;
+        e.lifecycle.publicListingId=result.entry.id;
+        if(!store()){
+          e.lifecycle.publicListingId=previous;
+          C.review(result.entry.id,'rejected');
+          alert('The workspace link could not be saved. The new community listing was unpublished to prevent an orphan public entry.');
+          return;
+        }
+      }
+      ui.publicListingOpen=true;
+      notice(mode==='approved'?'Community listing published to this browser demo. Open the public preview to check it.':'Public details saved for review in this browser demo. Nothing is published yet.');
+      return;
+    }
     if(f.id==='community-admin-create-form'){
       ev.preventDefault();
       if(!$.contains(f))return;
@@ -1620,7 +1688,13 @@
     store();notice('Saved to this browser.');
   });
   // Prevent stale browser tabs from silently overwriting other production edits.
-  window.addEventListener('storage',event=>{if(event.key===KEY)refreshFromStorage();if(event.key===window.PhaenomenonCommunity?.KEY&&ui.view==='community')render();});
+  document.addEventListener('input',event=>{
+    if(event.target?.closest?.('#event-publication-form'))renderPublicationPreview();
+  });
+  document.addEventListener('change',event=>{
+    if(event.target?.closest?.('#event-publication-form'))renderPublicationPreview();
+  });
+  window.addEventListener('storage',event=>{if(event.key===KEY)refreshFromStorage();if(event.key===window.PhaenomenonCommunity?.KEY&&['community','home'].includes(ui.view))render();});
   window.addEventListener('focus',refreshFromStorage);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshFromStorage();});
   document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){if(document.getElementById('production-rail')?.classList?.contains('is-expanded')){
