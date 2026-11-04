@@ -1,5 +1,13 @@
 # Phaenomenon
 
+## Unified Event Workspace — start here
+
+**[Open an event in the unified workspace](production.html#/home)** · [Architecture and workflow](EVENT_WORKSPACE.md)
+
+Every event now has one connected home, from the first speculative idea through to production delivery, closeout and archive. The overview shows **who leads the event, booking stage, date certainty, production stage and the recommended next action**. Early concepts prioritise outreach and event details while keeping technical/finance workspaces inside an expandable section. Confirmed and delivered events surface the relevant detailed tools directly. Existing event IDs and specialist functions are preserved.
+
+The Events list, calendar, Home dashboard, new-event flow and classic Studio event details link to this workspace. Phaenomenon-led public events can also be **explicitly prepared for the community noticeboard** through an event-specific public preview and permission confirmation, with draft/publish/update/unpublish actions. Public fields are deliberately separate from private crew, production and billing records. This remains a single-browser demonstration and is not a secure public hosting setup.
+
 ## Public community noticeboard — included in demo
 
 **[Open public community preview](community.html)** · **[Review submissions inside Phaenomenon](production.html#/community)** · [Implementation and launch requirements](COMMUNITY_BOARD.md)
