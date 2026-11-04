@@ -112,6 +112,12 @@ function render(db,e,ctx={}){
   {title:'People & crew',desc:'People, roles, responsibilities',href:'#/production/team/'+id,iconName:'people',meta:m.assignmentCount+' assigned'},
   {title:'Budget & invoices',desc:'Costs, client billing and payment status',href:'index.html#/invoices',iconName:'finance',meta:m.invoices.length+' linked invoice'+(m.invoices.length===1?'':'s')}
  ];
+ const publicCard={title:'Public community listing',desc:'Preview and choose exactly what goes public',
+ href:'#/home/'+id+'/publish',iconName:'public',meta:m.publicEntry?
+ (m.publicEntry.status==='approved'?'Listed on public demo':m.publicEntry.status==='pending'?'Awaiting review':'Unpublished'):'Not published'};
+ const mainVisible=m.early?
+   (life.eventLead==='studio'?[mainCards[0],mainCards[1],publicCard]:mainCards.slice(0,3)):
+   [...mainCards,publicCard];
  const productionCards=[
   {title:'3D design & equipment',desc:'Fixtures, positions and event kit',href:'index.html#/spaces/'+id,iconName:'design',meta:own(m.p.items).length+' placed objects'},
   {title:'Technical connections',desc:'Patch, power and cable planning',href:'#/technical/'+id,iconName:'technical',meta:own(m.p.runs).length+' documented runs'},
@@ -135,9 +141,9 @@ function render(db,e,ctx={}){
  '<a class="btn primary" href="'+esc(m.priority.href)+'">'+esc(m.priority.action)+' →</a></section>'+
  '<section class="ew-main-panel"><div class="ew-section-title"><h2>'+esc(m.early?'Develop this event':m.delivered||m.complete?'Review event records':'Manage this production')+'</h2>'+
  '<span>Everything stays connected to this event</span></div>'+
- '<div class="ew-card-grid">'+cards(m.early?mainCards.slice(0,3):mainCards)+'</div></section>'+
+ '<div class="ew-card-grid">'+cards(mainVisible)+'</div></section>'+
  (m.early?'<details class="ew-extra-tools"><summary>Production and finance workspaces <span>Available whenever you need them</span></summary><div class="ew-card-grid">'+
- cards([mainCards[3],...productionCards])+'</div></details>':
+ cards([...(life.eventLead==='studio'?[mainCards[2]]:[mainCards[3],publicCard]),...(life.eventLead==='studio'?[mainCards[3]]:[]),...productionCards])+'</div></details>':
  '<section class="ew-main-panel"><div class="ew-section-title"><h2>Production workspaces</h2><span>Specialist tools for this event</span></div><div class="ew-card-grid">'+cards(productionCards)+'</div></section>')+
  (m.early?'':'<div class="ew-technical-summary"><span>'+icon('design')+' '+own(m.p.items).length+' placed</span>'+
  '<span>'+icon('people')+' '+m.assignmentCount+' assigned</span><span>'+icon('closeout')+' '+m.issues+' open issues</span>'+
