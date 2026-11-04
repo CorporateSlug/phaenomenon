@@ -1460,6 +1460,19 @@
   });
   document.addEventListener('submit',ev=>{
     const f=ev.target;
+    if(f.id==='community-admin-create-form'){
+      ev.preventDefault();
+      if(!$.contains(f))return;
+      const data=new FormData(f),fields=Object.fromEntries(data.entries());
+      const model=window.PhaenomenonCommunity;
+      if(!model){notice('Community noticeboard is unavailable.');return;}
+      const result=model.createAdmin(fields,String(data.get('publishMode')||'approved'));
+      if(result.error){alert(result.error);return;}
+      notice(result.entry.status==='approved'
+        ?'Community event published to this browser demo. Open the public noticeboard to preview.'
+        :'Community event saved in the review queue in this browser demo.');
+      return;
+    }
     if(f.id==='cue-editor-form'){
       ev.preventDefault();
       const data=new FormData(f),val=k=>clean(data.get(k)),e=current();
