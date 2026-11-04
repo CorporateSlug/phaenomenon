@@ -45,6 +45,10 @@
   const iconFor=label=>{
     const x=label.toLowerCase();
     if(/home|dashboard|overview/.test(x))return 'home';
+    if(/builder/.test(x))return 'layers';
+    if(/details/.test(x))return 'brief';
+    if(/fixture library|fixture/.test(x))return 'bulb';
+    if(/equipment|stock/.test(x))return 'package';
     if(/schedule|calendar|event(s| &)?|bookings/.test(x))return 'calendar';
     if(/builder|planning|plan &/.test(x))return 'layers';
     if(/3d|design|fixture position/.test(x))return 'cube';
@@ -89,16 +93,16 @@
       switch(view){
         case 'dashboard':key='home';label='Home';icon='home';canonical='production.html#/dashboard';break;
         case 'events':key='events';label='Events & schedule';icon='calendar';canonical='production.html#/events';break;
-        case 'builder':key='builder:'+id;label=eventName(id)+' · Build';icon='layers';canonical='production.html#/builder/'+encoded+(segments[2]?'/'+segments[2]:'');break;
+        case 'builder':key='builder:'+id;label='Build · '+eventName(id);icon='layers';canonical='production.html#/builder/'+encoded+(segments[2]?'/'+segments[2]:'');break;
         case 'home':
-          if(detail==='venue'){key='venue:'+id;label=eventName(id)+' · Venue';icon='venue';canonical='production.html#/home/venue/'+encoded;}
-          else{key='overview:'+id;label=eventName(id)+' · Overview';icon='home';canonical='production.html#/home/'+encoded;}
+          if(detail==='venue'){key='venue:'+id;label='Venue · '+eventName(id);icon='venue';canonical='production.html#/home/venue/'+encoded;}
+          else{key='overview:'+id;label='Overview · '+eventName(id);icon='home';canonical='production.html#/home/'+encoded;}
           break;
-        case 'design':key='design:'+id;label=eventName(id)+' · Design';icon='cube';canonical='production.html#/design/'+encoded;break;
-        case 'technical':key='technical:'+id;label=eventName(id)+' · Technical';icon='bolt';canonical='production.html#/technical/'+encoded;break;
-        case 'crew':key='crew:'+id;label=eventName(id)+' · Crew';icon='check';canonical='production.html#/crew/'+encoded;break;
+        case 'design':key='design:'+id;label='Design · '+eventName(id);icon='cube';canonical='production.html#/design/'+encoded;break;
+        case 'technical':key='technical:'+id;label='Technical · '+eventName(id);icon='bolt';canonical='production.html#/technical/'+encoded;break;
+        case 'crew':key='crew:'+id;label='Crew · '+eventName(id);icon='check';canonical='production.html#/crew/'+encoded;break;
         case 'production':
-          key='production:'+id;label=eventName(id)+' · Production';icon='briefcase';
+          key='production:'+id;label='Production · '+eventName(id);icon='briefcase';
           canonical='production.html#/production/'+(productionTabs.includes(detail)?detail+'/':'')+encoded;break;
         case 'entities':
           key=detail?'entity:'+detail:'directory';label=detail?'Entity profile':'Directory';icon='users';canonical='production.html#/entities'+(detail?'/'+encodeURIComponent(detail):'');break;
@@ -109,7 +113,7 @@
       const iconMap={overview:'grid',bookings:'brief',spaces:'cube',equipment:'package',fixtures:'bulb',invoices:'receipt',projects:'briefcase',pipeline:'chart',schedule:'calendar',clients:'users',settings:'settings',search:'grid'};
       icon=iconMap[view]||'grid';label=titles[view]||'Studio overview';canonical='index.html#/'+view;
       if(['bookings','spaces'].includes(view)){
-        key=view+':'+id;label=eventName(id)+' · '+(view==='spaces'?'3D':'Details');canonical+='/'+encoded;
+        key=view+':'+id;label=(view==='spaces'?'3D':'Details')+' · '+eventName(id);canonical+='/'+encoded;
       }else if((view==='projects'||view==='invoices')&&detail){
         key=view+':'+detail;
         label=(view==='projects'?'Project':'Invoice')+' · '+detail.slice(0,18);
