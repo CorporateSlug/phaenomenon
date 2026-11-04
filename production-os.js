@@ -368,6 +368,52 @@
   }
   function notice(message){if(saveConflict){message='Another tab updated the event. Your latest edit was not saved. Please retry it.';saveConflict=false;}ui.notice=message;render();setTimeout(()=>{if(ui.notice===message){ui.notice='';document.querySelector('#message')?.remove();}},4200);}
   function viewName(){return ({dashboard:'Dashboard',builder:'Event builder',home:'Event workspace',events:'Events & schedule',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'People & organisations',venues:'Venues & spaces',equipment:'Equipment & fixtures',fixtures:'Fixture',finances:'Invoices & billing',new:'Create record',community:'Community noticeboard'}[ui.view]||'Workspace');}
+  const COLLECTION_KINDS=['event','entity','venue','equipment','fixture','invoice'];
+  const draftKey=id=>'phaenomenon-draft-v1-'+id;
+  function restoreCollectionDraft(){
+    const form=document.getElementById('collection-create-form');
+    if(!form)return;
+    try{
+      const saved=JSON.parse(sessionStorage.getItem(draftKey(form.dataset.draftId))||'null');
+      if(!saved||saved.kind!==form.dataset.kind)return;
+      Object.entries(saved.values||{}).forEach(([key,value])=>{
+        const input=form.elements?.namedItem?.(key);
+        if(input&&typeof input.value==='string')input.value=String(value);
+      });
+    }catch{}
+  }
+  function saveCollectionDraft(form){
+    if(!form?.dataset?.draftId)return;
+    try{const values=Object.fromEntries(new FormData(form).entries());
+      sessionStorage.setItem(draftKey(form.dataset.draftId),JSON.stringify({kind:form.dataset.kind,values}));
+    }catch{}
+  }
+  function clearCollectionDraft(id){
+    try{sessionStorage.removeItem(draftKey(id));}catch{}
+  }
+  function openRecordTab(href){
+    const full=/^(index|production)\.html#\//.test(href)?href:'production.html'+href;
+    if(window.PhaenomenonWorkspaceTabs?.openRecord)window.PhaenomenonWorkspaceTabs.openRecord(full);
+    else{location.href=full;}
+  }
+  function openCollectionDraft(kind){
+    if(!COLLECTION_KINDS.includes(kind))return;
+    const href='#/new/'+kind+'/'+uid('draft');
+    openRecordTab(href);
+  }
+  // New record data is held in per-tab session storage and is never
+  // inserted into the real production store until Create succeeds.
+  window.PhaenomenonCollectionDrafts={
+    hasDraft(href){
+      const id=String(href||'').match(/#\/new\/[a-z]+\/([a-z0-9_-]+)/i)?.[1];
+      if(!id)return false;
+      try{return !!sessionStorage.getItem(draftKey(id));}catch{return false;}
+    },
+    discard(href){
+      const id=String(href||'').match(/#\/new\/[a-z]+\/([a-z0-9_-]+)/i)?.[1];
+      if(id)clearCollectionDraft(id);
+    }
+  };
   function render(){
     const e=current(),c=counts(e);
     const navItem=(href,label,glyph,active)=>'<a href="'+href+'" class="nav'+(active?' active':'')+'"'+(active?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+glyph+'</span><span>'+esc(label)+'</span></a>';
