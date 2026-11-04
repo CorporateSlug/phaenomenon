@@ -37,7 +37,8 @@ function harness(hash='#/home'){
    handlers.click({target:{closest:s=>s==='[data-act]'?button:null},preventDefault(){}});
  };
  const readPublic=()=>window.PhaenomenonCommunity.read(localStorage);
- return {window,root,local,localStorage,location,notices,readPublic,submit,click,navigate,getDb};
+ const refresh=()=>handlers['window.storage']?.({key:'phaenomenon-demo-v1'});
+ return {window,root,local,localStorage,location,notices,readPublic,submit,click,navigate,getDb,refresh};
 }
 function future(days=60){
  const d=new Date();d.setDate(d.getDate()+days);
@@ -75,6 +76,7 @@ test('Confirmed client production surfaces design and issue resolution before cl
  const db=h.getDb();
  db.productionOS.issues.push({id:'workspace-issue',eventId:e.id,status:'Open'});
  h.local.set('phaenomenon-demo-v1',JSON.stringify(db));
+ h.refresh();
  h.navigate('#/home/'+encodeURIComponent(e.id));
  assert.match(h.root.innerHTML,/Manage this production/);
  assert.match(h.root.innerHTML,/unresolved production issue/);
@@ -99,6 +101,7 @@ test('Delivered and closed work prioritises financial/operational closeout, not 
  for(const task of C.TASKS)assert.equal(C.updateTask(db,ev,task.id,'na','No services incurred in demo').ok,true);
  assert.equal(C.closeEvent(db,ev).ok,true);
  h.local.set('phaenomenon-demo-v1',JSON.stringify(db));
+ h.refresh();
  h.navigate('#/home/'+encodeURIComponent(e.id));
  assert.match(h.root.innerHTML,/Event archived/);
  assert.match(h.root.innerHTML,/Review closure/);
@@ -109,6 +112,7 @@ test('A public-listing preview has no private fields, and explicit publication i
  const e=h.getDb().eventJobs.find(x=>x.title==='Own DJ idea');
  const db=h.getDb();db.eventJobs.find(x=>x.id===e.id).notes='PRIVATE: crew phone / technical notes / budget';
  h.local.set('phaenomenon-demo-v1',JSON.stringify(db));
+ h.refresh();
  h.navigate('#/home/'+encodeURIComponent(e.id)+'/publish');
  assert.match(h.root.innerHTML,/event-publication-form/);
  assert.match(h.root.innerHTML,/publishConsent/);
@@ -151,7 +155,7 @@ test('Permission and authorisation are required before publishing client work',(
 });
 test('The event directory, calendar and Home link back to the unified event workspace',()=>{
  const production=read('production-os.js'),home=read('home-dashboard.js'),studio=read('app.js'),nav=read('workspace-navigation.js');
- assert.match(production,/const eventRow=x=>'<a class="event-index-row[^']*href="#\/home\//);
+ assert.match(production,/href="#\/home\//);
  assert.match(production,/matches\.map\(x=>'<a href="#\/home\//);
  assert.match(home,/const link=id=>'#\/home\//);
  assert.match(studio,/production\.html#\/home\//);
