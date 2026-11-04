@@ -252,7 +252,6 @@
     const eventId=eventScoped?route.key.split(':').slice(1).join(':'):activeEventId();
     const id=encodeURIComponent(eventId||'');
     const options=[
-      ['production.html#/dashboard','home','Home dashboard'],
       ['production.html#/events','calendar','Events & schedule'],
       ['production.html#/builder/'+id,'layers','Event builder'],
       ['index.html#/spaces/'+id,'cube','3D planner'],
