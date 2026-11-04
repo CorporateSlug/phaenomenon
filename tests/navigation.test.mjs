@@ -108,14 +108,13 @@ test('Studio overview prioritises events and tasks with optional secondary metri
   assert.match(h.root.innerHTML,/Up next/);
   assert.doesNotMatch(h.root.innerHTML,/Every project, from first sketch/);
 });
-test('Production sidebar uses the same conceptual sections and moves options out of the header',()=>{
+test('Production sidebar lists stable collections, not event-specific global tools',()=>{
   const h=production(),html=h.root.innerHTML;
-  assert.equal((html.match(/class="rail-group"/g)||[]).length,4);
-  assert.match(html,/Plan &amp; design/);
-  assert.match(html,/Deliver the event/);
-  assert.match(html,/Library &amp; people/);
-  assert.match(html,/Studio management/);
-  assert.match(html,/data-act="toggle-rail"/);
+  for(const label of ['Dashboard','Events &amp; schedule','People &amp; organisations',
+    'Venues &amp; spaces','Equipment &amp; fixtures','Finances'])assert.ok(html.includes(label),label);
+  assert.match(html,/Community noticeboard/);
+  assert.doesNotMatch(html,/class="rail-group"/);
+  assert.doesNotMatch(html,/id="event-picker"/);
   assert.match(html,/class="header-more"/);
   assert.match(html,/Default starting view/);
 });
@@ -143,15 +142,15 @@ test('Production event workspace is stage-aware and preserves separate venue con
   assert.match(h.root.innerHTML,/id="event-venue-settings" open/);
   assert.match(h.root.innerHTML,/Event workspace/);
 });
-test('Advanced forms are available inside disclosures but canonical Venue creation is separate',()=>{
+test('Entities have browse-first index and contextual record creation',()=>{
   const h=production();
   h.navigate('#/production');
   assert.match(h.root.innerHTML,/Add person or supplier/);
   assert.match(h.root.innerHTML,/class="workspace-disclosure"/);
   h.navigate('#/entities');
-  assert.match(h.root.innerHTML,/Add person or organisation/);
-  assert.match(h.root.innerHTML,/Manage venues &amp; spaces/);
-  assert.doesNotMatch(h.root.innerHTML,/<option>Venue<\/option><option>Space<\/option>/);
+  assert.match(h.root.innerHTML,/New person or organisation/);
+  assert.match(h.root.innerHTML,/data-act="collection-new"/);
+  assert.doesNotMatch(h.root.innerHTML,/id="entity-form"/);
 });
 test('Production tab labels stay task-focused and retain internal stable IDs',()=>{
   const h=production();
