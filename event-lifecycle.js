@@ -19,7 +19,7 @@
     ['cancelled','Cancelled']
   ];
   const EVENT_LEADS=[
-    ['client','Client-led · external commission'],
+    ['client','Client-led · external organiser'],
     ['studio','Phaenomenon-led · own event']
   ];
   const PRODUCTION=[
