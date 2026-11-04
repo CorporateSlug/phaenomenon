@@ -133,3 +133,32 @@ test('shared forms expose lifecycle dimensions and a distinct closeout workspace
   for(const token of ['Crew timesheets','Equipment returned','Client payment received',
     'id="event-closeout-form"','lifecycle-close'])assert.ok(closeout.includes(token),token);
 });
+
+test('cancelled and declined opportunities can close with explained exemptions without delivery',()=>{
+ const {builder,lifecycle:l}=modules(),db=blank();
+ const e=builder.create(db,{title:'Cancelled proposal',bookingStage:'cancelled'}).event;
+ assert.equal(e.status,'Cancelled');
+ for(const task of l.TASKS){
+   const result=l.updateTask(db,e,task.id,'na','No delivery or invoice for this cancelled event');
+   assert.equal(result.ok,true);
+ }
+ const summary=l.summary(db,e);
+ assert.equal(summary.productionStage,'not-started');
+ assert.equal(summary.readyToClose,true);
+ assert.equal(l.closeEvent(db,e).ok,true);
+ assert.equal(l.summary(db,e).closed,true);
+ assert.equal(e.status,'Cancelled','A cancelled event must not become a completed booking');
+});
+test('approximate month uses the hierarchical date picker instead of a mismatched native month control',()=>{
+ const s=src('shared-ui.js');
+ assert.match(s,/input\[type="month"\]/);
+ assert.match(s,/monthOnly/);
+ assert.match(s,/view=monthOnly\?'month':'day'/);
+});
+test('production event directory exposes both early opportunities and closed archive',()=>{
+ const s=src('production-os.js');
+ assert.match(s,/Opportunities & discussions/);
+ assert.match(s,/Delivered · closeout outstanding/);
+ assert.match(s,/Closed \/ archive/);
+ assert.match(s,/PRODUCTION_TABS=\[[^\n]*closeout/);
+});
