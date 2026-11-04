@@ -567,7 +567,7 @@
       '<form id="builder-basics-form" class="form-grid">'+
       '<label class="wide">Event name<input class="input" name="title" required maxlength="120" value="'+esc(e.title)+'"></label>'+
       window.PhaenomenonLifecycleUI.fields(e,{compact:true})+
-      '<label>Client<select name="clientId" required>'+db.clients.map(x=>'<option value="'+esc(x.id)+'" '+(e.clientId===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label>'+
+      '<label>Client / organiser (optional)<select name="clientId"><option value="">Not known yet</option>'+db.clients.map(x=>'<option value="'+esc(x.id)+'" '+(e.clientId===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label>'+
       '<label>Event type<select name="eventType">'+eventTypes.map(x=>'<option value="'+esc(x)+'" '+(e.eventType===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></label>'+
 
       '<details class="wide workspace-disclosure builder-assumptions"><summary>Planning assumptions &amp; estimated costs</summary><div class="disclosure-body form-grid">'+
