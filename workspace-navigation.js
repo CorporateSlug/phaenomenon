@@ -216,22 +216,62 @@
     if(!main)return;
     let bar=main.querySelector(':scope > .ph-workspace-tabs');
     if(!bar){
-      bar=document.createElement('nav');bar.className='ph-workspace-tabs';bar.setAttribute('aria-label','Open workspaces');
+      bar=document.createElement('nav');
+      bar.className='ph-workspace-tabs';
+      bar.setAttribute('aria-label','Open workspaces');
       const header=main.querySelector(':scope > .header, :scope > .topbar');
       if(header)header.after(bar);else main.prepend(bar);
     }
-    bar.innerHTML='<div class="ph-tabs-track" role="tablist" aria-label="Open workspaces">'+tabs.map(t=>{
-      const active=t.key===selected,status=getTabStatus(t);
-      return '<div class="ph-workspace-tab'+(active?' is-active':'')+(t.key==='home'?' is-home':'')+'" data-tab-key="'+escape(t.key)+'">'+
-        '<a class="ph-tab-link" role="tab" aria-selected="'+active+'" href="'+escape(t.href)+'" title="'+escape(t.label)+'">'+
+    bar.innerHTML='<div class="ph-tabs-track" aria-label="Open workspaces">'+tabs.map(t=>{
+      const active=t.id===selected,status=getTabStatus(t);
+      return '<div class="ph-workspace-tab'+(active?' is-active':'')+(t.id==='home'?' is-home':'')+'" data-tab-id="'+escape(t.id)+'">'+
+        '<a class="ph-tab-link" data-open-tab="'+escape(t.id)+'" '+(active?'aria-current="page" ':'')+'href="'+escape(t.href)+'" title="'+escape(t.label)+'">'+
           '<span class="ph-tab-icon">'+svg(t.icon,15)+'</span><span class="ph-tab-title">'+escape(t.label)+'</span>'+
           (status?'<span class="ph-tab-status '+status.color+'" title="'+escape(status.label)+'" aria-label="'+escape(status.label)+'"></span>':'')+'</a>'+
-        (t.key==='home'?'':'<button type="button" class="ph-tab-close" data-close-key="'+escape(t.key)+'" aria-label="Close '+escape(t.label)+'" title="Close tab">'+svg('close',13)+'</button>')+
+        (t.id==='home'?'':'<button type="button" class="ph-tab-close" data-close-id="'+escape(t.id)+'" aria-label="Close '+escape(t.label)+'" title="Close workspace">'+svg('close',13)+'</button>')+
         '</div>';
-    }).join('')+'</div><button type="button" class="ph-tab-new" aria-label="New event" title="New event">'+svg('plus',19)+'</button>';
+    }).join('')+'</div><button type="button" class="ph-tab-new" aria-label="Open a new workspace tab" title="Open a new workspace tab" aria-haspopup="menu" aria-expanded="false">'+svg('plus',18)+'</button>';
+    // Only reveal the selected tab, not the entire navigation row.
     const activeEl=bar.querySelector('.ph-workspace-tab.is-active');
-    activeEl?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
-    // Keep the track usable by Shift+wheel, touch and native horizontal trackpads.
+    activeEl?.scrollIntoView({block:'nearest',inline:'nearest'});
+  }
+  function openWorkspacePicker(button){
+    const bar=button.closest('.ph-workspace-tabs');
+    if(!bar)return;
+    const old=bar.querySelector('.ph-tab-picker');
+    if(old){old.remove();button.setAttribute('aria-expanded','false');return}
+    const id=encodeURIComponent(activeEventId()||'');
+    const options=[
+      ['production.html#/dashboard','home','Home dashboard'],
+      ['production.html#/events','calendar','Events & schedule'],
+      ['production.html#/builder/'+id,'layers','Event builder'],
+      ['index.html#/spaces/'+id,'cube','3D planner'],
+      ['production.html#/technical/'+id,'bolt','Technical connections'],
+      ['production.html#/crew/'+id,'check','Crew installation'],
+      ['production.html#/production/'+id,'briefcase','Production'],
+      ['production.html#/entities','users','People & organisations'],
+      ['index.html#/equipment','package','Equipment library'],
+      ['index.html#/overview','grid','Studio overview']
+    ];
+    const picker=document.createElement('div');
+    picker.className='ph-tab-picker';
+    picker.setAttribute('role','menu');
+    picker.setAttribute('aria-label','Choose a workspace to open in a new tab');
+    picker.innerHTML='<div class="ph-tab-picker-heading">Open in a new tab</div>'+
+      '<div class="ph-tab-picker-items">'+options.map(o=>
+        '<button type="button" role="menuitem" class="ph-tab-picker-item" data-ph-new-tab="'+escape(o[0])+'">'+
+        svg(o[1],16)+'<span>'+escape(o[2])+'</span></button>'
+      ).join('')+'</div><p class="ph-tab-picker-hint">Normal navigation stays in the current tab</p>';
+    bar.appendChild(picker);
+    button.setAttribute('aria-expanded','true');
+    picker.querySelector('button')?.focus();
+  }
+  function closeWorkspacePicker(){
+    const picker=document.querySelector('.ph-tab-picker');
+    if(!picker)return false;
+    picker.remove();
+    document.querySelector('.ph-tab-new')?.setAttribute('aria-expanded','false');
+    return true;
   }
   function getTabStatus(tab){
     const match=/^[^:]+:([^:]+)$/.exec(tab.key);
