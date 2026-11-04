@@ -61,3 +61,6 @@
 @media(max-width:850px){.home-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.home-panels{grid-template-columns:1fr}.home-panel-list{height:auto;max-height:min(36dvh,360px)}.home-current{align-items:stretch;flex-direction:column}.home-current-actions{min-width:0;flex-direction:row;flex-wrap:wrap}.home-current-actions .btn{flex:1}.home-shortcut-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:480px){.home-top h1{font-size:23px}.home-metric{padding:12px}.home-current{padding:14px!important}.home-row{gap:6px;padding:10px}.home-shortcut{padding:10px 8px;grid-template-columns:24px minmax(0,1fr) 8px}.home-shortcut small{font-size:9px}.home-top-actions{width:100%}.home-top-actions .btn{flex:1}.home-current-actions .btn{flex-basis:100%}}
 @media print{.home-panel-list{height:auto;max-height:none;overflow:visible}.home-dashboard{display:block}.home-shortcut-grid{grid-template-columns:repeat(2,1fr)}}
+/* Distinguish home-produced concepts without adding another long dashboard panel. */
+.ph-home-section-title{position:sticky;top:0;z-index:1;padding:6px 13px;background:#202e36;border-bottom:1px solid #364b52;color:#98cec2;font-size:10px;font-weight:750;letter-spacing:.035em}
+.ph-home-section-title+ .home-row{border-top:0}
