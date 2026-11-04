@@ -42,12 +42,12 @@
          item.updatedAt?'<small>Last updated '+esc(new Date(item.updatedAt).toLocaleDateString('en-AU'))+'</small>':'<small>Manually recorded · not independently verified</small>')+
        '</div><label class="ph-closeout-state"><span class="visually-hidden">Status: '+esc(item.label)+'</span>'+
        (derived?'<input type="hidden" name="derived_'+esc(item.id)+'" value="true"><span class="ph-closeout-derived">'+(item.status==='done'?'Done':'Pending')+'</span>':
-         '<select name="status_'+esc(item.id)+'" aria-label="'+esc(item.label)+' status">'+
+         '<select name="status_'+esc(item.id)+'" aria-label="'+esc(item.label)+' status" '+(m.closed?'disabled':'')+'>'+
            [['pending','Pending'],['done','Done'],['na','Not applicable']].map(([key,label])=>
               '<option value="'+key+'" '+(item.status===key?'selected':'')+'>'+label+'</option>').join('')+'</select>')+'</label>'+
        (derived?'<span class="ph-closeout-note">'+esc(item.note)+'</span>':
          '<label class="ph-closeout-reason"><span class="visually-hidden">Explanation for '+esc(item.label)+'</span>'+
-         '<input class="input" name="note_'+esc(item.id)+'" maxlength="350" value="'+esc(lc.closeout[item.id].note||'')+'" placeholder="Note / reason if not applicable"></label>')+
+         '<input class="input" name="note_'+esc(item.id)+'" maxlength="350" '+(m.closed?'disabled':'')+' value="'+esc(lc.closeout[item.id].note||'')+'" placeholder="Note / reason if not applicable"></label>')+
        '</div>';
    };
    const groupNames=['Equipment','People','Finance','Admin'];
