@@ -19,7 +19,7 @@ function harness(){
     body:{insertAdjacentHTML:(where,html)=>{modal=html}}
   };
   class FormDataMock{constructor(el){this.v=el.values||{}}get(key){return this.v[key]??null}getAll(key){return this.v[key]||[]}}
-  for(const file of ['event-lifecycle.js','event-lifecycle-ui.js']){
+  for(const file of ['event-lifecycle.js','event-lifecycle-ui.js','event-workspace.js']){
     runInNewContext(readFileSync(new URL('../'+file,import.meta.url),'utf8'),{window},{filename:file});
   }
   runInNewContext(script,{
