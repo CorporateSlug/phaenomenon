@@ -2,11 +2,12 @@
 (function(){
 'use strict';
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const link=id=>'#/builder/'+encodeURIComponent(id);
+const link=id=>'#/home/'+encodeURIComponent(id);
+const builder=id=>'#/builder/'+encodeURIComponent(id);
 const closeout=id=>'#/production/closeout/'+encodeURIComponent(id);
 const fmt=s=>/^\d{4}-\d\d-\d\d$/.test(s||'')?new Date(s+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'Date unknown';
 const dayString=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-const hrefStep=(e,s)=>['brief','spaces','equipment','review'].includes(s.id)?link(e.id)+'/'+s.id:s.href||link(e.id);
+const hrefStep=(e,s)=>['brief','spaces','equipment','review'].includes(s.id)?builder(e.id)+'/'+s.id:s.href||builder(e.id);
 const isOpportunity=e=>!!e&&['idea','outreach','contacted','discussion','quoted','tentative','postponed'].includes(e.bookingStage)&&!e.closed;
 const isDelivered=e=>!!e&&e.productionStage==='delivered'&&!e.closed;
 const needsCloseout=e=>!!e&&(isDelivered(e)||e.closed&&e.closeoutRemaining>0);
@@ -37,7 +38,7 @@ function render({events=[],activeId}={}){
    '<p class="muted">'+escape(active?((active.eventLead==='studio'?'Own production':'Client-led event')+' · '+activeDate+' · '+(active.venue||'Venue unknown')+' · '+(active.bookingLabel||'Opportunity')):'Create an opportunity or event to start planning')+'</p>'+
    '<div class="home-progress-text"><strong>'+done+' of '+steps.length+' steps configured</strong><small>Planning progress only · not safety approval</small></div>'+
    '<div class="home-progress" role="progressbar" aria-label="Current event planning progress" aria-valuemin="0" aria-valuemax="'+steps.length+'" aria-valuenow="'+done+'"><span style="width:'+(steps.length?Math.round(done/steps.length*100):0)+'%"></span></div>'+
-   '</div><div class="home-current-actions"><a class="btn primary" href="'+activeUrl+'">Open event builder →</a>'+
+   '</div><div class="home-current-actions"><a class="btn primary" href="'+activeUrl+'">Open event workspace →</a>'+
    (isDelivered(active)?'<a class="btn" href="'+closeout(active.id)+'">Closeout · '+active.closeoutRemaining+' outstanding →</a>':
     next?'<a class="btn" href="'+hrefStep(active,next)+'">Next: '+escape(next.title)+'</a>':'<a class="btn" href="#/events">All events</a>')+
    '</div></section>';
