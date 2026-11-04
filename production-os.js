@@ -25,7 +25,7 @@
     catch(e){return starter();}
   }
   const storedRaw=()=>{try{return localStorage.getItem(KEY);}catch(e){return null;}};
-  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'dashboard',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',homeVenueOpen:false,builderFocus:'',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,scheduleMode:'list',scheduleMonth:'',eventScope:'all',notice:''};
+  let db=load(),storageBaseline=storedRaw(),saveConflict=false, ui={view:'dashboard',eventId:'',area:'all',crewPerson:'all',role:'lead',productionTab:'team',homeVenueOpen:false,publicListingOpen:false,builderFocus:'',teamPerson:'',entityId:null,history:[],histIndex:-1,query:'',entityType:'All',showArchived:false,scheduleMode:'list',scheduleMonth:'',eventScope:'all',notice:''};
   try{const saved=JSON.parse(localStorage.getItem(PREF)||'{}');ui.eventId=saved.eventId||'';ui.area=saved.area||'all';ui.crewPerson=saved.crewPerson||'all';ui.role=saved.role||'lead';ui.productionTab=saved.productionTab||'team';ui.scheduleMode=saved.scheduleMode==='calendar'?'calendar':'list';ui.eventScope=['all','studio','client'].includes(saved.eventScope)?saved.eventScope:'all';}catch(e){}
   function savePreferences(){
     try{localStorage.setItem(PREF,JSON.stringify({eventId:ui.eventId,area:ui.area,crewPerson:ui.crewPerson,role:ui.role,productionTab:ui.productionTab,scheduleMode:ui.scheduleMode,eventScope:ui.eventScope}));}catch(e){}
@@ -367,7 +367,7 @@
     return {all:t.length,installed:t.filter(x=>x.state!=='pending').length,verified:t.filter(x=>x.state==='verified').length,issues:org().issues.filter(x=>x.eventId===e?.id&&x.status!=='Resolved').length};
   }
   function notice(message){if(saveConflict){message='Another tab updated the event. Your latest edit was not saved. Please retry it.';saveConflict=false;}ui.notice=message;render();setTimeout(()=>{if(ui.notice===message){ui.notice='';document.querySelector('#message')?.remove();}},4200);}
-  function viewName(){return ({dashboard:'Home',builder:'Event builder',home:'Event overview',events:'Events & schedule',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'Directory',community:'Community noticeboard'}[ui.view]||'Event overview');}
+  function viewName(){return ({dashboard:'Home',builder:'Event builder',home:'Event workspace',events:'Events & schedule',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'Directory',community:'Community noticeboard'}[ui.view]||'Event overview');}
   function render(){
     const e=current(),c=counts(e);
     const navItem=(href,label,glyph,active)=>'<a href="'+href+'" class="nav'+(active?' active':'')+'"'+(active?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+glyph+'</span><span>'+esc(label)+'</span></a>';
@@ -381,7 +381,7 @@
       '<div class="rail-label">COMMUNITY</div>'+navItem('#/community','Community noticeboard','✳',ui.view==='community')+
       '<div class="rail-label">ACTIVE EVENT</div>'+
       navItem('#/builder/'+eventId,'Event builder','◈',ui.view==='builder')+
-      navItem('#/home','Event overview','⌂',ui.view==='home'&&!ui.homeVenueOpen)+
+      navItem('#/home/'+eventId,'Event workspace','⌂',ui.view==='home'&&!ui.homeVenueOpen)+
       navItem('index.html#/bookings/'+eventId,'Event details','▤',false)+
       '<div class="rail-label">WORKSPACES</div>'+
       navGroup('plan','Plan & design','⌑',[
@@ -439,6 +439,7 @@
       (ui.view==='dashboard'?studioDashboard():ui.view==='events'?eventSchedule():ui.view==='builder'?builderPage(e,c):ui.view==='home'?home(e,c):ui.view==='design'?design(e,c):ui.view==='technical'?technical(e,c):ui.view==='crew'?crew(e,c):ui.view==='production'?production(e,c):ui.view==='community'?window.PhaenomenonCommunityAdmin.render():entities(e))+
       '<p class="footnote">Phaenomenon prototype · Single-browser storage only · Data and technical calculations are provisional · Role views are not security permissions.</p></div></main></div>'+mobileNavigation;
     $.innerHTML=html;
+    renderPublicationPreview();
     document.title=viewName()+' · Phaenomenon';
   }
 
@@ -672,7 +673,7 @@
     const unscheduled=all.filter(x=>!used.has(x.id)&&!validEventDate(x.date)).sort((a,b)=>a.title.localeCompare(b.title));
     unscheduled.forEach(x=>used.add(x.id));
     const remaining=all.filter(x=>!used.has(x.id));
-    const eventRow=x=>'<a class="event-index-row'+(x.id===ui.eventId?' is-current':'')+'" href="#/builder/'+encodeURIComponent(x.id)+'">'+
+    const eventRow=x=>'<a class="event-index-row'+(x.id===ui.eventId?' is-current':'')+'" href="#/home/'+encodeURIComponent(x.id)+'">'+
       '<span class="event-index-date">'+esc(date(x.date)==='Unscheduled'?(state(x).targetMonth?state(x).targetMonth+' approx.':'No date'):date(x.date))+'</span>'+
       '<span class="event-index-main"><strong>'+esc(x.title)+'</strong><small>'+esc(venue(x)?.name||x.venue||'Venue not assigned')+
       ' · '+esc(state(x).eventLead==='studio'?'Own production':'Client-led event')+' · '+esc(state(x).dateLabel)+' · '+esc(state(x).productionLabel)+(state(x).nextAction?' · Next: '+esc(state(x).nextAction):'')+'</small></span>'+
@@ -691,13 +692,13 @@
       const stamp=key+'-'+String(d).padStart(2,'0');
       const matches=monthEvents.filter(x=>x.date===stamp);
       return '<div class="calendar-day'+(stamp===today?' is-today':'')+'"><span class="calendar-date">'+d+'</span>'+
-        matches.map(x=>'<a href="#/builder/'+encodeURIComponent(x.id)+'" title="'+esc(x.title)+'" class="calendar-event'+(x.id===ui.eventId?' is-current':'')+'">'+esc(x.title)+'</a>').join('')+'</div>';
+        matches.map(x=>'<a href="#/home/'+encodeURIComponent(x.id)+'" title="'+esc(x.title)+'" class="calendar-event'+(x.id===ui.eventId?' is-current':'')+'">'+esc(x.title)+'</a>').join('')+'</div>';
     }).join('');
     return hero('EVENTS & SCHEDULE','All events','Track Phaenomenon-produced concepts separately from client commissions, from first idea to closeout.',
       '<button class="btn primary" data-act="builder-new">+ New event</button>')+
       '<div class="event-index-actions section"><div class="row ph-event-scope" role="group" aria-label="Filter events by organiser">'+[['all','All events'],['studio','Own events'],['client','Client work']].map(([id,title])=>'<button type="button" class="btn small'+(ui.eventScope===id?' primary':'')+'" data-act="event-scope" data-id="'+id+'" aria-pressed="'+(ui.eventScope===id)+'">'+title+'</button>').join('')+'</div><div class="row"><button type="button" class="btn'+(ui.scheduleMode==='list'?' primary':'')+'" data-act="schedule-mode" data-id="list" aria-pressed="'+(ui.scheduleMode==='list')+'">Event list</button>'+
       '<button type="button" class="btn'+(ui.scheduleMode==='calendar'?' primary':'')+'" data-act="schedule-mode" data-id="calendar" aria-pressed="'+(ui.scheduleMode==='calendar')+'">Month calendar</button></div>'+
-      (selected?'<a class="btn" href="#/builder/'+encodeURIComponent(selected.id)+'">Continue '+esc(selected.title)+' →</a>':'')+'</div>'+
+      (selected?'<a class="btn" href="#/home/'+encodeURIComponent(selected.id)+'">Open '+esc(selected.title)+' →</a>':'')+'</div>'+
       (ui.scheduleMode==='calendar'?
         '<section class="panel section event-calendar"><div class="event-calendar-head"><h2>'+esc(monthTitle)+'</h2>'+
         '<div class="row"><button type="button" class="btn small" data-act="schedule-month" data-id="-1" aria-label="Previous month">←</button>'+
@@ -705,7 +706,7 @@
         '<button type="button" class="btn small" data-act="schedule-selected" '+(!selected||!validEventDate(selected.date)?'disabled':'')+'>Selected event</button>'+
         '<button type="button" class="btn small" data-act="schedule-month" data-id="1" aria-label="Next month">→</button></div></div>'+
         '<div class="calendar-grid" aria-label="'+esc(monthTitle)+'">'+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>'<div class="calendar-weekday">'+x+'</div>').join('')+grid+'</div>'+
-        '<p class="form-note">Event dates from your saved bookings. Select an event to open its builder. For the broader studio diary, use <a href="index.html#/schedule">Studio calendar ↗</a>.</p></section>'+
+        '<p class="form-note">Event dates from your saved bookings. Select an event to open its workspace. For the broader studio diary, use <a href="index.html#/schedule">Studio calendar ↗</a>.</p></section>'+
         (monthEvents.length?grouped('Events this month',monthEvents.slice().sort((a,b)=>a.date.localeCompare(b.date))):'<p class="muted">No events scheduled this month. Use the arrows to browse other months or switch to Event list for every booking.</p>'):
         (all.length?grouped('Opportunities & discussions',opportunities)+grouped('Upcoming confirmed',upcoming)+
           grouped('Delivered · closeout outstanding',outstanding)+grouped('Past events',past)+grouped('Without a date',unscheduled)+grouped('Other events',remaining)+grouped('Closed / archive',closed):
@@ -714,24 +715,10 @@
   }
 
   function home(e,c){
-    if(!e)return '<div class="empty">Create an event in the original workspace to begin.</div>';
-    return hero('YOUR EVENT WORKSPACE',e.title, date(e.date)+' · '+(venue(e)?.name||e.venue||'Venue not set'),'<a class="btn primary" href="#/builder/'+encodeURIComponent(e.id)+'">Continue event builder →</a> '+pill(e.status||'Enquiry')+' '+pill('Crew pack r'+(published(e)?.revision||0)))+
-      changeNotice(e)+venueSettings(e)+
-      '<div class="stats">'+stat('Spaces',areas(e).length,'Selected for this event')+stat('Placed equipment',(plan(e).items||[]).length,'All equipment and structures')+
-      stat('Installation',c.installed+' / '+c.all,'Tasks marked installed')+stat('Open issues',c.issues,'Awaiting resolution')+'</div>'+
-      '<div class="section-head"><h2>What are you working on?</h2><span class="muted">Choose a task, not an expertise level</span></div>'+
-      '<div class="grid cols4 section">'+[
-        ['design','⌑','3D design','Position equipment and plan the physical layout.'],
-        ['technical','⚡','Connections','Review patching, cables and power.'],
-        ['crew','✓','Crew installation','Follow task-specific installation instructions.'],
-        ['production','▤','Production','Coordinate team, equipment and show schedule.']
-      ].map(x=>'<a class="work-card" href="#/'+x[0]+'"><span class="symbol">'+x[1]+'</span><strong>'+x[2]+'</strong><p>'+x[3]+'</p></a>').join('')+'</div>'+
-      '<details class="event-overview-more section"><summary>Spaces &amp; installation progress <span aria-hidden="true">⌄</span></summary><div class="grid cols2">'+
-      '<section class="panel"><h2>Spaces in this event</h2><div class="stack">'+areas(e).map(a=>'<div class="area-card"><div class="row between"><strong>'+esc(a.name)+'</strong>'+pill(a.kind||'Stage')+'</div><p class="muted">'+(plan(e).items||[]).filter(i=>groupArea(e,i)===a.id).length+' placed items · '+(plan(e).runs||[]).filter(r=>{const to=(plan(e).items||[]).find(i=>i.id===r.to);return to&&groupArea(e,to)===a.id;}).length+' incoming/local cable records</p></div>').join('')+'</div></section>'+
-      '<section class="panel"><h2>Current state</h2><p class="muted">The event record connects a reusable venue, its selected spaces, equipment placements, technical connections, named assignments and a published crew revision.</p>'+
-      '<div class="sep"></div><div class="row between"><span>Installed</span><strong>'+c.installed+' / '+c.all+'</strong></div><div class="progress" style="margin:12px 0"><div style="width:'+(c.all?100*c.installed/c.all:0)+'%"></div></div>'+
-      '<p class="muted">'+c.verified+' independently marked verified · '+c.issues+' open issue(s)</p>'+
-      '<a class="btn" href="#/production">Open production overview →</a></section></div></details>';
+    return window.PhaenomenonEventWorkspace.render(db,e,{
+      changed:!!e&&isChanged(e),
+      publishOpen:ui.publicListingOpen
+    });
   }
   function design(e,c){
     const p=plan(e),v=venue(e);
@@ -1188,6 +1175,7 @@
     ui.view=['dashboard','events','builder','home','design','technical','crew','production','entities','community'].includes(view)?view:'dashboard';
     ui.builderFocus=ui.view==='builder'&&['brief','spaces','design','equipment','connections','team','review'].includes(parts[2])?parts[2]:'';
     ui.homeVenueOpen=(ui.view==='home'&&parts[1]==='venue')||(ui.view==='builder'&&ui.builderFocus==='spaces');
+    ui.publicListingOpen=ui.view==='home'&&parts[2]==='publish'&&!ui.homeVenueOpen;
     const routeEvent=ui.view==='home'&&parts[1]==='venue'?parts[2]:ui.view==='production'&&['team','logistics','installation','show','closeout'].includes(parts[1])?parts[2]:['entities','events','community'].includes(ui.view)?null:parts[1];
     if(ui.view==='production'&&['team','logistics','installation','show','closeout'].includes(parts[1]))ui.productionTab=parts[1];
     if(routeEvent&&events().some(x=>x.id===decodeURIComponent(routeEvent)))ui.eventId=decodeURIComponent(routeEvent);
@@ -1515,7 +1503,7 @@
       ensure();
       if(!store())return;
       closeBuilderEvent();
-      location.hash='#/builder/'+encodeURIComponent(result.event.id);
+      location.hash='#/home/'+encodeURIComponent(result.event.id);
       route();
       return;
     }
