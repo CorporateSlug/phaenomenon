@@ -310,6 +310,13 @@
     }else{saveTabs();schedule()}
   }
   document.addEventListener('click',ev=>{
+    // When all tabs have been intentionally closed, clicking Home again
+    // should reopen it as a regular tab, even if the hash doesn't change.
+    const reopenHome=ev.target.closest('a[href="#/dashboard"],a[href="production.html#/dashboard"]');
+    if(reopenHome&&emptyHome&&!tabs.length&&isProduction()&&getRoute().key==='home'){
+      emptyHome=false;
+      schedule();
+    }
     const collapse=ev.target.closest('.ph-rail-toggle');
     if(collapse){
       ev.preventDefault();collapsed=!collapsed;try{localStorage.setItem(RAIL_KEY,JSON.stringify(collapsed))}catch{}
