@@ -446,8 +446,14 @@
     const rows=events().map(e=>{
       const revision=!!published(e)&&isChanged(e);
       const steps=model?.steps(db,e,{changed:revision})||[];
+      const life=window.PhaenomenonLifecycle.summary(db,e);
       return {
         id:e.id,title:e.title,date:e.date,status:e.status,
+        bookingStage:life.bookingStage,bookingLabel:life.bookingLabel,
+        dateCertainty:life.dateCertainty,targetMonth:life.targetMonth,
+        productionStage:life.productionStage,productionLabel:life.productionLabel,
+        followUpDate:life.followUpDate,nextAction:life.nextAction,
+        closeoutRemaining:life.remaining,closeoutDone:life.done,closed:life.closed,
         venue:venue(e)?.name||e.venue||'Venue to be confirmed',
         needsRevision:revision,
         openIssues:org().issues.filter(i=>i.eventId===e.id&&i.status!=='Resolved').length,
@@ -607,7 +613,7 @@
     };
     return hero('GUIDED EVENT BUILDER',e.title,'Choose the next step or jump directly to any part of the event. Nothing is locked.',
         '<button class="btn" data-act="builder-new">+ Another event</button>')+
-      changeNotice(e)+
+      changeNotice(e)+window.PhaenomenonLifecycleUI.stageStrip(e,db)+
       '<section class="builder-summary section"><div><strong>'+setup+' of '+steps.length+' steps configured</strong><p class="muted">Planning progress only. A configured step does not mean it has been checked or approved for safe installation.</p>'+
       '<div class="builder-progress" role="progressbar" aria-label="Event setup progress" aria-valuenow="'+setup+'" aria-valuemin="0" aria-valuemax="'+steps.length+'"><div style="width:'+progress+'%"></div></div></div>'+
       (next?'<div class="builder-next"><span class="eyebrow">SUGGESTED NEXT</span><strong>'+esc(next.title)+'</strong><small>'+esc(next.summary)+'</small>'+actionLink(next)+'</div>':
@@ -623,7 +629,7 @@
       '<div class="stack">'+gear.incomplete.map(x=>'<div class="linkrow"><strong>'+esc(x.name)+'</strong><span class="muted">'+x.placed+' placed · '+x.requested+' allocated</span></div>').join('')+'</div>'+
       '<button class="btn primary" style="margin-top:13px" data-act="builder-reconcile-kit">Bring kit up to placed quantities</button></section>':'')+
             (gear?builderEquipmentLinks(e,gear):'')+
-      '<div class="builder-footnote">You can leave an event as a draft and return to any step. Layout revisions, technical verification and crew sign-offs remain separate from these planning markers.</div>';
+      '<div class="builder-footnote">You can leave an event as a draft and return to any step. Layout revisions, technical verification and crew sign-offs remain separate from these planning markers. <a href="#/production/closeout/'+encodeURIComponent(e.id)+'">Post-event closeout →</a></div>';
   }
   let builderEventOpen=false;
   function openBuilderEvent(){
