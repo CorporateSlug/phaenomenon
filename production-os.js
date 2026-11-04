@@ -674,7 +674,7 @@
     const eventRow=x=>'<a class="event-index-row'+(x.id===ui.eventId?' is-current':'')+'" href="#/builder/'+encodeURIComponent(x.id)+'">'+
       '<span class="event-index-date">'+esc(date(x.date)==='Unscheduled'?(state(x).targetMonth?state(x).targetMonth+' approx.':'No date'):date(x.date))+'</span>'+
       '<span class="event-index-main"><strong>'+esc(x.title)+'</strong><small>'+esc(venue(x)?.name||x.venue||'Venue not assigned')+
-      ' · '+esc(state(x).eventLead==='studio'?'Own production':'Client commission')+' · '+esc(state(x).dateLabel)+' · '+esc(state(x).productionLabel)+(state(x).nextAction?' · Next: '+esc(state(x).nextAction):'')+'</small></span>'+
+      ' · '+esc(state(x).eventLead==='studio'?'Own production':'Client-led event')+' · '+esc(state(x).dateLabel)+' · '+esc(state(x).productionLabel)+(state(x).nextAction?' · Next: '+esc(state(x).nextAction):'')+'</small></span>'+
       '<span class="event-index-status">'+pill(state(x).closed?'Closed':state(x).bookingLabel)+(x.id===ui.eventId?'<small class="event-index-active">Current</small>':'')+'</span><span class="event-index-chevron" aria-hidden="true">›</span></a>';
     const grouped=(name,list)=>list.length?'<section class="panel event-index-group"><h2>'+esc(name)+' <span class="muted">('+list.length+')</span></h2><div class="event-index-rows">'+list.map(eventRow).join('')+'</div></section>':'';
     const selected=current(),monthPattern=/^\d{4}-(0[1-9]|1[0-2])$/;
