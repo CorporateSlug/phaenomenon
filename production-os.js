@@ -367,7 +367,7 @@
     return {all:t.length,installed:t.filter(x=>x.state!=='pending').length,verified:t.filter(x=>x.state==='verified').length,issues:org().issues.filter(x=>x.eventId===e?.id&&x.status!=='Resolved').length};
   }
   function notice(message){if(saveConflict){message='Another tab updated the event. Your latest edit was not saved. Please retry it.';saveConflict=false;}ui.notice=message;render();setTimeout(()=>{if(ui.notice===message){ui.notice='';document.querySelector('#message')?.remove();}},4200);}
-  function viewName(){return ({dashboard:'Home',builder:'Event builder',home:'Event overview',events:'Events & schedule',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'Directory'}[ui.view]||'Event overview');}
+  function viewName(){return ({dashboard:'Home',builder:'Event builder',home:'Event overview',events:'Events & schedule',design:'3D design',technical:'Technical connections',crew:'Crew installation',production:'Production',entities:'Directory',community:'Community noticeboard'}[ui.view]||'Event overview');}
   function render(){
     const e=current(),c=counts(e);
     const navItem=(href,label,glyph,active)=>'<a href="'+href+'" class="nav'+(active?' active':'')+'"'+(active?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+glyph+'</span><span>'+esc(label)+'</span></a>';
@@ -378,6 +378,7 @@
     const navigation=
       '<div class="rail-label">HOME</div>'+navItem('#/dashboard','Dashboard','⌂',ui.view==='dashboard')+
       '<div class="rail-label">EVENTS</div>'+navItem('#/events','All events & schedule','▦',ui.view==='events')+
+      '<div class="rail-label">COMMUNITY</div>'+navItem('#/community','Community noticeboard','✳',ui.view==='community')+
       '<div class="rail-label">ACTIVE EVENT</div>'+
       navItem('#/builder/'+eventId,'Event builder','◈',ui.view==='builder')+
       navItem('#/home','Event overview','⌂',ui.view==='home'&&!ui.homeVenueOpen)+
@@ -423,7 +424,7 @@
       '<div class="rail-bottom"><strong>ALL EVENTS · CONNECTED WORK</strong><p>Browse the schedule or switch events at any time.</p>'+
       '<p>Local prototype · Role views are not security permissions.</p></div></aside>'+
       '<button type="button" class="mobile-nav-backdrop" data-act="close-rail" aria-label="Close navigation"></button>'+
-      '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / '+(ui.view==='dashboard'?'Home':'Event')+'</div><div class="header-title"><span class="header-title-desktop">'+viewName()+'</span><span class="header-title-mobile">'+({dashboard:'Home',builder:'Build',home:'Event',events:'Events',design:'Design',technical:'Tech',crew:'Crew',production:'Production',entities:'Directory'}[ui.view]||'Event')+'</span></div></div>'+
+      '<main class="main"><header class="header"><div><div class="eyebrow">Phaenomenon / '+(ui.view==='dashboard'?'Home':'Event')+'</div><div class="header-title"><span class="header-title-desktop">'+viewName()+'</span><span class="header-title-mobile">'+({dashboard:'Home',builder:'Build',home:'Event',events:'Events',design:'Design',technical:'Tech',crew:'Crew',production:'Production',entities:'Directory',community:'Community'}[ui.view]||'Event')+'</span></div></div>'+
       '<div class="header-tools"><a class="btn header-events-link" href="#/events">All events</a><button type="button" class="btn primary" data-act="builder-new">+ New event</button><label class="event-header-select">SWITCH EVENT<select id="event-picker" aria-label="Switch active event">'+
       events().map(x=>'<option value="'+esc(x.id)+'" '+(x.id===e?.id?'selected':'')+'>'+esc(x.title)+'</option>').join('')+
       '</select></label><details class="header-more"><summary class="btn" aria-label="More workspace options">Options ▾</summary>'+
@@ -435,7 +436,7 @@
       '<a class="btn" href="index.html#/bookings/'+eventId+'">Edit event booking ↗</a></div></details>'+
       '<small id="save-status" class="save-status" title="This is local browser storage, not cloud sync.">Saved in this browser</small></div></header>'+
       '<div class="content">'+(ui.notice?'<div id="message" class="notice good section" role="status">'+esc(ui.notice)+'</div>':'')+
-      (ui.view==='dashboard'?studioDashboard():ui.view==='events'?eventSchedule():ui.view==='builder'?builderPage(e,c):ui.view==='home'?home(e,c):ui.view==='design'?design(e,c):ui.view==='technical'?technical(e,c):ui.view==='crew'?crew(e,c):ui.view==='production'?production(e,c):entities(e))+
+      (ui.view==='dashboard'?studioDashboard():ui.view==='events'?eventSchedule():ui.view==='builder'?builderPage(e,c):ui.view==='home'?home(e,c):ui.view==='design'?design(e,c):ui.view==='technical'?technical(e,c):ui.view==='crew'?crew(e,c):ui.view==='production'?production(e,c):ui.view==='community'?window.PhaenomenonCommunityAdmin.render():entities(e))+
       '<p class="footnote">Phaenomenon prototype · Single-browser storage only · Data and technical calculations are provisional · Role views are not security permissions.</p></div></main></div>'+mobileNavigation;
     $.innerHTML=html;
     document.title=viewName()+' · Phaenomenon';
@@ -1184,10 +1185,10 @@
   function route(){
     document.body?.classList?.remove('ph-mobile-menu-open');
     const parts=location.hash.replace(/^#\/?/,'').split('/'),view=parts[0];
-    ui.view=['dashboard','events','builder','home','design','technical','crew','production','entities'].includes(view)?view:'dashboard';
+    ui.view=['dashboard','events','builder','home','design','technical','crew','production','entities','community'].includes(view)?view:'dashboard';
     ui.builderFocus=ui.view==='builder'&&['brief','spaces','design','equipment','connections','team','review'].includes(parts[2])?parts[2]:'';
     ui.homeVenueOpen=(ui.view==='home'&&parts[1]==='venue')||(ui.view==='builder'&&ui.builderFocus==='spaces');
-    const routeEvent=ui.view==='home'&&parts[1]==='venue'?parts[2]:ui.view==='production'&&['team','logistics','installation','show','closeout'].includes(parts[1])?parts[2]:['entities','events'].includes(ui.view)?null:parts[1];
+    const routeEvent=ui.view==='home'&&parts[1]==='venue'?parts[2]:ui.view==='production'&&['team','logistics','installation','show','closeout'].includes(parts[1])?parts[2]:['entities','events','community'].includes(ui.view)?null:parts[1];
     if(ui.view==='production'&&['team','logistics','installation','show','closeout'].includes(parts[1]))ui.productionTab=parts[1];
     if(routeEvent&&events().some(x=>x.id===decodeURIComponent(routeEvent)))ui.eventId=decodeURIComponent(routeEvent);
     if(ui.view==='entities'&&parts[1]&&entity(decodeURIComponent(parts[1]))){
@@ -1234,6 +1235,17 @@
       const result=window.PhaenomenonLifecycle.reopenEvent(e);
       if(result.error){notice(result.error);return;}
       if(store())notice('Event reopened for additional changes.');
+      return;
+    }
+    if(action==='community-review'){
+      const status=el.dataset.status;
+      if(!['approved','rejected','pending'].includes(status))return;
+      const model=window.PhaenomenonCommunity;
+      if(!model){notice('Community demo is unavailable.');return;}
+      if(status==='approved'&&!confirm('Approve this local submission for the public demo page? Do not approve private locations or personal details.'))return;
+      const result=model.review(id,status);
+      if(result.error){notice(result.error);return;}
+      notice(status==='approved'?'Submission approved in this browser demo.':'Submission review updated in this browser demo.');
       return;
     }
     if(action==='builder-new-close'){closeBuilderEvent();return;}
@@ -1607,7 +1619,7 @@
     store();notice('Saved to this browser.');
   });
   // Prevent stale browser tabs from silently overwriting other production edits.
-  window.addEventListener('storage',event=>{if(event.key===KEY)refreshFromStorage();});
+  window.addEventListener('storage',event=>{if(event.key===KEY)refreshFromStorage();if(event.key===window.PhaenomenonCommunity?.KEY&&ui.view==='community')render();});
   window.addEventListener('focus',refreshFromStorage);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshFromStorage();});
   document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){if(document.getElementById('production-rail')?.classList?.contains('is-expanded')){
