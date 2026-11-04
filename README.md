@@ -1,5 +1,13 @@
 # Phaenomenon
 
+## Public community noticeboard — included in demo
+
+**[Open public community preview](community.html)** · **[Review submissions inside Phaenomenon](production.html#/community)** · [Implementation and launch requirements](COMMUNITY_BOARD.md)
+
+A deliberately lightweight, public-facing **queer community events noticeboard** is now part of the demo. It is separate from the private production management views. Visitors can browse example listings, search and filter events, and submit a short event form with an optional external ticket link. Submitted events go to a pending queue; Aaron can approve, decline or unpublish them from the internal Community workspace.
+
+**This is still a local prototype, not a deployed multi-user public service.** Community entries live in a separate browser-local store and are visible to the review screen only when opened under the same browser origin. Real public posting requires shared server storage, authenticated moderation and spam/privacy protection. No private Phaenomenon event data is published automatically.
+
 ## Event lifecycle and post-event closeout
 
 [**Event lifecycle architecture and rules**](EVENT_LIFECYCLE.md) defines the single connected event record from initial opportunity and organiser outreach through tentative/confirmed booking, independent production progress, delivery, financial reconciliation and explicit closure. **Date, client and venue can remain unknown at creation.** An approximate month and follow-up action can be recorded while a booking remains an idea.
