@@ -50,3 +50,16 @@ body:has(#app) .ph-closeout-derived{background:#e2f2eb;color:#2d7866}
 .ph-closeout-group h3{position:sticky;top:0;z-index:2;background:#19232d;padding:8px 0;margin:0}
 body:has(#app) .ph-closeout-group h3{background:#fff}
 @media print{.ph-closeout-list{max-height:none;overflow:visible}.ph-closeout-group h3{position:static}}
+
+/* Event leadership is independent of booking/production stage. Hide the
+   external commissioning-client picker for a studio-produced event, without
+   rewriting (or erasing) other organisation and collaborator relationships. */
+.ph-lifecycle-lead{grid-column:1/-1}
+.ph-lifecycle-lead-hint{display:block;font-size:10px;line-height:1.4;color:#9bafb4;font-weight:400;margin-top:4px}
+body:has(#app) .ph-lifecycle-lead-hint{color:#69847c}
+form:has(select[name="eventLead"] option[value="studio"]:checked) [data-ph-client-field]{display:none!important}
+.ph-stage-strip{grid-template-columns:repeat(5,minmax(0,1fr))}
+.ph-event-scope{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ph-event-scope .btn{font-size:11px;min-height:30px;padding:5px 10px}
+@media (max-width:920px){.ph-stage-strip{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:600px){.ph-stage-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
