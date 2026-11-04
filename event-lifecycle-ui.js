@@ -62,7 +62,7 @@
      '<div class="ph-closeout-progress"><span style="width:'+Math.round(m.done/m.total*100)+'%"></span></div>'+
      '<p class="form-note">'+(m.productionStage==='delivered'?'Event marked delivered.':['cancelled','declined','lost'].includes(m.bookingStage)?'Booking no longer proceeding.':'Set production to Delivered (or record a declined or cancelled booking) before closing.')+
      ' Invoice issue and payment statuses are automatically determined from linked invoices where present. Other items require explicit confirmation.</p>'+
-     '<form id="event-closeout-form">'+groups+
+     '<form id="event-closeout-form"><div class="ph-closeout-list" role="region" tabindex="0" aria-label="Post-event closeout checklist">'+groups+'</div>'+
      '<div class="row ph-closeout-actions"><button class="btn primary" type="submit" '+(m.closed?'disabled':'')+'>Save checklist</button>'+
      '<a class="btn" href="index.html#/invoices">Open invoices ↗</a>'+
      (m.closed?'<button type="button" class="btn" data-act="lifecycle-reopen">Reopen event</button>':
