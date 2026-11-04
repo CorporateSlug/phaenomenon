@@ -8,8 +8,7 @@
  */
 (() => {
   'use strict';
-  // v2 deliberately starts with one workspace instead of restoring the old
-  // auto-generated v1 tabs that accumulated during ordinary navigation.
+  // Existing v2 tab records are retained, but Home is no longer pinned.
   const TABS_KEY='phaenomenon-open-workspace-tabs-v2';
   const ACTIVE_KEY='phaenomenon-active-workspace-tab-v2';
   const LAST_WORK_KEY='phaenomenon-last-workspace-tab-v2';
@@ -139,38 +138,34 @@
     const ids=new Set();
     return filtered.filter(x=>{if(ids.has(x.id))return false;ids.add(x.id);return true;});
   }
-  const home={id:'home',key:'home',label:'Home',icon:'home',href:'production.html#/dashboard'};
-  let tabs=[home,...sanitize(parseJson(TABS_KEY,{tabs:[]})).filter(x=>x.id!=='home')];
+  const homeHref='production.html#/dashboard';
+  const savedInitial=parseJson(TABS_KEY,{tabs:[]});
+  let tabs=sanitize(savedInitial);
+  // Closing the final tab leaves an intentionally empty tab strip on reload.
+  let emptyHome=!!(savedInitial?.emptyHome&&!tabs.length);
   let collapsed=parseJson(RAIL_KEY,false)===true;
   const session=()=>{
     try{return sessionStorage}catch{return localStorage}
   };
-  const getActive=()=>{try{return session().getItem(ACTIVE_KEY)||'home'}catch{return 'home'}};
+  const getActive=()=>{try{return session().getItem(ACTIVE_KEY)||''}catch{return ''}};
   const setActive=id=>{try{session().setItem(ACTIVE_KEY,id)}catch{}};
   let selected=getActive(),lastWorking=(()=>{try{return session().getItem(LAST_WORK_KEY)||''}catch{return ''}})();
-  if(selected!=='home')lastWorking=selected;
+  if(tabs.some(t=>t.id===selected))lastWorking=selected;
   const newId=()=> 'work-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);
-  const saveTabs=()=>{try{localStorage.setItem(TABS_KEY,JSON.stringify({version:2,tabs}))}catch{}};
+  const saveTabs=()=>{try{localStorage.setItem(TABS_KEY,JSON.stringify({version:3,tabs,emptyHome}))}catch{}};
   function activate(id){
     selected=id;
-    if(id!=='home'){
-      lastWorking=id;
-      try{session().setItem(LAST_WORK_KEY,id)}catch{}
-    }
+    lastWorking=id||'';
+    try{session().setItem(LAST_WORK_KEY,lastWorking)}catch{}
     setActive(id);
   }
   function synchronize(){
     const route=getRoute();
-    // Home is pinned; coming home never erases the last working tab.
-    if(route.key==='home'){
-      activate('home');
-      saveTabs();
-      return;
-    }
-    let slot=tabs.find(t=>t.id===selected&&t.id!=='home');
-    // Clicking an ordinary sidebar link while Home is active reuses a working
-    // slot, rather than spawning another tab on each navigation.
-    if(!slot)slot=tabs.find(t=>t.id===lastWorking)||tabs.find(t=>t.id!=='home');
+    if(emptyHome&&!tabs.length&&route.key==='home')return;
+    emptyHome=false;
+    let slot=tabs.find(t=>t.id===selected);
+    // Ordinary sidebar navigation reuses the selected tab.
+    if(!slot)slot=tabs.find(t=>t.id===lastWorking)||tabs[0];
     if(!slot){
       slot={id:newId(),...route};
       tabs.push(slot);
@@ -184,6 +179,7 @@
     if(!/^(index|production)\.html#\/[a-z0-9_/%-]+$/i.test(href))return;
     const slot={id:newId(),key:'new',label:'Workspace',icon:'grid',href};
     tabs.push(slot);
+    emptyHome=false;
     activate(slot.id);
     saveTabs();
     visit(href);
@@ -231,13 +227,13 @@
       const header=main.querySelector(':scope > .header, :scope > .topbar');
       if(header)header.after(bar);else main.prepend(bar);
     }
-    bar.innerHTML='<div class="ph-tabs-track" aria-label="Open workspaces">'+tabs.map(t=>{
+    bar.innerHTML='<div class="ph-tabs-track" aria-label="Open workspaces">'+(tabs.length?'':'<span class="ph-tabs-empty">No open tabs</span>')+tabs.map(t=>{
       const active=t.id===selected;
-      return '<div class="ph-workspace-tab'+(active?' is-active':'')+(t.id==='home'?' is-home':'')+'" data-tab-id="'+escape(t.id)+'">'+
+      return '<div class="ph-workspace-tab'+(active?' is-active':'')+'" data-tab-id="'+escape(t.id)+'">'+
         '<a class="ph-tab-link" data-open-tab="'+escape(t.id)+'" '+(active?'aria-current="page" ':'')+'href="'+escape(t.href)+'" title="'+escape(t.label)+'">'+
           '<span class="ph-tab-icon">'+svg(t.icon,15)+'</span><span class="ph-tab-title">'+escape(t.label)+'</span>'+
           '</a>'+
-        (t.id==='home'?'':'<button type="button" class="ph-tab-close" data-close-id="'+escape(t.id)+'" aria-label="Close '+escape(t.label)+'" title="Close workspace">'+svg('close',13)+'</button>')+
+        '<button type="button" class="ph-tab-close" data-close-id="'+escape(t.id)+'" aria-label="Close '+escape(t.label)+'" title="Close workspace">'+svg('close',13)+'</button>'+
         '</div>';
     }).join('')+'</div><button type="button" class="ph-tab-new" aria-label="Open a new workspace tab" title="Open a new workspace tab" aria-haspopup="menu" aria-expanded="false">'+svg('plus',18)+'</button>';
     // Only reveal the selected tab, not the entire navigation row.
@@ -254,6 +250,7 @@
     const eventId=eventScoped?route.key.split(':').slice(1).join(':'):activeEventId();
     const id=encodeURIComponent(eventId||'');
     const options=[
+      ['production.html#/dashboard','home','Home dashboard'],
       ['production.html#/events','calendar','Events & schedule'],
       ['production.html#/builder/'+id,'layers','Event builder'],
       ['index.html#/spaces/'+id,'cube','3D planner'],
@@ -298,15 +295,17 @@
   function visit(href){if(!/^(index|production)\.html#\//.test(href))return;location.href=href;}
   function closeTab(id){
     const i=tabs.findIndex(t=>t.id===id);
-    if(i<0||id==='home')return;
+    if(i<0)return;
     const wasActive=selected===id;
     tabs.splice(i,1);
-    if(lastWorking===id)lastWorking=tabs.find(t=>t.id!=='home')?.id||'';
+    if(lastWorking===id)lastWorking=tabs[0]?.id||'';
+    if(!tabs.length)emptyHome=true;
     if(wasActive){
-      const target=tabs[Math.min(i,tabs.length-1)]||home;
-      activate(target.id);
+      const target=tabs[Math.min(i,tabs.length-1)];
+      activate(target?.id||'');
       saveTabs();
-      visit(target.href);
+      // Return to the dashboard, but do not recreate a locked Home tab.
+      visit(target?.href||homeHref);
       schedule();
     }else{saveTabs();schedule()}
   }
@@ -376,7 +375,7 @@
     else if(ev.key==='End')target=links.length-1;
     else if(ev.key==='Delete'){
       const id=link.closest('.ph-workspace-tab')?.dataset.tabId;
-      if(id&&id!=='home'){ev.preventDefault();closeTab(id)}
+      if(id){ev.preventDefault();closeTab(id)}
       return;
     }else return;
     ev.preventDefault();
@@ -402,8 +401,10 @@
   window.addEventListener('hashchange',schedule);
   window.addEventListener('storage',ev=>{
     if(ev.key===TABS_KEY){
-      tabs=[home,...sanitize(parseJson(TABS_KEY,{tabs:[]})).filter(x=>x.id!=='home')];
-      if(!tabs.some(t=>t.id===selected))activate('home');
+      const saved=parseJson(TABS_KEY,{tabs:[]});
+      tabs=sanitize(saved);
+      emptyHome=!!(saved?.emptyHome&&!tabs.length);
+      if(!tabs.some(t=>t.id===selected))activate(tabs[0]?.id||'');
       schedule();
     }
     if(ev.key===RAIL_KEY){collapsed=parseJson(RAIL_KEY,false)===true;document.body.classList.toggle('ph-nav-collapsed',collapsed);schedule()}
