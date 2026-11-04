@@ -57,7 +57,7 @@
     const invalidPositions=items.filter(x=>!spaces.some(s=>s.id===x.areaId));
     const connections=runs.filter(r=>items.some(x=>x.id===r.from)&&items.some(x=>x.id===r.to));
     const wired=items.some(x=>['light','control','audio','video','network','power'].includes(x.kind));
-    const readyBrief=!!clean(e.title)&&!!e.date&&own(db?.clients).some(x=>x.id===e.clientId);
+    const readyBrief=!!clean(e.title); // Opportunities can begin before dates, clients or venues are known.
     const venueValid=!!v&&spaces.length>0;
     const layoutReady=items.length>0&&!p.needsVenueReview&&!invalidPositions.length;
     const equipmentReady=items.length>0&&gear.incomplete.length===0&&gear.unknown.length===0&&gear.unlinked.length===0;
@@ -65,7 +65,7 @@
     const revisionStale=!!pub&&(!!p.needsVenueReview||!!options.changed);
     return [
       mark('brief','Event details','Who, what and when.',
-        readyBrief?'complete':'attention',readyBrief?'Event name, client and date recorded':'Add event name, client and date',
+        readyBrief?'complete':'attention',readyBrief?(e.date?'Event name and date recorded':'Opportunity recorded · date can be added later'):'Name this event or opportunity',
         'Edit details','index.html#/bookings/'+encodeURIComponent(e.id)),
       mark('spaces','Venue & spaces','Choose a reusable venue and the spaces used.',
         venueValid?'complete':'attention',venueValid?spaces.length+' space'+(spaces.length===1?'':'s')+' selected':'Choose a venue and at least one space',
@@ -95,23 +95,35 @@
   function create(db,fields={}){
     if(!Array.isArray(db.eventJobs))db.eventJobs=[];
     if(!Array.isArray(db.clients))db.clients=[];
-    const title=clean(fields.title).slice(0,120);
-    const date=clean(fields.date);
+    const title=clean(fields.title).slice(0,120),date=clean(fields.date);
     if(!title)return {error:'Enter an event name.'};
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(new Date(date+'T00:00:00Z').getTime())||new Date(date+'T00:00:00Z').toISOString().slice(0,10)!==date)return {error:'Choose a valid date.'};
+    if(date&&(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(new Date(date+'T00:00:00Z').getTime())||
+      new Date(date+'T00:00:00Z').toISOString().slice(0,10)!==date))return {error:'Choose a valid date or leave it blank.'};
     let client=db.clients.find(x=>x.id===fields.clientId),newClient=null;
     const clientName=clean(fields.clientName).slice(0,120);
     if(!client&&clientName){
       client=db.clients.find(x=>clean(x.name).toLocaleLowerCase('en-AU')===clientName.toLocaleLowerCase('en-AU'));
-      if(!client)newClient={id:uid('c'),name:clientName,person:'',email:'',type:'Event client'};
+      if(!client)newClient={id:uid('c'),name:clientName,person:'',email:'',type:'Event contact'};
     }
-    if(!client&&!newClient)return {error:'Select an existing client or enter a new client name.'};
     if(newClient){db.clients.push(newClient);client=newClient;}
     const e={
-      id:uid('ev'),title,date,clientId:client.id,venue:'',venueId:'',spaceIds:[],
+      id:uid('ev'),title,date,clientId:client?.id||'',venue:'',venueId:'',spaceIds:[],
       eventType:'Other',status:'Enquiry',guests:1,zones:1,environment:'Indoor',
       complexity:'Standard',labourHours:0,labourRate:0,notes:'',kit:[]
     };
+    // Keep early-stage opportunities in the same event entity all the way to closeout.
+    const lifecycle=window.PhaenomenonLifecycle;
+    lifecycle?.ensureEvent(e);
+    if(lifecycle){
+      const stageResult=lifecycle.setDetails(e,{
+        date,bookingStage:clean(fields.bookingStage)||'idea',
+        dateCertainty:clean(fields.dateCertainty)||(date?'proposed':'unknown'),
+        targetMonth:clean(fields.targetMonth),
+        dateNotes:clean(fields.dateNotes),nextAction:clean(fields.nextAction),
+        followUpDate:clean(fields.followUpDate),productionStage:'not-started'
+      });
+      if(stageResult.error)return stageResult;
+    }
     db.eventJobs.push(e);
     return {event:e,client:newClient};
   }
