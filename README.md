@@ -1,5 +1,13 @@
 # Phaenomenon
 
+## Collapsible icon sidebar and open workspace tabs
+
+Phaenomenon uses a shared navigation system across [Home / Production](production.html#/dashboard) and [Studio](index.html#/overview). On desktop, the left sidebar has matching line-style icons and a collapse control. Collapsed navigation shows icons only; hover/focus exposes the item name, and choosing a grouped icon expands the menu to expose its child links. This preference is remembered locally.
+
+A slim workspace-tab band sits directly under the main header. Open an event in Builder, 3D, Technical, Crew or Production and each view gets a separate tab; opening a different event gets another tab. The active view is highlighted, event tabs show known booking-status dots, and each closable tab has an **×**. Tabs retain a fixed width and scroll horizontally as more are added, while **+ New event** stays at the right. Home always remains available. Keyboard users can move between tabs with arrow keys and close the focused tab with Delete.
+
+Tab choices and sidebar collapse state persist in this browser and are shared between the Studio and Production pages. **Closing a tab never deletes event data**. These are route-based saved workspaces, not independently executing app instances; save unsaved form edits before changing views. The implementation is in `workspace-navigation.js` and `workspace-navigation.css`, with regression coverage in `tests/workspace-navigation.test.mjs`.
+
 ## Home dashboard (default landing screen)
 
 Open **[Phaenomenon Home](production.html#/dashboard)** to see the compact, connected overview. Opening the app root (the repository's `index.html` without a hash route) redirects to this dashboard; direct links to the classic Studio pages, Event Builder and all Production views remain available.
