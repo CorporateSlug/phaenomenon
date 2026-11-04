@@ -656,7 +656,7 @@
   function eventSchedule(){
     const all=events(),today=dateKey(new Date()),L=window.PhaenomenonLifecycle;
     const state=x=>L.summary(db,x);
-    const earlyStages=new Set(['idea','outreach','contacted','discussion','quoted','tentative']);
+    const earlyStages=new Set(['idea','outreach','contacted','discussion','quoted','tentative','postponed']);
     const isEarly=x=>earlyStages.has(state(x).bookingStage);
     const opportunities=all.filter(isEarly).sort((a,b)=>(state(a).followUpDate||'9999').localeCompare(state(b).followUpDate||'9999')||a.title.localeCompare(b.title));
     const upcoming=all.filter(x=>state(x).bookingStage==='confirmed'&&!state(x).closed&&
