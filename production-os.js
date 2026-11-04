@@ -389,7 +389,8 @@
       ],['design','technical'].includes(ui.view))+
       navGroup('deliver','Deliver the event','✓',[
         navItem('#/crew','Crew installation','☑',ui.view==='crew'),
-        navItem('#/production','Production','▦',ui.view==='production')
+        navItem('#/production','Production','▦',ui.view==='production')+
+        ','+navItem('#/production/closeout/'+eventId,'Closeout','✓',ui.view==='production'&&ui.productionTab==='closeout')
       ],['crew','production'].includes(ui.view))+
       navGroup('library','Library & people','◇',[
         navItem('#/home/venue/'+eventId,'Venues & spaces','⌘',ui.view==='home'&&ui.homeVenueOpen),
@@ -1039,7 +1040,7 @@
   }
 
 
-  const PRODUCTION_TABS=[['team','Team'],['logistics','Equipment & logistics'],['installation','Installation'],['show','Show schedule']];
+  const PRODUCTION_TABS=[['team','Team'],['logistics','Equipment & logistics'],['installation','Installation'],['show','Show schedule'],['closeout','Closeout']];
   function productionTabs(){
     return '<nav class="tabs production-tabs section no-print" role="tablist" aria-label="Production work areas">'+
       PRODUCTION_TABS.map(([key,label])=>
@@ -1098,7 +1099,8 @@
       (org().show[e.id]||[]).slice().sort((a,b)=>a.time.localeCompare(b.time)).map(x=>'<tr><td>'+esc(x.time)+'</td><td>'+esc(x.title)+'</td><td>'+esc(areaName(e,x.areaId))+'</td><td>'+esc((org().looks[e.id]||[]).find(l=>l.id===x.lookId)?.name||'—')+'</td><td>'+pill(x.done?'Done':'Planned',x.done?'good':'')+'</td><td><div class="row"><button class="btn small" data-act="toggle-cue" data-id="'+esc(x.id)+'">'+(x.done?'Reopen':'Mark done')+'</button><button class="btn small" data-act="edit-cue" data-id="'+esc(x.id)+'">Edit</button><button class="btn small danger" data-act="delete-cue" data-id="'+esc(x.id)+'">Remove</button></div></td></tr>').join('')+'</tbody></table></div>'+
       '<details class="workspace-disclosure"><summary>+ Add show cue</summary><div class="disclosure-body"><form id="cue-form" class="form-grid"><label>Time<input class="input" type="time" name="time" required value="19:00"></label><label>Area<select name="areaId">'+areas(e).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
       '<label class="wide">Cue or activity<input class="input" name="title" required maxlength="160" placeholder="e.g. Outdoor stage changeover"></label><label class="wide">Optional draft lighting look<select name="lookId"><option value="">No linked look</option>'+(org().looks[e.id]||[]).map(l=>'<option value="'+esc(l.id)+'">'+esc(l.name)+'</option>').join('')+'</select></label><div class="wide"><button class="btn primary" type="submit">Add cue</button></div></form></div></details></section>'+
-      '<section class="panel"><h2>Published revisions</h2>'+([...(p?.history||[]),...(p?[{revision:p.revision,at:p.at,tasks:p.tasks}]:[])].reverse().map(x=>'<div class="linkrow"><div><strong>Revision '+x.revision+'</strong><div class="detail">'+new Date(x.at).toLocaleString('en-AU')+' · '+(x.tasks?.length||0)+' tasks</div></div>'+pill(x.revision===p.revision?'Current':'Archived')+'</div>').join('')||'<div class="empty">No revisions yet.</div>')+'</section></section>';
+      '<section class="panel"><h2>Published revisions</h2>'+([...(p?.history||[]),...(p?[{revision:p.revision,at:p.at,tasks:p.tasks}]:[])].reverse().map(x=>'<div class="linkrow"><div><strong>Revision '+x.revision+'</strong><div class="detail">'+new Date(x.at).toLocaleString('en-AU')+' · '+(x.tasks?.length||0)+' tasks</div></div>'+pill(x.revision===p.revision?'Current':'Archived')+'</div>').join('')||'<div class="empty">No revisions yet.</div>')+'</section></section>'+productionPane('closeout')+
+      window.PhaenomenonLifecycleUI.closeoutPanel(db,e)+'</section>';
   }
   function navigateProfile(id,backOrForward){
     if(!entity(id))return;
@@ -1163,7 +1165,7 @@
     ui.view=['dashboard','events','builder','home','design','technical','crew','production','entities'].includes(view)?view:'dashboard';
     ui.builderFocus=ui.view==='builder'&&['brief','spaces','design','equipment','connections','team','review'].includes(parts[2])?parts[2]:'';
     ui.homeVenueOpen=(ui.view==='home'&&parts[1]==='venue')||(ui.view==='builder'&&ui.builderFocus==='spaces');
-    const routeEvent=ui.view==='home'&&parts[1]==='venue'?parts[2]:ui.view==='production'&&['team','logistics','installation','show'].includes(parts[1])?parts[2]:['entities','events'].includes(ui.view)?null:parts[1];
+    const routeEvent=ui.view==='home'&&parts[1]==='venue'?parts[2]:ui.view==='production'&&['team','logistics','installation','show','closeout'].includes(parts[1])?parts[2]:['entities','events'].includes(ui.view)?null:parts[1];
     if(ui.view==='production'&&['team','logistics','installation','show'].includes(parts[1]))ui.productionTab=parts[1];
     if(routeEvent&&events().some(x=>x.id===decodeURIComponent(routeEvent)))ui.eventId=decodeURIComponent(routeEvent);
     if(ui.view==='entities'&&parts[1]&&entity(decodeURIComponent(parts[1]))){
@@ -1198,6 +1200,19 @@
         org().show[e.id]=(org().show[e.id]||[]).filter(x=>x.id!==id);
         if(store())notice('Show cue removed from the planning schedule.');
       }return;
+    }
+    if(action==='lifecycle-close'){
+      const result=window.PhaenomenonLifecycle.closeEvent(db,e);
+      if(result.error){notice(result.error);return;}
+      if(store())notice('Event closed. All closeout requirements were recorded as complete or not applicable.');
+      return;
+    }
+    if(action==='lifecycle-reopen'){
+      if(!confirm('Reopen this event for editing? Existing checklist records will be retained.'))return;
+      const result=window.PhaenomenonLifecycle.reopenEvent(e);
+      if(result.error){notice(result.error);return;}
+      if(store())notice('Event reopened for additional changes.');
+      return;
     }
     if(action==='builder-new-close'){closeBuilderEvent();return;}
     if(action==='builder-new'){openBuilderEvent();return;}
@@ -1421,6 +1436,22 @@
       cue.lookId=(org().looks[e.id]||[]).some(x=>x.id===val('lookId'))?val('lookId'):null;
       cue.done=false;
       if(store()){closeCueEditor();notice('Show cue updated. Completion reset to Planned.');}
+      return;
+    }
+    if(f.id==='event-closeout-form'){
+      ev.preventDefault();
+      const e=current(),L=window.PhaenomenonLifecycle;
+      if(!e){notice('Select an event first.');return;}
+      const draft=JSON.parse(JSON.stringify(e)),data=new FormData(f);
+      for(const task of L.effectiveCloseout(db,draft)){
+        if(task.source==='invoices')continue;
+        const state=String(data.get('status_'+task.id)||'pending');
+        const note=String(data.get('note_'+task.id)||'');
+        const result=L.updateTask(db,draft,task.id,state,note);
+        if(result.error){notice(task.label+': '+result.error);return;}
+      }
+      e.lifecycle.closeout=draft.lifecycle.closeout;
+      if(store())notice('Closeout checklist saved. Completion is recorded manually unless linked invoices provide the status.');
       return;
     }
     if(f.id==='builder-new-event-form'){
