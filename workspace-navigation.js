@@ -101,7 +101,7 @@
         case 'builder':key='builder:'+id;label='Build · '+eventName(id);icon='layers';canonical='production.html#/builder/'+encoded+(segments[2]?'/'+segments[2]:'');break;
         case 'home':
           if(detail==='venue'){key='venue:'+id;label='Venue · '+eventName(id);icon='venue';canonical='production.html#/home/venue/'+encoded;}
-          else{key='overview:'+id;label='Overview · '+eventName(id);icon='home';canonical='production.html#/home/'+encoded;}
+          else{key='overview:'+id;label='Event · '+eventName(id);icon='home';canonical='production.html#/home/'+encoded+(segments[2]==='publish'?'/publish':'');}
           break;
         case 'design':key='design:'+id;label='Design · '+eventName(id);icon='cube';canonical='production.html#/design/'+encoded;break;
         case 'technical':key='technical:'+id;label='Technical · '+eventName(id);icon='bolt';canonical='production.html#/technical/'+encoded;break;
